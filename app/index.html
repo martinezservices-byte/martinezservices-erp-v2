@@ -1441,6 +1441,7 @@
 
       // Cargar datos del tenant desde Firestore
       await loadTenantData(user.uid);
+      showSAButton(); // ← CRÍTICO: mostrar SA Panel si es superadmin
       renderLevel1();
     });
 
@@ -1464,6 +1465,7 @@
         }
         updateHeaderPlan();
         await loadEntities(uid);
+        showSAButton(); // respaldo: asegurar visibilidad SA Panel
       } catch (e) {
         console.error("Error cargando tenant:", e);
       }
@@ -5011,21 +5013,26 @@
     // ═══════════════════════════════════════════════
     // SUPERADMIN PANEL — MOTOR COMPLETO
     // ═══════════════════════════════════════════════
-    const SUPERADMIN_UID = "R4yUrD8lPuhYCSjha1QLZDoR"; // UID de Gaudy
+    const SUPERADMIN_UID = "R4yUrD8lPuhYCSjha1QLZDoRwBx2"; // UID de Gaudy — COMPLETO
     const TODOS_MODULOS  = ["condominios","residentes","rrhh","contabilidad","facturacion","logistica","auditoria"];
 
     function isSuperadmin() {
-      return STATE.user && (
-        STATE.tenantData?.es_superadmin === true ||
-        STATE.tenantData?.rol === "superadmin" ||
-        STATE.user.uid.startsWith("R4yUrD8") ||
-        STATE.user.email === "aybserviciosg@gmail.com"
-      );
+      if (!STATE.user) return false;
+      if (STATE.user.uid === SUPERADMIN_UID) return true;
+      if (STATE.user.email === "aybserviciosg@gmail.com") return true;
+      if (STATE.tenantData?.es_superadmin === true) return true;
+      if (STATE.tenantData?.rol === "superadmin") return true;
+      return false;
     }
 
     function showSAButton() {
       const btn = document.getElementById("btn-sa-panel");
-      if (btn && isSuperadmin()) btn.classList.remove("hidden");
+      if (!btn) return;
+      if (isSuperadmin()) {
+        btn.classList.remove("hidden");
+        btn.style.display = "";
+        btn.style.visibility = "visible";
+      }
     }
 
     // Navegación al SA Panel
@@ -5490,7 +5497,7 @@
           <button id="btn-libro-dt" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📤 Archivo DT Chile</button>
         </div>` +
         tableWrap("tbl-libro","Libro de Remuneraciones","Nómina mensual con todos los haberes y descuentos legales",
-          ["RUT","Nombre","Cargo","Sueldo Base","Gratificación","Total Haberes","AFP","Monto AFP","Salud","Monto Salud","Total Desc.","Líquido"]);
+          ["RUT","Nombre","Cargo","S.Base","Grat.","Col.","Mov.","Bono Asist.","H.Extra 50%","H.Extra 100%","Viat.","Total Impon.","Total Haberes","AFP","Mont.AFP","Salud","Mont.Salud","Tot.Desc.","Líquido"]);
 
       const cargarLibro = async () => {
         const periodo = document.getElementById("libro-periodo").value;
@@ -5569,11 +5576,18 @@
         if (!periodo || !empId) { alert("Selecciona el periodo primero"); return; }
         const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
         if (snap.empty) { alert("Sin datos para ese periodo"); return; }
-        // Formato SII: columnas requeridas por el SII para el libro de remuneraciones
-        let csv = "RUT_EMPLEADO;NOMBRE;PERIODO;SUELDO_BASE;GRATIFICACION;TOTAL_IMPONIBLE;DESCUENTO_AFP;DESCUENTO_SALUD;TOTAL_DESCUENTOS;LIQUIDO_PAGAR;AFP;SALUD\n";
+        // Formato SII — Libro de Remuneraciones Electrónico (LRE) formato oficial
+        let csv = "RUT_TRABAJADOR;NOMBRE;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION_LEGAL;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;HORAS_EXTRA_50PCT;HORAS_EXTRA_100PCT;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;ISAPRE_FONASA;MONTO_SALUD;IMPUESTO_UNICO;OTROS_DESCUENTOS;TOTAL_DESCUENTOS;LIQUIDO_PAGAR\n";
         snap.forEach(d => {
           const r = d.data();
-          csv += `${r.rut};${r.nombre};${r.periodo};${r.sueldo_base||0};${r.gratificacion||0};${r.total_haberes||0};${r.desc_afp||0};${r.desc_salud||0};${r.total_descuentos||0};${r.liquido_pagar||0};${r.afp};${r.salud}\n`;
+          const tiSII=(r.sueldo_base||0)+(r.gratificacion||0)+(r.bono_asistencia||0)+(r.horas_extra_50||0)+(r.horas_extra_100||0);
+          const tiNiSII=(r.asig_colacion||0)+(r.asig_movilizacion||0)+(r.viaticos||0);
+          csv += [r.rut,r.nombre,r.tipo_contrato||'INDEFINIDO',r.periodo,
+            r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,
+            r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,
+            tiSII,tiNiSII,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,
+            r.impuesto_unico||0,r.otros_descuentos||0,
+            r.total_descuentos||0,r.liquido_pagar||0].join(';')+'\n';
         });
         const a = document.createElement("a");
         a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
@@ -5589,11 +5603,17 @@
         if (snap.empty) { alert("Sin datos para ese periodo"); return; }
         const empDoc = await db.collection("empresas").doc(empId).get();
         const empresa = empDoc.exists ? empDoc.data() : {rut:"76.782.954-K"};
-        // Formato Dirección del Trabajo (DT Chile) — carga masiva
-        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE_TRABAJADOR;PERIODO;SUELDO_BASE;TOTAL_IMPONIBLE;TOTAL_DESCUENTOS;LIQUIDO;TIPO_CONTRATO;AFP;SALUD\n";
+        // Formato Dirección del Trabajo (DT Chile) — formato oficial carga masiva
+        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE_TRABAJADOR;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION_LEGAL;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;HORAS_EXTRA_50PCT;HORAS_EXTRA_100PCT;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;ISAPRE_FONASA;MONTO_SALUD;TOTAL_DESCUENTOS;LIQUIDO_PAGAR\n";
         snap.forEach(d => {
           const r = d.data();
-          csv += `${empresa.rut||''};${r.rut};${r.nombre};${r.periodo};${r.sueldo_base||0};${r.total_haberes||0};${r.total_descuentos||0};${r.liquido_pagar||0};${r.tipo_contrato||'INDEFINIDO'};${r.afp};${r.salud}\n`;
+          const tiDT=(r.sueldo_base||0)+(r.gratificacion||0)+(r.bono_asistencia||0)+(r.horas_extra_50||0)+(r.horas_extra_100||0);
+          const tiNiDT=(r.asig_colacion||0)+(r.asig_movilizacion||0)+(r.viaticos||0);
+          csv += [empresa.rut||'',r.rut,r.nombre,r.tipo_contrato||'INDEFINIDO',r.periodo,
+            r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,
+            r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,
+            tiDT,tiNiDT,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,
+            r.total_descuentos||0,r.liquido_pagar||0].join(';')+'\n';
         });
         const a = document.createElement("a");
         a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
@@ -5804,140 +5824,171 @@
 
     // ── PORTAL DEL COLABORADOR ──
     async function renderRRHH_Portal(zone, empId) {
+      // Vista ADMINISTRADOR: gestiona accesos del portal de trabajadores
       zone.innerHTML = `
-        <div style="margin-bottom:20px;">
-          <div style="background:var(--c-surface);border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:12px;">
-            <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:6px;">👤 Portal del Colaborador</div>
-            <p style="font-size:12px;color:var(--c-muted)">Busca al trabajador para ver su portal completo: ficha, liquidaciones, contratos, vacaciones, permisos y anticipos.</p>
+        <div style="background:var(--c-surface);border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+          <div style="font-size:15px;font-weight:800;margin-bottom:6px;">👤 Portal del Colaborador — Gestión de Accesos</div>
+          <p style="font-size:13px;color:var(--c-muted);margin-bottom:12px;">Desde aquí activas o desactivas el acceso de cada trabajador a su Portal Personal. El trabajador ingresa con su correo y clave al portal separado.</p>
+          <div style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:var(--radius);padding:10px;font-size:12px;color:#0ea5e9;">
+            <strong>URL del Portal del Colaborador:</strong> El trabajador debe acceder al ERP con su correo registrado. Al iniciar sesión con un rol "trabajador", verá automáticamente SOLO su portal personal.
           </div>
-          <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <select id="portal-emp-select" style="flex:1;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
-              <option value="">— Selecciona trabajador —</option>
-            </select>
-            <button id="btn-cargar-portal" class="btn-entrar">Ver Portal</button>
-          </div>
-        </div>
-        <div id="portal-contenido"></div>`;
+        </div>` +
+        tableWrap("tbl-portal-accesos","Trabajadores con Acceso al Portal","Estado de acceso de cada colaborador",
+          ["Trabajador","RUT","Cargo","Correo Portal","Estado Acceso","Última vez","Acciones"]);
 
-      // Cargar empleados en el select
-      if (empId) {
-        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
-        const sel2 = document.getElementById("portal-emp-select");
-        empSnap.forEach(d => {
-          const o=document.createElement("option"); o.value=d.id;
-          o.textContent=`${d.data().rut} — ${d.data().nombre}`; sel2.appendChild(o);
-        });
-      }
-
-      document.getElementById("btn-cargar-portal").onclick = async () => {
-        const empDocId = document.getElementById("portal-emp-select").value;
-        if (!empDocId) { alert("Selecciona un trabajador"); return; }
-        const cont = document.getElementById("portal-contenido");
-        cont.innerHTML = '<div style="color:var(--c-muted);font-size:13px;padding:20px">Cargando...</div>';
-
-        const [empDoc, remSnap, contSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
-          db.collection("empleados").doc(empDocId).get(),
-          db.collection("remuneraciones").where("empleado_id","==",empDocId).orderBy("periodo","desc").limit(12).get(),
-          db.collection("contratos").where("empleado_id","==",empDocId).get(),
-          db.collection("vacaciones").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
-          db.collection("permisos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
-          db.collection("anticipos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
-        ]);
-
-        const emp = empDoc.data();
-        const eCls = {activo:"green",inactivo:"gray",licencia:"warn",vacaciones:"warn"}[emp.estado]||"gray";
-
-        let liqs = "";
-        remSnap.forEach(d=>{const r=d.data(); liqs+=`<tr><td>${r.periodo}</td><td>${formatMonto(r.total_haberes)}</td><td style="color:var(--c-danger)">${formatMonto(r.total_descuentos)}</td><td style="font-weight:700">${formatMonto(r.liquido_pagar)}</td><td><button onclick="exportarLiquidacionesPDF('${empId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">🖨️</button></td></tr>`;});
-        if (!liqs) liqs = `<tr class="empty-row"><td colspan="5">Sin liquidaciones registradas aún</td></tr>`;
-
-        let conts = "";
-        contSnap.forEach(d=>{const r=d.data(); conts+=`<tr><td>${r.tipo||'—'}</td><td>${r.fecha_inicio||'—'}</td><td>${r.fecha_fin||'Indefinido'}</td><td>${formatMonto(r.sueldo_pactado)}</td><td><span class="badge badge-${r.estado==='vigente'?'green':'gray'}">${r.estado||'—'}</span></td></tr>`;});
-        if (!conts) conts = `<tr class="empty-row"><td colspan="5">Sin contratos registrados</td></tr>`;
-
-        let vacs = "";
-        vacSnap.forEach(d=>{const r=d.data(); vacs+=`<tr><td>${r.tipo||'—'}</td><td>${r.desde||'—'}</td><td>${r.hasta||'—'}</td><td>${r.dias_solicitados||0}</td><td><span class="badge badge-${r.estado==='aprobada'?'green':r.estado==='rechazada'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
-        if (!vacs) vacs = `<tr class="empty-row"><td colspan="5">Sin solicitudes registradas</td></tr>`;
-
-        let perms = "";
-        permSnap.forEach(d=>{const r=d.data(); perms+=`<tr><td>${r.tipo||'—'}</td><td>${r.fecha||'—'}</td><td>${r.motivo||'—'}</td><td><span class="badge badge-${r.estado==='aprobado'?'green':r.estado==='rechazado'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
-        if (!perms) perms = `<tr class="empty-row"><td colspan="4">Sin permisos registrados</td></tr>`;
-
-        let ants = "";
-        anticSnap.forEach(d=>{const r=d.data(); ants+=`<tr><td>${formatFecha(r.creado)}</td><td>${formatMonto(r.monto)}</td><td>${r.motivo||'—'}</td><td><span class="badge badge-${r.estado==='aprobado'?'green':r.estado==='rechazado'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
-        if (!ants) ants = `<tr class="empty-row"><td colspan="4">Sin solicitudes de anticipo</td></tr>`;
-
-        cont.innerHTML = `
-          <!-- FICHA RESUMEN -->
-          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
-            <div>
-              <div style="font-size:20px;font-weight:800">${emp.nombre||'—'}</div>
-              <div style="font-size:13px;color:var(--c-muted);margin-top:3px">${emp.cargo||'—'} · RUT: ${emp.rut||'—'}</div>
-              <div style="font-size:12px;color:var(--c-muted)">${emp.correo||''} · ${emp.telefono||''}</div>
-              <div style="font-size:12px;color:var(--c-muted)">Ingreso: ${emp.fecha_ingreso||'—'} · Contrato: ${emp.tipo_contrato||'—'}</div>
-              <div style="font-size:12px;color:var(--c-muted)">AFP: ${emp.afp||'—'} · Salud: ${emp.salud||'—'} · Sueldo: ${formatMonto(emp.sueldo_base)}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-              <span class="badge badge-${eCls}">${emp.estado?.toUpperCase()||'—'}</span>
-              <button onclick="imprimirFichaEmpleado('${empDocId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">🖨️ Imprimir Ficha</button>
-            </div>
-          </div>
-
-          <!-- SOLICITUDES RÁPIDAS -->
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px;">
-            <button onclick="abrirSolicitudPortal('vacaciones','${empDocId}','${empId}')" style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);color:var(--c-accent);font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-              🏖️ Solicitar Vacaciones<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Registrar solicitud de vacaciones</div>
+      if (!empId) return;
+      const snap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+      const tb = document.getElementById("tbl-portal-accesos-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(7, "Sin trabajadores registrados. Agrégalos primero en Fichas del Personal."); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const tieneAcceso = r.portal_activo === true;
+        const acCls = tieneAcceso ? "green" : "gray";
+        tb.innerHTML += `<tr>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+          <td>${r.cargo||"—"}</td>
+          <td style="font-size:11px">${r.correo_portal||r.correo||"Sin correo asignado"}</td>
+          <td><span class="badge badge-${acCls}">${tieneAcceso?"✓ Activo":"✗ Sin acceso"}</span></td>
+          <td style="font-size:11px">${r.ultimo_acceso_portal||"Nunca"}</td>
+          <td>
+            <button onclick="toggleAccesoPortal('${d.id}','${empId}',${!tieneAcceso})"
+              style="background:none;border:1px solid ${tieneAcceso?"var(--c-danger)":"var(--c-accent)"};color:${tieneAcceso?"var(--c-danger)":"var(--c-accent)"};padding:5px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;">
+              ${tieneAcceso?"🔒 Revocar acceso":"🔓 Activar acceso"}
             </button>
-            <button onclick="abrirSolicitudPortal('permiso','${empDocId}','${empId}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-              📋 Solicitar Permiso<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Permiso con o sin goce de sueldo</div>
-            </button>
-            <button onclick="abrirSolicitudPortal('anticipo','${empDocId}','${empId}')" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-              💵 Solicitar Anticipo<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Anticipo de sueldo</div>
-            </button>
-            <button onclick="registrarAsistenciaPortal('${empDocId}','${empId}')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-              📍 Registrar Asistencia<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Firma digital con timestamp</div>
-            </button>
-          </div>
-
-          <!-- LIQUIDACIONES -->
-          <div class="data-table-wrap" style="margin-bottom:14px;">
-            <div class="data-table-head"><div><h3>📑 Mis Liquidaciones</h3><p>Últimos 12 períodos</p></div></div>
-            <table class="data-table"><thead><tr><th>Período</th><th>Haberes</th><th>Descuentos</th><th>Líquido</th><th>PDF</th></tr></thead>
-            <tbody>${liqs}</tbody></table>
-          </div>
-
-          <!-- CONTRATOS -->
-          <div class="data-table-wrap" style="margin-bottom:14px;">
-            <div class="data-table-head"><div><h3>📝 Mis Contratos y Anexos</h3><p>Historial contractual</p></div></div>
-            <table class="data-table"><thead><tr><th>Tipo</th><th>Inicio</th><th>Término</th><th>Sueldo Pactado</th><th>Estado</th></tr></thead>
-            <tbody>${conts}</tbody></table>
-          </div>
-
-          <!-- VACACIONES -->
-          <div class="data-table-wrap" style="margin-bottom:14px;">
-            <div class="data-table-head"><div><h3>🏖️ Mis Vacaciones y Permisos</h3><p>Historial de solicitudes</p></div></div>
-            <table class="data-table"><thead><tr><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días</th><th>Estado</th></tr></thead>
-            <tbody>${vacs}</tbody></table>
-          </div>
-
-          <!-- PERMISOS -->
-          <div class="data-table-wrap" style="margin-bottom:14px;">
-            <div class="data-table-head"><div><h3>📋 Mis Permisos</h3><p>Permisos solicitados</p></div></div>
-            <table class="data-table"><thead><tr><th>Tipo</th><th>Fecha</th><th>Motivo</th><th>Estado</th></tr></thead>
-            <tbody>${perms}</tbody></table>
-          </div>
-
-          <!-- ANTICIPOS -->
-          <div class="data-table-wrap" style="margin-bottom:14px;">
-            <div class="data-table-head"><div><h3>💵 Mis Anticipos</h3><p>Solicitudes de anticipo de sueldo</p></div></div>
-            <table class="data-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Motivo</th><th>Estado</th></tr></thead>
-            <tbody>${ants}</tbody></table>
-          </div>
-
-          <div id="portal-modal-solicitud"></div>`;
-      };
+          </td>
+        </tr>`;
+      });
     }
 
+    window.toggleAccesoPortal = async (docId, empId, activar) => {
+      const empDoc = await db.collection("empleados").doc(docId).get();
+      const r = empDoc.data();
+      const correoPortal = r.correo_portal || r.correo || "";
+      if (activar && !correoPortal) {
+        alert("Este trabajador no tiene correo asignado. Edita su ficha y agrega el correo del portal primero.");
+        return;
+      }
+      if (activar) {
+        const confirmar = confirm(`¿Activar acceso al Portal del Colaborador para ${r.nombre}?
+
+El trabajador podrá ingresar con:
+Correo: ${correoPortal}
+
+¿Confirmar?`);
+        if (!confirmar) return;
+      } else {
+        const confirmar = confirm(`¿Revocar acceso al portal de ${r.nombre}?`);
+        if (!confirmar) return;
+      }
+      await db.collection("empleados").doc(docId).update({
+        portal_activo: activar,
+        portal_activado_por: STATE.user?.email || "",
+        portal_fecha_activacion: new Date().toISOString()
+      });
+      alert(activar ? `✓ Acceso activado para ${r.nombre}. El trabajador ya puede ingresar con su correo.` : `✓ Acceso revocado para ${r.nombre}.`);
+      renderRRHH_Portal(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // VISTA TRABAJADOR — se activa cuando el usuario logueado tiene rol "trabajador"
+    async function renderPortalTrabajador(zone, user) {
+      // Buscar la ficha del trabajador por su correo
+      const snap = await db.collection("empleados").where("correo_portal","==",user.email).limit(1).get();
+      const snap2 = snap.empty ? await db.collection("empleados").where("correo","==",user.email).limit(1).get() : snap;
+      if (snap2.empty) {
+        zone.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+          <div style="font-size:48px;margin-bottom:16px">🔒</div>
+          <h2 style="color:var(--c-text);margin-bottom:8px">Sin ficha asignada</h2>
+          <p style="color:var(--c-muted)">Tu correo no está vinculado a ninguna ficha de trabajador. Contacta a tu administrador.</p>
+        </div>`;
+        return;
+      }
+      const empDoc = snap2.docs[0];
+      const empId = empDoc.data().entityId;
+      const empDocId = empDoc.id;
+
+      // Actualizar último acceso
+      await db.collection("empleados").doc(empDocId).update({
+        ultimo_acceso_portal: new Date().toLocaleString('es-CL')
+      });
+
+      // Cargar todos los datos del trabajador en paralelo
+      const [remSnap, contSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
+        db.collection("remuneraciones").where("empleado_id","==",empDocId).orderBy("periodo","desc").limit(12).get(),
+        db.collection("contratos").where("empleado_id","==",empDocId).orderBy("creado","desc").get(),
+        db.collection("vacaciones").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+        db.collection("permisos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+        db.collection("anticipos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+      ]);
+
+      const emp = empDoc.data();
+      const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+
+      let liqs=""; remSnap.forEach(d=>{const r=d.data();liqs+=`<tr><td>${r.periodo}</td><td>${fmt(r.total_haberes)}</td><td style="color:var(--c-danger)">${fmt(r.total_descuentos)}</td><td style="font-weight:700">${fmt(r.liquido_pagar)}</td><td><span class="badge badge-green">Pagada</span></td></tr>`;});
+      if(!liqs) liqs=`<tr class="empty-row"><td colspan="5">Sin liquidaciones aún</td></tr>`;
+
+      let conts=""; contSnap.forEach(d=>{const r=d.data();conts+=`<tr><td>${r.tipo||'—'}</td><td>${r.fecha_inicio||'—'}</td><td>${r.fecha_fin||'Indefinido'}</td><td>${fmt(r.sueldo_pactado)}</td><td><span class="badge badge-${r.estado==='vigente'?'green':'gray'}">${r.estado||'—'}</span></td></tr>`;});
+      if(!conts) conts=`<tr class="empty-row"><td colspan="5">Sin contratos registrados</td></tr>`;
+
+      let vacs=""; vacSnap.forEach(d=>{const r=d.data();vacs+=`<tr><td>${r.tipo||'—'}</td><td>${r.desde||'—'}</td><td>${r.hasta||'—'}</td><td>${r.dias_solicitados||0}</td><td><span class="badge badge-${r.estado==='aprobada'?'green':r.estado==='rechazada'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
+      if(!vacs) vacs=`<tr class="empty-row"><td colspan="5">Sin solicitudes</td></tr>`;
+
+      zone.innerHTML = `
+        <!-- HEADER PORTAL TRABAJADOR -->
+        <div style="background:linear-gradient(135deg,rgba(46,168,79,0.15),rgba(21,101,192,0.1));border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius-lg);padding:22px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-size:22px;font-weight:900;margin-bottom:4px">${emp.nombre||'—'}</div>
+            <div style="font-size:13px;color:var(--c-muted)">${emp.cargo||'—'} · RUT: ${emp.rut||'—'}</div>
+            <div style="font-size:12px;color:var(--c-muted)">Empresa: ${emp.entityId||'—'} · Ingreso: ${emp.fecha_ingreso||'—'}</div>
+            <div style="font-size:12px;color:var(--c-muted)">AFP: ${emp.afp||'—'} · Salud: ${emp.salud||'—'} · Sueldo Base: ${fmt(emp.sueldo_base)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+            <span class="badge badge-green">TRABAJADOR ACTIVO</span>
+            <button onclick="imprimirFichaEmpleado('${empDocId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">🖨️ Mi Ficha PDF</button>
+          </div>
+        </div>
+
+        <!-- ACCIONES RÁPIDAS -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;">
+          <button onclick="abrirSolicitudPortal('vacaciones','${empDocId}','${empId}')" style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);color:var(--c-accent);font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            🏖️ Solicitar Vacaciones<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Días legales y convenidos</div>
+          </button>
+          <button onclick="abrirSolicitudPortal('permiso','${empDocId}','${empId}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            📋 Solicitar Permiso<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Con o sin goce de sueldo</div>
+          </button>
+          <button onclick="abrirSolicitudPortal('anticipo','${empDocId}','${empId}')" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            💵 Solicitar Anticipo<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Anticipo de sueldo</div>
+          </button>
+          <button onclick="registrarAsistenciaPortal('${empDocId}','${empId}')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            📍 Marcar Asistencia GPS<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Firma digital con ubicación</div>
+          </button>
+        </div>
+
+        <!-- MIS LIQUIDACIONES -->
+        <div class="data-table-wrap" style="margin-bottom:14px;">
+          <div class="data-table-head"><div><h3>📑 Mis Liquidaciones de Sueldo</h3><p>Últimos 12 períodos</p></div></div>
+          <table class="data-table"><thead><tr><th>Período</th><th>Total Haberes</th><th>Descuentos</th><th>Líquido a Pagar</th><th>Estado</th></tr></thead>
+          <tbody>${liqs}</tbody></table>
+        </div>
+
+        <!-- MIS CONTRATOS -->
+        <div class="data-table-wrap" style="margin-bottom:14px;">
+          <div class="data-table-head"><div><h3>📝 Mis Contratos y Anexos</h3><p>Historial contractual</p></div></div>
+          <table class="data-table"><thead><tr><th>Tipo</th><th>Inicio</th><th>Término</th><th>Sueldo Pactado</th><th>Estado</th></tr></thead>
+          <tbody>${conts}</tbody></table>
+        </div>
+
+        <!-- MIS VACACIONES -->
+        <div class="data-table-wrap" style="margin-bottom:14px;">
+          <div class="data-table-head"><div><h3>🏖️ Mis Vacaciones y Permisos</h3><p>Solicitudes registradas</p></div></div>
+          <table class="data-table"><thead><tr><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días</th><th>Estado</th></tr></thead>
+          <tbody>${vacs}</tbody></table>
+        </div>
+        <div id="portal-modal-solicitud"></div>`;
+    }
+
+    
     window.abrirSolicitudPortal = (tipo, empDocId, empId) => {
       const cont = document.getElementById("portal-modal-solicitud");
       if (!cont) return;
@@ -6057,6 +6108,770 @@
       if (prevBtn) prevBtn.onclick = () => exportarPrevired(empId);
       const pdfBtn = document.getElementById("btn-export-liq-pdf");
       if (pdfBtn) pdfBtn.onclick = () => exportarLiquidacionesPDF(empId);
+    };
+
+
+    // ═══════════════════════════════════════════════════════════
+    // SPRINT B — ÁREA 1 CONDOMINIOS: Importar/Exportar + PDFs
+    // ═══════════════════════════════════════════════════════════
+
+    // ── IMPORTAR UNIDADES EXCEL/CSV ──
+    window.importarUnidades = async (condoId) => {
+      const fileInput = document.getElementById("import-unidades-file");
+      if (!fileInput?.files[0]) return;
+      const text = await fileInput.files[0].text();
+      const lines = text.split("\n").filter(l=>l.trim());
+      let ok=0;
+      for (let i=1; i<lines.length; i++) {
+        const c = lines[i].split(",");
+        if (c.length < 3) continue;
+        await db.collection("condominios").doc(condoId).collection("unidades").add({
+          numero_unidad: (c[0]||"").trim(),
+          nombre_propietario: (c[1]||"").trim(),
+          rut: (c[2]||"").trim(),
+          correo: (c[3]||"").trim().toLowerCase(),
+          telefono: (c[4]||"").trim(),
+          rol: (c[5]||"propietario").trim(),
+          estado: "activo",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        ok++;
+      }
+      alert(`✓ ${ok} unidades importadas.\n\nFormato CSV esperado:\nN°Unidad,Nombre,RUT,Correo,Telefono,Rol`);
+      renderCondo_Unidades(document.getElementById("module-dynamic-zone"), condoId);
+    };
+
+    window.exportarUnidades = async (condoId) => {
+      const snap = await db.collection("condominios").doc(condoId).collection("unidades").orderBy("numero_unidad").get();
+      let csv = "N°Unidad,Nombre Propietario,RUT,Correo,Teléfono,Rol,Estado\n";
+      snap.forEach(d => {
+        const r=d.data();
+        csv += `${r.numero_unidad||''},${r.nombre_propietario||''},${r.rut||''},${r.correo||''},${r.telefono||''},${r.rol||''},${r.estado||''}\n`;
+      });
+      const a = document.createElement("a");
+      a.href = "data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+      a.download = `copropietarios_${condoId}_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    };
+
+    // ── COLILLAS PDF AL CERRAR MES ──
+    window.imprimirColillas = async (condoId, periodo) => {
+      const [uSnap, gcSnap, condoDoc] = await Promise.all([
+        db.collection("condominios").doc(condoId).collection("unidades").where("estado","==","activo").get(),
+        db.collection("condominios").doc(condoId).collection("gastos_comunes").where("periodo","==",periodo).get(),
+        db.collection("condominios").doc(condoId).get()
+      ]);
+      if (gcSnap.empty) { alert("Sin gastos comunes para ese período"); return; }
+      const gc = gcSnap.docs[0].data();
+      const condo = condoDoc.data()||{};
+      const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+      let colillas = "";
+      uSnap.forEach(d => {
+        const u=d.data();
+        colillas += `
+          <div style="border:1px solid #ccc;padding:20px;margin:10px;page-break-inside:avoid">
+            <div style="display:flex;justify-content:space-between;border-bottom:2px solid #1A7A3C;padding-bottom:10px;margin-bottom:12px">
+              <div><strong style="color:#1A7A3C;font-size:14px">${condo.nombre||'Condominio'}</strong><br><span style="font-size:11px;color:#555">${condo.direccion||''}</span></div>
+              <div style="text-align:right"><strong>COLILLA DE COBRO</strong><br><span style="font-size:11px">Período: ${periodo}</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div><strong>Unidad N°:</strong> ${u.numero_unidad||'—'}</div>
+              <div><strong>Vencimiento:</strong> ${gc.fecha_vencimiento||'—'}</div>
+              <div style="grid-column:1/-1"><strong>Propietario/Residente:</strong> ${u.nombre_propietario||'—'}</div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <tr style="background:#f0f9f0"><td style="padding:6px;border:1px solid #ddd"><strong>Gasto Común del Período</strong></td><td style="padding:6px;border:1px solid #ddd;text-align:right">${fmt(gc.monto_por_unidad)}</td></tr>
+              <tr style="background:#1A7A3C;color:#fff"><td style="padding:8px;font-weight:700"><strong>TOTAL A PAGAR</strong></td><td style="padding:8px;text-align:right;font-weight:700;font-size:14px"><strong>${fmt(gc.monto_por_unidad)}</strong></td></tr>
+            </table>
+            <div style="margin-top:12px;font-size:10px;color:#777">Transferir a: ${condo.nombre||'Condominio'} · Contacto: ${condo.correo||''} · ${condo.telefono||''}</div>
+          </div>`;
+      });
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Colillas ${periodo}</title>
+      <style>body{font-family:Arial;font-size:12px;padding:10px}@media print{@page{margin:10mm}}</style>
+      </head><body>${colillas}</body></html>`;
+      const w = window.open('','_blank'); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(),600);
+    };
+
+    // ── FONDO RESERVA PDF IMPRIMIBLE ──
+    window.imprimirFondoReserva = async (condoId) => {
+      const [snap, condoDoc] = await Promise.all([
+        db.collection("condominios").doc(condoId).collection("fondo_reserva").orderBy("fecha","asc").get(),
+        db.collection("condominios").doc(condoId).get()
+      ]);
+      const condo = condoDoc.data()||{};
+      const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+      let filas="", saldo=0;
+      snap.forEach(d=>{
+        const r=d.data(); saldo=r.saldo_acumulado||saldo;
+        filas+=`<tr><td>${r.fecha||'—'}</td><td>${r.concepto||'—'}</td><td style="color:green">${r.ingreso?fmt(r.ingreso):'—'}</td><td style="color:red">${r.egreso?fmt(r.egreso):'—'}</td><td style="font-weight:700">${fmt(r.saldo_acumulado)}</td></tr>`;
+      });
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fondo de Reserva</title>
+      <style>body{font-family:Arial;font-size:12px;padding:24px}h2{color:#1A7A3C}h3{color:#555;font-weight:normal;font-size:11px}
+      table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:7px}td{padding:6px;border-bottom:1px solid #eee}
+      .total{background:#f0f9f0;font-weight:700;font-size:14px}@media print{body{padding:12px}}</style></head><body>
+      <h2>ESTADO DE CUENTA — FONDO DE RESERVA</h2>
+      <h3>${condo.nombre||'Condominio'} · RUT: ${condo.rut||'—'} · Emitido: ${new Date().toLocaleDateString('es-CL')}</h3>
+      <table><thead><tr><th>Fecha</th><th>Concepto</th><th>Ingreso</th><th>Egreso</th><th>Saldo Acumulado</th></tr></thead>
+      <tbody>${filas}<tr class="total"><td colspan="4">SALDO ACTUAL</td><td>${fmt(saldo)}</td></tr></tbody></table>
+      </body></html>`;
+      const w=window.open('','_blank'); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(),500);
+    };
+
+    // ── CONTRATO PDF ──
+    window.imprimirContratoPDF = async (docId) => {
+      const d = await db.collection("contratos").doc(docId).get();
+      if (!d.exists) return;
+      const r = d.data();
+      const empDoc = await db.collection("empresas").doc(r.entityId||'').get();
+      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA",rut:"76.782.954-K"};
+      const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+      const tipos = {indefinido:"Indefinido",plazo_fijo:"Plazo Fijo",obra_faena:"Obra o Faena",honorarios:"Honorarios",anexo:"Anexo de Contrato"};
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Contrato ${r.nombre}</title>
+      <style>body{font-family:Arial;font-size:12px;padding:30px;max-width:720px;margin:0 auto;line-height:1.6}
+      h2{color:#1A7A3C;text-align:center;font-size:16px}h3{color:#555;text-align:center;font-size:12px;font-weight:normal;margin-bottom:20px}
+      .seccion{margin:16px 0}.seccion h4{color:#1A7A3C;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #ddd;padding-bottom:5px;margin-bottom:10px}
+      p{margin-bottom:8px;text-align:justify}
+      .firma-box{display:flex;justify-content:space-between;margin-top:50px}
+      .firma{text-align:center;width:44%}.firma-line{border-top:1px solid #333;padding-top:6px;font-size:10px;color:#555}
+      @media print{body{padding:16px}}</style></head><body>
+      <h2>CONTRATO INDIVIDUAL DE TRABAJO</h2>
+      <h3>Tipo: ${tipos[r.tipo]||r.tipo||'—'}</h3>
+      <div class="seccion"><h4>Partes Contratantes</h4>
+        <p><strong>EMPLEADOR:</strong> ${empresa.nombre||'Martinez Services SPA'}, RUT ${empresa.rut||'76.782.954-K'}, con domicilio en ${empresa.direccion||'Alto Hospicio, Chile'}.</p>
+        <p><strong>TRABAJADOR:</strong> ${r.nombre||'—'}, RUT ${r.rut||'—'}.</p>
+      </div>
+      <div class="seccion"><h4>Condiciones del Contrato</h4>
+        <p><strong>Cargo o función:</strong> ${r.cargo||'—'}</p>
+        <p><strong>Fecha de inicio:</strong> ${r.fecha_inicio||'—'}</p>
+        <p><strong>Fecha de término:</strong> ${r.fecha_fin||'Contrato de duración indefinida'}</p>
+        <p><strong>Remuneración mensual:</strong> ${fmt(r.sueldo_pactado)} (incluye sueldo base y todos los beneficios legales)</p>
+        <p><strong>Jornada de trabajo:</strong> 45 horas semanales distribuidas de lunes a viernes, o según lo acordado entre las partes.</p>
+        <p><strong>Lugar de prestación de servicios:</strong> ${empresa.direccion||'Alto Hospicio, Chile'}, o donde el empleador lo requiera según las necesidades de la empresa.</p>
+      </div>
+      <div class="seccion"><h4>Disposiciones Generales</h4>
+        <p>El presente contrato se rige por el Código del Trabajo de Chile y demás leyes y reglamentos vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.</p>
+        ${r.observaciones?`<p><strong>Observaciones:</strong> ${r.observaciones}</p>`:''}
+      </div>
+      <p style="text-align:center;font-size:11px;color:#777">Firmado en ${empresa.ciudad||'Alto Hospicio'}, el ${new Date().toLocaleDateString('es-CL')}</p>
+      <div class="firma-box">
+        <div class="firma"><div class="firma-line">Empleador<br>${empresa.nombre||'Martinez Services SPA'}<br>RUT: ${empresa.rut||'76.782.954-K'}</div></div>
+        <div class="firma"><div class="firma-line">Trabajador<br>${r.nombre||'—'}<br>RUT: ${r.rut||'—'}</div></div>
+      </div></body></html>`;
+      const w=window.open('','_blank'); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(),600);
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // SPRINT B — ÁREA 2 RESIDENTES: Botón Pagar en Línea + Gráficos
+    // ═══════════════════════════════════════════════════════════
+
+    // ── BOTÓN PAGAR EN LÍNEA (placeholder activo) ──
+    window.pagarEnLinea = (monto, periodo, unidad) => {
+      const msg = `Hola, soy residente de Unidad ${unidad}. Quiero pagar el gasto común del período ${periodo} por ${monto}. ¿Me puede indicar los datos para la transferencia?`;
+      window.open('https://wa.me/56974889039?text='+encodeURIComponent(msg),'_blank');
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // SPRINT B — ÁREA 4 CONTABILIDAD: Plan de Cuentas + Balance PDF + Estado Resultados
+    // ═══════════════════════════════════════════════════════════
+
+    // Actualizar router Contabilidad
+    const _origContRouter = renderContabilidadZone;
+    renderContabilidadZone = function(zone, navId) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      if (navId === "plancuentas") { renderCont_PlanCuentas(zone, empId); return; }
+      if (navId === "resultados")  { renderCont_EstadoResultados(zone, empId); return; }
+      _origContRouter(zone, navId);
+    };
+
+    async function renderCont_PlanCuentas(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-plan","Agregar Cuenta al Plan","＋") +
+        `<div style="margin-bottom:10px;display:flex;gap:8px;">
+          <button id="btn-export-plan-csv" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar CSV</button>
+        </div>` +
+        tableWrap("tbl-plan","Plan de Cuentas","Catálogo de cuentas contables de la empresa",
+          ["Código","Nombre de Cuenta","Tipo","Naturaleza","Nivel","Estado","Acciones"]) +
+        modalHtml("modal-plan","Agregar Cuenta al Plan de Cuentas", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Código", inp("plan-cod","text","Ej: 1101"))}</div>
+            <div>${formField("Nivel", sel("plan-nivel",[{v:"1",l:"Nivel 1 — Grupo"},{v:"2",l:"Nivel 2 — Subgrupo"},{v:"3",l:"Nivel 3 — Cuenta"},{v:"4",l:"Nivel 4 — Subcuenta"}]))}</div>
+          </div>
+          ${formField("Nombre de la Cuenta", inp("plan-nombre","text","Ej: Caja Moneda Nacional"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Tipo", sel("plan-tipo",[{v:"activo",l:"Activo"},{v:"pasivo",l:"Pasivo"},{v:"patrimonio",l:"Patrimonio"},{v:"ingreso",l:"Ingreso"},{v:"gasto",l:"Gasto"},{v:"costo",l:"Costo"}]))}</div>
+            <div>${formField("Naturaleza", sel("plan-nat",[{v:"deudora",l:"Deudora (Débito)"},{v:"acreedora",l:"Acreedora (Crédito)"}]))}</div>
+          </div>
+          ${formField("Descripción (opcional)", inp("plan-desc","text",""))}
+          <input type="hidden" id="plan-docid">
+          <button id="btn-save-plan" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Cuenta</button>
+        `);
+
+      document.getElementById("btn-add-plan").onclick = () => {
+        ["plan-cod","plan-nombre","plan-desc","plan-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("modal-plan").style.display="flex";
+      };
+      document.getElementById("btn-save-plan").onclick = async () => {
+        if (!empId) return;
+        const cod = document.getElementById("plan-cod").value.trim();
+        const nom = document.getElementById("plan-nombre").value.trim();
+        if (!cod||!nom) { alert("Código y nombre son obligatorios"); return; }
+        const docId = document.getElementById("plan-docid").value;
+        const data = {
+          entityId:empId, codigo:cod, nombre:nom,
+          tipo: document.getElementById("plan-tipo").value,
+          naturaleza: document.getElementById("plan-nat").value,
+          nivel: document.getElementById("plan-nivel").value,
+          descripcion: document.getElementById("plan-desc").value.trim(),
+          estado:"activa",
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("plan_cuentas");
+        if (docId) await ref.doc(docId).update(data);
+        else await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-plan").style.display="none";
+        renderCont_PlanCuentas(zone, empId);
+      };
+
+      document.getElementById("btn-export-plan-csv").onclick = async () => {
+        const snap = await db.collection("plan_cuentas").where("entityId","==",empId).orderBy("codigo").get();
+        let csv = "Codigo,Nombre,Tipo,Naturaleza,Nivel,Estado\n";
+        snap.forEach(d=>{const r=d.data(); csv+=`${r.codigo},${r.nombre},${r.tipo},${r.naturaleza},${r.nivel},${r.estado}\n`;});
+        const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+        a.download=`plan_cuentas_${empId}.csv`; a.click();
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("plan_cuentas").where("entityId","==",empId).orderBy("codigo").get();
+      const tb = document.getElementById("tbl-plan-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(7,"Sin cuentas registradas. Agrega las primeras cuentas contables."); return; }
+      tb.innerHTML="";
+      snap.forEach(d=>{
+        const r=d.data();
+        const tipCol = {activo:"green",pasivo:"warn",patrimonio:"warn",ingreso:"green",gasto:"danger",costo:"danger"}[r.tipo]||"gray";
+        tb.innerHTML+=`<tr>
+          <td style="font-family:var(--mono);font-weight:700">${r.codigo||'—'}</td>
+          <td><strong>${r.nombre||'—'}</strong></td>
+          <td><span class="badge badge-${tipCol}">${r.tipo||'—'}</span></td>
+          <td><span class="badge badge-gray">${r.naturaleza||'—'}</span></td>
+          <td style="text-align:center">${r.nivel||'—'}</td>
+          <td><span class="badge badge-green">${r.estado||'activa'}</span></td>
+          <td>
+            <button onclick="editPlanCuenta('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
+            <button onclick="deletePlanCuenta('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+    window.editPlanCuenta = async (docId,empId)=>{
+      const d=await db.collection("plan_cuentas").doc(docId).get(); const r=d.data();
+      document.getElementById("plan-docid").value=docId;
+      document.getElementById("plan-cod").value=r.codigo||"";
+      document.getElementById("plan-nombre").value=r.nombre||"";
+      document.getElementById("plan-tipo").value=r.tipo||"activo";
+      document.getElementById("plan-nat").value=r.naturaleza||"deudora";
+      document.getElementById("plan-nivel").value=r.nivel||"3";
+      document.getElementById("plan-desc").value=r.descripcion||"";
+      document.getElementById("modal-plan").style.display="flex";
+    };
+    window.deletePlanCuenta = async (docId,empId)=>{
+      if(!confirm("¿Eliminar esta cuenta del plan?")) return;
+      await db.collection("plan_cuentas").doc(docId).delete();
+      renderCont_PlanCuentas(document.getElementById("module-dynamic-zone"),empId);
+    };
+
+    // ── BALANCE PDF ──
+    window.imprimirBalancePDF = async (empId) => {
+      const [snap, empDoc] = await Promise.all([
+        db.collection("cuentas").where("entityId","==",empId).orderBy("codigo").get(),
+        db.collection("empresas").doc(empId).get()
+      ]);
+      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA"};
+      const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+      let filas="",tDeb=0,tCred=0,tSD=0,tSA=0,tRP=0,tRG=0;
+      snap.forEach(d=>{
+        const r=d.data();
+        tDeb+=r.debitos||0;tCred+=r.creditos||0;tSD+=r.saldo_deudor||0;tSA+=r.saldo_acreedor||0;tRP+=r.resultado_perdida||0;tRG+=r.resultado_ganancia||0;
+        filas+=`<tr><td>${r.codigo||'—'}</td><td>${r.nombre||'—'}</td><td>${fmt(r.debitos)}</td><td>${fmt(r.creditos)}</td><td>${r.saldo_deudor>0?fmt(r.saldo_deudor):'—'}</td><td>${r.saldo_acreedor>0?fmt(r.saldo_acreedor):'—'}</td><td style="color:red">${r.resultado_perdida>0?fmt(r.resultado_perdida):'—'}</td><td style="color:green">${r.resultado_ganancia>0?fmt(r.resultado_ganancia):'—'}</td></tr>`;
+      });
+      const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Balance 8 Columnas</title>
+      <style>body{font-family:Arial;font-size:9px;padding:16px}h2{color:#1A7A3C;font-size:13px}h3{font-size:10px;color:#555;font-weight:normal;margin-bottom:10px}
+      table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:5px 3px;font-size:8px;text-align:left}
+      td{padding:4px 3px;border-bottom:1px solid #eee;font-size:9px}tr:nth-child(even){background:#f9f9f9}
+      .tot{background:#f0f9f0;font-weight:700}@media print{body{padding:8px}@page{size:A4 landscape;margin:8mm}}</style></head><body>
+      <h2>BALANCE DE 8 COLUMNAS — ${empresa.nombre||'Empresa'}</h2>
+      <h3>Período Tributario Activo · Emitido: ${new Date().toLocaleDateString('es-CL')}</h3>
+      <table><thead><tr><th>Código</th><th>Cuenta Contable</th><th>Débitos</th><th>Créditos</th><th>Saldo Deudor</th><th>Saldo Acreedor</th><th>Result. Pérdida</th><th>Result. Ganancia</th></tr></thead>
+      <tbody>${filas}
+      <tr class="tot"><td colspan="2">TOTALES</td><td>${fmt(tDeb)}</td><td>${fmt(tCred)}</td><td>${fmt(tSD)}</td><td>${fmt(tSA)}</td><td>${fmt(tRP)}</td><td>${fmt(tRG)}</td></tr>
+      </tbody></table></body></html>`;
+      const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
+    };
+
+    // ── ESTADO DE RESULTADOS ──
+    async function renderCont_EstadoResultados(zone, empId) {
+      zone.innerHTML = `
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+          <button id="btn-calc-resultados" class="btn-entrar">⚙️ Calcular Estado de Resultados</button>
+          <button id="btn-er-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ Exportar PDF</button>
+        </div>
+        <div id="er-resultado"></div>`;
+
+      document.getElementById("btn-calc-resultados").onclick = async () => {
+        if (!empId) return;
+        const div = document.getElementById("er-resultado");
+        div.innerHTML = '<p style="color:var(--c-muted);padding:20px">Calculando...</p>';
+        const snap = await db.collection("cuentas").where("entityId","==",empId).get();
+        let ingresos=0, costos=0, gastos=0;
+        snap.forEach(d=>{
+          const r=d.data();
+          if(r.tipo==="ingreso") ingresos += r.resultado_ganancia||Math.abs((r.creditos||0)-(r.debitos||0));
+          if(r.tipo==="costo")   costos   += r.resultado_perdida||Math.abs((r.debitos||0)-(r.creditos||0));
+          if(r.tipo==="gasto")   gastos   += r.resultado_perdida||Math.abs((r.debitos||0)-(r.creditos||0));
+        });
+        const utilBruta = ingresos - costos;
+        const utilNeta  = utilBruta - gastos;
+        const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+        const color = n => n>=0?"var(--c-accent)":"var(--c-danger)";
+        div.innerHTML = `
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;max-width:480px;">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:20px;color:var(--c-text)">Estado de Resultados</h3>
+            <div id="er-data">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border);font-size:14px;"><span>Ingresos de Explotación</span><span style="color:var(--c-accent);font-weight:700">${fmt(ingresos)}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border);font-size:14px;"><span>(-) Costo de Ventas</span><span style="color:var(--c-danger)">-${fmt(costos)}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:2px solid var(--c-border);font-size:14px;font-weight:700;"><span>= Utilidad Bruta</span><span style="color:${color(utilBruta)}">${fmt(utilBruta)}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border);font-size:14px;"><span>(-) Gastos de Administración y Venta</span><span style="color:var(--c-danger)">-${fmt(gastos)}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:14px 0;font-size:16px;font-weight:800;border-top:2px solid var(--c-border);margin-top:4px;"><span>${utilNeta>=0?"UTILIDAD":"PÉRDIDA"} DEL EJERCICIO</span><span style="color:${color(utilNeta)}">${fmt(Math.abs(utilNeta))}</span></div>
+            </div>
+          </div>`;
+        // Guardar para export PDF
+        window._erData = {ingresos,costos,gastos,utilBruta,utilNeta,empId};
+      };
+
+      document.getElementById("btn-er-pdf").onclick = async () => {
+        if (!window._erData) { alert("Calcula primero el Estado de Resultados"); return; }
+        const d=window._erData;
+        const empDoc = await db.collection("empresas").doc(d.empId).get();
+        const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA"};
+        const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+        const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Estado de Resultados</title>
+        <style>body{font-family:Arial;font-size:12px;padding:30px;max-width:500px;margin:0 auto}
+        h2{color:#1A7A3C;font-size:16px;text-align:center}h3{color:#555;text-align:center;font-size:11px;font-weight:normal;margin-bottom:20px}
+        .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}
+        .total{font-weight:800;font-size:15px;padding:12px 0;border-top:2px solid #333}
+        @media print{body{padding:16px}}</style></head><body>
+        <h2>ESTADO DE RESULTADOS</h2>
+        <h3>${empresa.nombre||'Empresa'} · Emitido: ${new Date().toLocaleDateString('es-CL')}</h3>
+        <div class="row"><span>Ingresos de Explotación</span><span style="color:green">${fmt(d.ingresos)}</span></div>
+        <div class="row"><span>(-) Costo de Ventas</span><span style="color:red">-${fmt(d.costos)}</span></div>
+        <div class="row" style="font-weight:700"><span>= Utilidad Bruta</span><span>${fmt(d.utilBruta)}</span></div>
+        <div class="row"><span>(-) Gastos de Administración</span><span style="color:red">-${fmt(d.gastos)}</span></div>
+        <div class="row total"><span>${d.utilNeta>=0?"UTILIDAD":"PÉRDIDA"} DEL EJERCICIO</span><span style="color:${d.utilNeta>=0?'green':'red'}">${fmt(Math.abs(d.utilNeta))}</span></div>
+        </body></html>`;
+        const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SPRINT B — ÁREA 5 FACTURACIÓN: Importar Libros SII + CRM
+    // ═══════════════════════════════════════════════════════════
+
+    // Actualizar router Facturación
+    const _origFactRouter = renderFacturacionZone;
+    renderFacturacionZone = function(zone, navId) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      if (navId === "crm")      { renderFact_CRM(zone, empId); return; }
+      if (navId === "librossii") { renderFact_LibrosSII(zone, empId); return; }
+      _origFactRouter(zone, navId);
+    };
+
+    async function renderFact_CRM(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-lead","Nuevo Lead / Prospecto","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Total Leads</div><div class="kpi-value" id="kpi-crm-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">En Negociación</div><div class="kpi-value warn" id="kpi-crm-neg">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Cerrados Ganados</div><div class="kpi-value green" id="kpi-crm-gan">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Valor Pipeline</div><div class="kpi-value" id="kpi-crm-valor">—</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;" id="crm-kanban-header">
+          ${["Prospecto","Contactado","Propuesta Enviada","Negociación","Cerrado"].map((e,i)=>`<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--c-muted)">${e}</div>`).join("")}
+        </div>` +
+        tableWrap("tbl-crm","Pipeline de Ventas CRM","Gestión de prospectos y clientes comerciales",
+          ["Cliente","Contacto","Correo","Teléfono","Etapa","Valor","Próxima Acción","Acciones"]) +
+        modalHtml("modal-crm","Nuevo Lead / Prospecto", `
+          ${formField("Empresa / Cliente", inp("crm-empresa","text","Nombre de la empresa o persona"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Contacto", inp("crm-contacto","text","Nombre del contacto"))}</div>
+            <div>${formField("Cargo", inp("crm-cargo","text","Cargo del contacto"))}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Correo", inp("crm-correo","email",""))}</div>
+            <div>${formField("Teléfono", inp("crm-tel","tel",""))}</div>
+          </div>
+          ${formField("Etapa del Pipeline", sel("crm-etapa",[
+            {v:"prospecto",l:"🔵 Prospecto"},
+            {v:"contactado",l:"🟡 Contactado"},
+            {v:"propuesta",l:"🟠 Propuesta Enviada"},
+            {v:"negociacion",l:"🔴 Negociación"},
+            {v:"ganado",l:"✅ Cerrado Ganado"},
+            {v:"perdido",l:"❌ Cerrado Perdido"},
+          ]))}
+          ${formField("Valor Estimado ($)", inp("crm-valor","number","0"))}
+          ${formField("Próxima Acción", inp("crm-accion","text","Ej: Llamar el lunes, enviar cotización"))}
+          ${formField("Fecha Próxima Acción", inp("crm-fecha-acc","date",""))}
+          ${formField("Notas", `<textarea id="crm-notas" rows="2" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>`)}
+          <input type="hidden" id="crm-docid">
+          <button id="btn-save-crm" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Lead</button>
+        `);
+
+      document.getElementById("btn-add-lead").onclick = () => {
+        ["crm-empresa","crm-contacto","crm-cargo","crm-correo","crm-tel","crm-accion","crm-notas","crm-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("crm-valor").value=0;
+        document.getElementById("modal-crm").style.display="flex";
+      };
+      document.getElementById("btn-save-crm").onclick = async () => {
+        if (!empId) return;
+        const empresa = document.getElementById("crm-empresa").value.trim();
+        if (!empresa) { alert("El nombre del cliente es obligatorio"); return; }
+        const docId = document.getElementById("crm-docid").value;
+        const data = {
+          entityId:empId, empresa,
+          contacto: document.getElementById("crm-contacto").value.trim(),
+          cargo: document.getElementById("crm-cargo").value.trim(),
+          correo: document.getElementById("crm-correo").value.trim().toLowerCase(),
+          telefono: document.getElementById("crm-tel").value.trim(),
+          etapa: document.getElementById("crm-etapa").value,
+          valor: parseFloat(document.getElementById("crm-valor").value)||0,
+          proxima_accion: document.getElementById("crm-accion").value.trim(),
+          fecha_accion: document.getElementById("crm-fecha-acc").value,
+          notas: document.getElementById("crm-notas").value.trim(),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("crm_leads");
+        if (docId) await ref.doc(docId).update(data);
+        else await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-crm").style.display="none";
+        renderFact_CRM(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("crm_leads").where("entityId","==",empId).orderBy("creado","desc").get();
+      const tb = document.getElementById("tbl-crm-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML=""; let total=0,neg=0,gan=0,valor=0;
+      snap.forEach(d=>{
+        const r=d.data(); total++;
+        if(r.etapa==="negociacion") neg++;
+        if(r.etapa==="ganado") gan++;
+        valor+=r.valor||0;
+        const etapaCls = {prospecto:"gray",contactado:"warn",propuesta:"warn",negociacion:"danger",ganado:"green",perdido:"gray"}[r.etapa]||"gray";
+        const etapaLbl = {prospecto:"🔵 Prospecto",contactado:"🟡 Contactado",propuesta:"🟠 Propuesta",negociacion:"🔴 Negociación",ganado:"✅ Ganado",perdido:"❌ Perdido"}[r.etapa]||r.etapa;
+        tb.innerHTML+=`<tr>
+          <td><strong>${r.empresa||'—'}</strong></td>
+          <td>${r.contacto||'—'}</td>
+          <td style="font-size:11px">${r.correo||'—'}</td>
+          <td>${r.telefono||'—'}</td>
+          <td><span class="badge badge-${etapaCls}">${etapaLbl}</span></td>
+          <td style="font-weight:700">${formatMonto(r.valor)}</td>
+          <td style="font-size:11px">${r.proxima_accion||'—'}${r.fecha_accion?' ('+r.fecha_accion+')':''}</td>
+          <td>
+            <button onclick="editCRM('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
+            <button onclick="deleteCRM('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+      document.getElementById("kpi-crm-total").textContent=total;
+      document.getElementById("kpi-crm-neg").textContent=neg;
+      document.getElementById("kpi-crm-gan").textContent=gan;
+      document.getElementById("kpi-crm-valor").textContent=formatMonto(valor);
+    }
+    window.editCRM = async (docId,empId)=>{
+      const d=await db.collection("crm_leads").doc(docId).get(); const r=d.data();
+      document.getElementById("crm-docid").value=docId;
+      document.getElementById("crm-empresa").value=r.empresa||"";
+      document.getElementById("crm-contacto").value=r.contacto||"";
+      document.getElementById("crm-cargo").value=r.cargo||"";
+      document.getElementById("crm-correo").value=r.correo||"";
+      document.getElementById("crm-tel").value=r.telefono||"";
+      document.getElementById("crm-etapa").value=r.etapa||"prospecto";
+      document.getElementById("crm-valor").value=r.valor||0;
+      document.getElementById("crm-accion").value=r.proxima_accion||"";
+      document.getElementById("crm-fecha-acc").value=r.fecha_accion||"";
+      document.getElementById("crm-notas").value=r.notas||"";
+      document.getElementById("modal-crm").style.display="flex";
+    };
+    window.deleteCRM = async (docId,empId)=>{
+      if(!confirm("¿Eliminar este lead?")) return;
+      await db.collection("crm_leads").doc(docId).delete();
+      renderFact_CRM(document.getElementById("module-dynamic-zone"),empId);
+    };
+
+    async function renderFact_LibrosSII(zone, empId) {
+      zone.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid rgba(14,165,233,0.3);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+          <div style="font-size:14px;font-weight:700;color:#0ea5e9;margin-bottom:8px;">📋 Libros del SII — Importar y Exportar</div>
+          <p style="font-size:13px;color:var(--c-muted)">Sube el archivo CSV/TXT descargado desde el portal del SII para importar tus libros de compras y ventas.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
+            <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">📥 Importar Libro de Ventas SII</h3>
+            <label style="background:var(--c-accent);color:#fff;padding:9px 16px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:700;display:inline-block;margin-bottom:10px;">
+              📂 Seleccionar Archivo
+              <input type="file" id="sii-ventas-file" accept=".csv,.txt" style="display:none">
+            </label>
+            <div id="sii-ventas-status" style="font-size:12px;color:var(--c-muted)">Sin archivo seleccionado</div>
+          </div>
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
+            <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">📥 Importar Libro de Compras SII</h3>
+            <label style="background:var(--c-accent);color:#fff;padding:9px 16px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:700;display:inline-block;margin-bottom:10px;">
+              📂 Seleccionar Archivo
+              <input type="file" id="sii-compras-file" accept=".csv,.txt" style="display:none">
+            </label>
+            <div id="sii-compras-status" style="font-size:12px;color:var(--c-muted)">Sin archivo seleccionado</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <button id="btn-ver-sii-ventas" class="btn-entrar">Ver Libro Ventas SII</button>
+          <button id="btn-ver-sii-compras" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">Ver Libro Compras SII</button>
+          <button id="btn-sii-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ PDF Mensual</button>
+        </div>` +
+        tableWrap("tbl-sii-libros","Registros SII Importados","Documentos del libro cargado",
+          ["Fecha","Folio","Tipo","Razón Social","RUT","Neto","IVA","Total","Origen"]);
+
+      // Importar ventas
+      document.getElementById("sii-ventas-file").onchange = async function() {
+        const f=this.files[0]; if(!f) return;
+        document.getElementById("sii-ventas-status").textContent="Procesando "+f.name+"...";
+        const text=await f.text(); const lines=text.split("\n").filter(l=>l.trim());
+        let ok=0;
+        for(let i=1;i<lines.length;i++){
+          const c=lines[i].split(";").map(x=>x.replace(/"/g,"").trim());
+          if(c.length<5) continue;
+          await db.collection("sii_libros").add({
+            entityId:empId, tipo_libro:"ventas",
+            fecha:c[0]||"", folio:c[1]||"", tipo_doc:c[2]||"",
+            razon_social:c[3]||"", rut:c[4]||"",
+            neto:parseFloat(c[5])||0, iva:parseFloat(c[6])||0, total:parseFloat(c[7])||0,
+            origen:"importado_sii",
+            creado: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          ok++;
+        }
+        document.getElementById("sii-ventas-status").textContent=`✓ ${ok} registros importados`;
+      };
+
+      // Importar compras
+      document.getElementById("sii-compras-file").onchange = async function() {
+        const f=this.files[0]; if(!f) return;
+        document.getElementById("sii-compras-status").textContent="Procesando "+f.name+"...";
+        const text=await f.text(); const lines=text.split("\n").filter(l=>l.trim());
+        let ok=0;
+        for(let i=1;i<lines.length;i++){
+          const c=lines[i].split(";").map(x=>x.replace(/"/g,"").trim());
+          if(c.length<5) continue;
+          await db.collection("sii_libros").add({
+            entityId:empId, tipo_libro:"compras",
+            fecha:c[0]||"", folio:c[1]||"", tipo_doc:c[2]||"",
+            razon_social:c[3]||"", rut:c[4]||"",
+            neto:parseFloat(c[5])||0, iva:parseFloat(c[6])||0, total:parseFloat(c[7])||0,
+            origen:"importado_sii",
+            creado: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          ok++;
+        }
+        document.getElementById("sii-compras-status").textContent=`✓ ${ok} registros importados`;
+      };
+
+      const cargarLibroSII = async (tipoLibro) => {
+        const snap = await db.collection("sii_libros").where("entityId","==",empId).where("tipo_libro","==",tipoLibro).orderBy("fecha","desc").limit(200).get();
+        const tb = document.getElementById("tbl-sii-libros-tbody");
+        if(snap.empty){tb.innerHTML=emptyRow(9,`Sin registros de ${tipoLibro} importados aún. Sube el archivo CSV del SII.`);return;}
+        tb.innerHTML=""; let tN=0,tI=0,tT=0;
+        snap.forEach(d=>{
+          const r=d.data(); tN+=r.neto||0;tI+=r.iva||0;tT+=r.total||0;
+          tb.innerHTML+=`<tr>
+            <td>${r.fecha||'—'}</td><td style="font-family:var(--mono)">${r.folio||'—'}</td>
+            <td><span class="badge badge-gray">${r.tipo_doc||'—'}</span></td>
+            <td>${r.razon_social||'—'}</td>
+            <td style="font-family:var(--mono);font-size:11px">${r.rut||'—'}</td>
+            <td>${formatMonto(r.neto)}</td>
+            <td>${formatMonto(r.iva)}</td>
+            <td style="font-weight:700">${formatMonto(r.total)}</td>
+            <td><span class="badge badge-green">${r.origen||'—'}</span></td>
+          </tr>`;
+        });
+        tb.innerHTML+=`<tr style="background:var(--c-bg);font-weight:800"><td colspan="5" style="text-align:right">TOTALES:</td><td>${formatMonto(tN)}</td><td>${formatMonto(tI)}</td><td>${formatMonto(tT)}</td><td></td></tr>`;
+      };
+
+      document.getElementById("btn-ver-sii-ventas").onclick  = ()=>cargarLibroSII("ventas");
+      document.getElementById("btn-ver-sii-compras").onclick = ()=>cargarLibroSII("compras");
+      document.getElementById("btn-sii-pdf").onclick = async () => {
+        const tipoActual = "ventas";
+        const snap = await db.collection("sii_libros").where("entityId","==",empId).where("tipo_libro","==",tipoActual).orderBy("fecha","desc").limit(200).get();
+        if(snap.empty){alert("Sin datos para exportar");return;}
+        const empDoc = await db.collection("empresas").doc(empId).get();
+        const empresa = empDoc.exists?empDoc.data():{nombre:"Martinez Services SPA"};
+        const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
+        let filas="",tN=0,tI=0,tT=0;
+        snap.forEach(d=>{const r=d.data();tN+=r.neto||0;tI+=r.iva||0;tT+=r.total||0;
+          filas+=`<tr><td>${r.fecha}</td><td>${r.folio}</td><td>${r.tipo_doc}</td><td>${r.razon_social}</td><td>${r.rut}</td><td>${fmt(r.neto)}</td><td>${fmt(r.iva)}</td><td><strong>${fmt(r.total)}</strong></td></tr>`;
+        });
+        const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Libro SII</title>
+        <style>body{font-family:Arial;font-size:9px;padding:16px}h2{color:#1A7A3C;font-size:13px}
+        table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:5px;font-size:8px}
+        td{padding:4px;border-bottom:1px solid #eee}.tot{font-weight:700;background:#f0f9f0}
+        @media print{@page{size:A4 landscape;margin:8mm}}</style></head><body>
+        <h2>LIBRO DE VENTAS SII — ${empresa.nombre||'Empresa'}</h2>
+        <p style="font-size:10px;color:#555">Emitido: ${new Date().toLocaleDateString('es-CL')}</p>
+        <table><thead><tr><th>Fecha</th><th>Folio</th><th>Tipo</th><th>Razón Social</th><th>RUT</th><th>Neto</th><th>IVA</th><th>Total</th></tr></thead>
+        <tbody>${filas}<tr class="tot"><td colspan="5">TOTALES</td><td>${fmt(tN)}</td><td>${fmt(tI)}</td><td>${fmt(tT)}</td></tr></tbody></table>
+        </body></html>`;
+        const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SPRINT B — ÁREA 6 LOGÍSTICA: Importar Inventario + Catálogo Web
+    // ═══════════════════════════════════════════════════════════
+
+    // Actualizar router Logística
+    const _origLogRouter = renderLogisticaZone;
+    renderLogisticaZone = function(zone, navId) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      if (navId === "catalogo") { renderLog_Catalogo(zone, empId); return; }
+      _origLogRouter(zone, navId);
+    };
+
+    window.importarInventario = async (empId) => {
+      const fileInput = document.getElementById("import-inventario-file");
+      if (!fileInput?.files[0]) return;
+      const text = await fileInput.files[0].text();
+      const lines = text.split("\n").filter(l=>l.trim());
+      let ok=0;
+      for(let i=1;i<lines.length;i++){
+        const c=lines[i].split(",");
+        if(c.length<4) continue;
+        const stock=parseInt(c[3])||0, min=parseInt(c[4])||0, precio=parseFloat(c[5])||0;
+        await db.collection("inventarios").add({
+          entityId:empId,
+          sku:(c[0]||"").trim(), nombre:(c[1]||"").trim(),
+          bodega:(c[2]||"Bodega Principal").trim(),
+          stock_actual:stock, stock_minimo:min, precio_unitario:precio,
+          valorizacion:stock*precio, categoria:(c[6]||"").trim(),
+          unidad:(c[7]||"unidad").trim(), alerta_stock:stock<=min,
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        ok++;
+      }
+      alert(`✓ ${ok} productos importados.\n\nFormato CSV: SKU,Nombre,Bodega,Stock,StockMin,Precio,Categoria,Unidad`);
+      renderLog_Inventario(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    async function renderLog_Catalogo(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-catalogo","Agregar al Catálogo","＋") +
+        `<div style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:12px;color:var(--c-muted);">
+          💡 El catálogo muestra los productos/servicios que ofreces públicamente. Puede usarse como carta de servicios o tienda web.
+        </div>` +
+        tableWrap("tbl-catalogo","Catálogo de Productos y Servicios","Productos visibles para clientes",
+          ["Imagen","Nombre","Categoría","Precio","Descripción","Estado","Acciones"]) +
+        modalHtml("modal-catalogo","Agregar Producto al Catálogo", `
+          ${formField("Nombre del Producto/Servicio", inp("cat-nombre","text","Ej: Servicio de Administración Mensual"))}
+          ${formField("Categoría", inp("cat-cat","text","Ej: Servicios, Productos, Software"))}
+          ${formField("Precio ($)", inp("cat-precio","number","0"))}
+          ${formField("¿Precio incluye IVA?", sel("cat-iva",[{v:"si",l:"Sí — precio final"},{v:"no",l:"No — precio neto"}]))}
+          ${formField("Descripción detallada", `<textarea id="cat-desc" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>`)}
+          ${formField("URL de imagen (opcional)", inp("cat-img","url","https://..."))}
+          ${formField("Estado", sel("cat-estado",[{v:"activo",l:"Activo — visible"},{v:"inactivo",l:"Inactivo — oculto"}]))}
+          <input type="hidden" id="cat-docid">
+          <button id="btn-save-catalogo" class="btn-entrar" style="width:100%;margin-top:8px">Guardar en Catálogo</button>
+        `);
+
+      document.getElementById("btn-add-catalogo").onclick = () => {
+        ["cat-nombre","cat-cat","cat-desc","cat-img","cat-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("cat-precio").value=0;
+        document.getElementById("modal-catalogo").style.display="flex";
+      };
+      document.getElementById("btn-save-catalogo").onclick = async () => {
+        if (!empId) return;
+        const nombre = document.getElementById("cat-nombre").value.trim();
+        if (!nombre) { alert("El nombre es obligatorio"); return; }
+        const precio = parseFloat(document.getElementById("cat-precio").value)||0;
+        const conIva = document.getElementById("cat-iva").value==="si";
+        const docId = document.getElementById("cat-docid").value;
+        const data = {
+          entityId:empId, nombre,
+          categoria: document.getElementById("cat-cat").value.trim(),
+          precio, precio_con_iva: conIva ? precio : Math.round(precio*1.19),
+          descripcion: document.getElementById("cat-desc").value.trim(),
+          imagen_url: document.getElementById("cat-img").value.trim(),
+          estado: document.getElementById("cat-estado").value,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("catalogo");
+        if (docId) await ref.doc(docId).update(data);
+        else await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-catalogo").style.display="none";
+        renderLog_Catalogo(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("catalogo").where("entityId","==",empId).orderBy("categoria").get();
+      const tb = document.getElementById("tbl-catalogo-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(7); return; }
+      tb.innerHTML="";
+      snap.forEach(d=>{
+        const r=d.data();
+        tb.innerHTML+=`<tr>
+          <td>${r.imagen_url?`<img src="${r.imagen_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">`:'-'}</td>
+          <td><strong>${r.nombre||'—'}</strong></td>
+          <td><span class="badge badge-gray">${r.categoria||'—'}</span></td>
+          <td style="font-weight:700">${formatMonto(r.precio_con_iva||r.precio)}</td>
+          <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${r.descripcion||'—'}</td>
+          <td><span class="badge badge-${r.estado==='activo'?'green':'gray'}">${r.estado||'—'}</span></td>
+          <td>
+            <button onclick="deleteCatalogo('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+    window.deleteCatalogo = async (docId,empId)=>{
+      if(!confirm("¿Eliminar este producto del catálogo?")) return;
+      await db.collection("catalogo").doc(docId).delete();
+      renderLog_Catalogo(document.getElementById("module-dynamic-zone"),empId);
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // SPRINT B — ÁREA 7 AUDITORÍA: Exportar Informe PDF
+    // ═══════════════════════════════════════════════════════════
+
+    window.exportarInformeAuditoria = async (empId) => {
+      const [logsSnap, empDoc] = await Promise.all([
+        db.collection("system_logs").where("entityId","==",empId).orderBy("timestamp","desc").limit(100).get(),
+        db.collection("empresas").doc(empId).get()
+      ]);
+      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA"};
+      let filas="";
+      logsSnap.forEach(d=>{
+        const r=d.data();
+        const ts=r.timestamp?.toDate?.()?.toLocaleString('es-CL')||'—';
+        filas+=`<tr><td>${ts}</td><td>${r.usuario||'—'}</td><td>${r.modulo||'—'}</td><td>${r.accion||'—'}</td><td>${r.ip_origen||'—'}</td></tr>`;
+      });
+      const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Informe de Auditoría</title>
+      <style>body{font-family:Arial;font-size:10px;padding:24px}
+      h2{color:#1A7A3C;font-size:14px}h3{color:#555;font-size:10px;font-weight:normal;margin-bottom:14px}
+      table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:6px;font-size:9px}
+      td{padding:4px 6px;border-bottom:1px solid #eee;font-size:9px}tr:nth-child(even){background:#f9f9f9}
+      @media print{body{padding:10px}}</style></head><body>
+      <h2>INFORME DE AUDITORÍA — ${empresa.nombre||'Empresa'}</h2>
+      <h3>Trazabilidad del sistema · Emitido: ${new Date().toLocaleString('es-CL')} · Total eventos: ${logsSnap.size}</h3>
+      <table><thead><tr><th>Fecha/Hora</th><th>Usuario</th><th>Módulo</th><th>Acción</th><th>IP Origen</th></tr></thead>
+      <tbody>${filas||'<tr><td colspan="5">Sin eventos registrados</td></tr>'}</tbody></table>
+      </body></html>`;
+      const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
     };
 
   })();
