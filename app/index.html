@@ -1239,31 +1239,175 @@
                   style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
               </div>
             </div>
-            <div style="margin-bottom:20px;">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Correo de Contacto</label>
-              <input id="ne-correo" type="email" placeholder="correo@empresa.cl"
-                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Correo de Contacto</label>
+                <input id="ne-correo" type="email" placeholder="correo@empresa.cl"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Región</label>
+                <select id="ne-region" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                  <option value="Tarapacá">I — Tarapacá</option>
+                  <option value="Antofagasta">II — Antofagasta</option>
+                  <option value="Atacama">III — Atacama</option>
+                  <option value="Coquimbo">IV — Coquimbo</option>
+                  <option value="Valparaíso">V — Valparaíso</option>
+                  <option value="O'Higgins">VI — O'Higgins</option>
+                  <option value="Maule">VII — Maule</option>
+                  <option value="Biobío">VIII — Biobío</option>
+                  <option value="La Araucanía">IX — La Araucanía</option>
+                  <option value="Los Lagos">X — Los Lagos</option>
+                  <option value="Aysén">XI — Aysén</option>
+                  <option value="Magallanes">XII — Magallanes</option>
+                  <option value="Metropolitana">XIII — Metropolitana</option>
+                  <option value="Los Ríos">XIV — Los Ríos</option>
+                  <option value="Arica y Parinacota">XV — Arica y Parinacota</option>
+                  <option value="Ñuble">XVI — Ñuble</option>
+                </select>
+              </div>
             </div>
-            <button id="btn-crear-entidad" class="btn-entrar" style="width:100%">Registrar Entidad</button>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Tipo de Empresa</label>
+                <select id="ne-tipo-empresa" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                  <option value="juridica">Persona Jurídica</option>
+                  <option value="natural">Persona Natural</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Actividad Económica</label>
+                <input id="ne-actividad" type="text" placeholder="Ej: 702000 - Actividad de Servicio"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+            </div>
+
+            <div style="background:rgba(21,101,192,0.08);border:1px solid rgba(21,101,192,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">👤 Representante Legal</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">RUT Representante</label>
+                  <input id="ne-rep-rut" type="text" placeholder="12.345.678-9"
+                    style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nombre Representante</label>
+                  <input id="ne-rep-nombre" type="text" placeholder="Nombre completo"
+                    style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+              </div>
+            </div>
+
+            <div style="background:rgba(21,101,192,0.08);border:1px solid rgba(21,101,192,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">🏦 Datos Bancarios</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Banco</label>
+                  <select id="ne-banco" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                    <option value="">— Seleccionar —</option>
+                    <option value="Santander">Santander</option>
+                    <option value="BCI">BCI</option>
+                    <option value="Banco de Chile">Banco de Chile</option>
+                    <option value="BancoEstado">BancoEstado</option>
+                    <option value="Scotiabank">Scotiabank</option>
+                    <option value="Itaú">Itaú</option>
+                    <option value="Security">Banco Security</option>
+                    <option value="Falabella">Banco Falabella</option>
+                    <option value="Ripley">Banco Ripley</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Tipo Cuenta</label>
+                  <select id="ne-tipo-cuenta" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                    <option value="corriente">Cuenta Corriente</option>
+                    <option value="vista">Cuenta Vista / RUT</option>
+                    <option value="ahorro">Cuenta de Ahorro</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top:8px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Número de Cuenta</label>
+                <input id="ne-num-cuenta" type="text" placeholder="Ej: 27783090"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+              </div>
+            </div>
+
+            <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:10px;">🖼️ Logo de la Empresa</div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">URL del Logo (link a imagen)</label>
+                <input id="ne-logo" type="url" placeholder="https://mi-empresa.cl/logo.png"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                <div style="font-size:11px;color:var(--c-muted);margin-top:3px;">Sube tu logo a Google Drive, Dropbox o cualquier hosting y pega el link aquí.</div>
+              </div>
+            </div>
+
+            <button id="btn-crear-entidad" class="btn-entrar" style="width:100%">💾 Registrar Entidad</button>
             <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.25);border-radius:var(--radius);padding:12px;margin-bottom:10px;">
-              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:8px;">⚙️ Configuración de Remuneraciones</div>
-              <div style="margin-bottom:8px;">
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-                  <input type="checkbox" id="ne-paga-gratif" checked style="accent-color:var(--c-accent);width:16px;height:16px;">
-                  Paga gratificación legal (mensual, base/12, tope legal)
-                </label>
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">⚙️ Configuración de Remuneraciones (Código del Trabajo Chile)</div>
+
+              <div style="margin-bottom:10px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Gratificación Legal</label>
+                <select id="ne-tipo-gratif" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <option value="art47_mensual">Art. 47 — Mensual (sueldo/12, tope 4.75 IMM) ← Más común</option>
+                  <option value="art50_25">Art. 50 — 25% de las utilidades del ejercicio</option>
+                  <option value="no_paga">No paga gratificación (ej: condominios, empresas sin utilidades)</option>
+                </select>
+                <div style="font-size:11px;color:var(--c-muted);margin-top:4px;">
+                  • Art. 47: empresa con utilidades paga mensualmente. Art. 50: pago anual del 25% de utilidades con tope 4.75 IMM. Sin gratificación: condominios y entidades sin fines de lucro.
+                </div>
               </div>
+
               <div style="margin-bottom:8px;">
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-                  <input type="checkbox" id="ne-paga-colacion" style="accent-color:var(--c-accent);width:16px;height:16px;">
-                  Paga asignación de colación
-                </label>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Tope Imponible</label>
+                <select id="ne-tope-imponible" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <option value="78uf">78 UF (tope legal vigente)</option>
+                  <option value="sin_tope">Sin tope</option>
+                </select>
               </div>
+
               <div style="margin-bottom:8px;">
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-                  <input type="checkbox" id="ne-paga-movil" style="accent-color:var(--c-accent);width:16px;height:16px;">
-                  Paga asignación de movilización
-                </label>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Descuento por días de ausencia</label>
+                <select id="ne-descuento-ausencia" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <option value="base_mixta">Base mixta (30 días)</option>
+                  <option value="dias_habiles">Días hábiles</option>
+                  <option value="dias_calendario">Días calendario</option>
+                </select>
+              </div>
+
+              <div style="margin-bottom:8px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Caja de Compensación</label>
+                <select id="ne-caja-compensacion" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <option value="">No pertenece a caja de compensación</option>
+                  <option value="18_septiembre">Caja Los Andes (18 de Septiembre)</option>
+                  <option value="los_andes">Caja Los Andes</option>
+                  <option value="la_araucana">La Araucana</option>
+                </select>
+              </div>
+
+              <div style="margin-bottom:8px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Mutual de Seguridad</label>
+                <select id="ne-mutual" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <option value="achs">ACHS — Asoc. Chilena de Seguridad</option>
+                  <option value="museg">Mutual de Seguridad</option>
+                  <option value="ist">IST — Instituto de Seguridad del Trabajo</option>
+                  <option value="ins">INS — Instituto de Normalización Previsional</option>
+                </select>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px;">
+                <div>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:6px;">
+                    <input type="checkbox" id="ne-paga-colacion" style="accent-color:var(--c-accent);width:14px;height:14px;">
+                    Paga asignación colación (no imponible)
+                  </label>
+                </div>
+                <div>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:6px;">
+                    <input type="checkbox" id="ne-paga-movil" style="accent-color:var(--c-accent);width:14px;height:14px;">
+                    Paga asignación movilización (no imponible)
+                  </label>
+                </div>
               </div>
             </div>
             <p id="ne-msg" style="margin-top:10px;font-size:12px;text-align:center;min-height:16px;"></p>
@@ -4524,88 +4668,273 @@ Clave: ${clavePortal}`);
     };
 
     // ── COTIZACIONES ──
+    // ═══════════════════════════════════════════════════════════
+    // COTIZACIONES — 4 TIPOS: Software, Servicios, Productos, Presupuesto
+    // ═══════════════════════════════════════════════════════════
     async function renderFact_Cotizaciones(zone, empId) {
-      zone.innerHTML =
-        btnPrimary("btn-add-cot","Nueva Cotización","＋") +
-        tableWrap("tbl-cot","Cotizaciones y Presupuestos","Propuestas comerciales emitidas",
-          ["N°","Cliente","Descripción","Neto","IVA","Total","Vigencia","Estado","Acciones"]) +
-        modalHtml("modal-cot","Nueva Cotización", `
-          ${formField("Cliente / Razón Social", inp("cot-cliente","text","Nombre del cliente"))}
-          ${formField("RUT Cliente", inp("cot-rut","text","12.345.678-9"))}
-          ${formField("Descripción del Servicio", inp("cot-desc","text","Resumen de la propuesta"))}
-          ${formField("Monto Neto ($)", inp("cot-neto","number","0"))}
-          ${formField("¿Afecto a IVA?", sel("cot-iva",[{v:"si",l:"Sí — 19% IVA"},{v:"no",l:"No — Exento"}]))}
-          ${formField("Fecha Vigencia Hasta", inp("cot-vigencia","date",""))}
-          ${formField("Observaciones", inp("cot-obs","text","Condiciones, plazos, etc."))}
-          <input type="hidden" id="cot-docid">
-          <button id="btn-save-cot" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Cotización</button>
-        `);
+      zone.innerHTML = `
+        <div style="margin-bottom:18px;">
+          <div style="font-size:12px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Selecciona el tipo de cotización a crear:</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+            <button onclick="abrirModalCot('software','${empId}')" style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);color:var(--c-accent);font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              <div style="font-size:22px;margin-bottom:6px">💻</div>
+              <div>Cotización Software/ERP</div>
+              <div style="font-size:11px;color:var(--c-muted);font-weight:400;margin-top:3px">Para ofrecer el ERP a clientes</div>
+            </button>
+            <button onclick="abrirModalCot('servicios','${empId}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              <div style="font-size:22px;margin-bottom:6px">🔧</div>
+              <div>Cotización de Servicios</div>
+              <div style="font-size:11px;color:var(--c-muted);font-weight:400;margin-top:3px">Administración, contabilidad, asesoría</div>
+            </button>
+            <button onclick="abrirModalCot('productos','${empId}')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              <div style="font-size:22px;margin-bottom:6px">📦</div>
+              <div>Cotización de Productos</div>
+              <div style="font-size:11px;color:var(--c-muted);font-weight:400;margin-top:3px">Venta con SKU, stock y descuento</div>
+            </button>
+            <button onclick="abrirModalCot('presupuesto','${empId}')" style="background:rgba(180,83,9,0.1);border:1px solid rgba(180,83,9,0.3);color:#b45309;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              <div style="font-size:22px;margin-bottom:6px">📊</div>
+              <div>Presupuesto General</div>
+              <div style="font-size:11px;color:var(--c-muted);font-weight:400;margin-top:3px">Mixto: servicios + productos + software</div>
+            </button>
+          </div>
+        </div>` +
+        tableWrap("tbl-cot","Cotizaciones y Presupuestos Emitidos","Historial completo de propuestas",
+          ["N°","Tipo","Cliente","RUT","Descripción","Neto","IVA","Total","Vigencia","Estado","Acciones"]);
 
-      document.getElementById("btn-add-cot").onclick = () => {
-        ["cot-cliente","cot-rut","cot-desc","cot-obs","cot-docid"].forEach(id=>document.getElementById(id).value="");
-        document.getElementById("cot-neto").value=0;
-        document.getElementById("modal-cot").style.display="flex";
-      };
-      document.getElementById("btn-save-cot").onclick = async () => {
-        if (!empId) return;
-        const neto   = parseFloat(document.getElementById("cot-neto").value)||0;
-        const conIva = document.getElementById("cot-iva").value==="si";
-        const iva    = conIva ? Math.round(neto*0.19) : 0;
-        const cliente= document.getElementById("cot-cliente").value.trim();
-        if (!cliente || !neto) { alert("Cliente y monto son obligatorios"); return; }
-        const snap = await db.collection("cotizaciones").where("entityId","==",empId).get();
-        const docId = document.getElementById("cot-docid").value;
-        const data  = {
-          entityId:empId, numero: snap.size+1, cliente,
-          rut_cliente: document.getElementById("cot-rut").value.trim(),
-          descripcion: document.getElementById("cot-desc").value.trim(),
-          monto_neto:neto, iva, total:neto+iva,
-          vigencia: document.getElementById("cot-vigencia").value,
-          observaciones: document.getElementById("cot-obs").value.trim(),
-          estado:"enviada",
-          actualizado: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        const ref = db.collection("cotizaciones");
-        if (docId) await ref.doc(docId).update(data);
-        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
-        document.getElementById("modal-cot").style.display="none";
-        renderFact_Cotizaciones(zone, empId);
-      };
+      // Modal universal para todos los tipos
+      const modalDiv = document.createElement('div');
+      modalDiv.id = 'modal-cotizacion-universal';
+      modalDiv.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:3000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;';
+      document.body.appendChild(modalDiv);
 
-      if (!empId) return;
-      const snap = await db.collection("cotizaciones").where("entityId","==",empId).orderBy("creado","desc").get();
-      const tb = document.getElementById("tbl-cot-tbody");
-      if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
-      tb.innerHTML = "";
-      snap.forEach(d => {
+      await cargarTablaCotizaciones(empId);
+    }
+
+    window.abrirModalCot = async (tipo, empId) => {
+      let modal = document.getElementById('modal-cotizacion-universal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-cotizacion-universal';
+        modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:3000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;';
+        document.body.appendChild(modal);
+      }
+      const snap = await db.collection("cotizaciones").where("entityId","==",empId).get();
+      const nextNum = String(snap.size + 1).padStart(3,"0");
+      const hoy = new Date().toISOString().slice(0,10);
+      const vence = new Date(); vence.setDate(vence.getDate()+30);
+      const venceStr = vence.toISOString().slice(0,10);
+      const cfg = {
+        software:   {color:'rgba(46,168,79,0.2)', borde:'rgba(46,168,79,0.5)', txt:'var(--c-accent)',  ico:'💻', label:'Software / ERP'},
+        servicios:  {color:'rgba(14,165,233,0.2)', borde:'rgba(14,165,233,0.5)', txt:'#0ea5e9', ico:'🔧', label:'Servicios Profesionales'},
+        productos:  {color:'rgba(124,58,237,0.2)', borde:'rgba(124,58,237,0.5)', txt:'#7c3aed', ico:'📦', label:'Venta de Productos'},
+        presupuesto:{color:'rgba(180,83,9,0.2)',   borde:'rgba(180,83,9,0.5)',   txt:'#b45309', ico:'📊', label:'Presupuesto General'},
+      };
+      const c = cfg[tipo];
+      const extraSW = tipo==='software' ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 10px;">
+          <div>${formField("Usuarios incluidos", inp("cot-x-usuarios","text","Ilimitados"))}</div>
+          <div>${formField("Capacitación", inp("cot-x-cap","text","2 horas"))}</div>
+          <div>${formField("Soporte", inp("cot-x-sop","text","WhatsApp directo"))}</div>
+        </div>` : tipo==='servicios' ? `
+        ${formField("Forma de Pago / Hitos", inp("cot-x-hitos","text","Ej: 50% anticipo + 50% al finalizar"))}` :
+        tipo==='productos' ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px;">
+          <div>${formField("Descuento (%)", `<input type="number" id="cot-x-desc" value="0" min="0" max="100" oninput="recalcCotModal()" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+          <div>${formField("Stock / Entrega", inp("cot-x-entrega","text","Inmediato"))}</div>
+        </div>` : `
+        ${formField("Tipo de Presupuesto", sel("cot-x-subtipo",[{v:"general",l:"General"},{v:"proyecto",l:"Proyecto Completo"},{v:"mixto",l:"Mixto (Serv+Prod+SW)"},{v:"anual",l:"Contrato Anual"}]))}`;
+
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:660px;margin:auto;">
+          <div style="background:${c.color};border-bottom:2px solid ${c.borde};padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
+            <div style="font-weight:800;font-size:15px;color:${c.txt}">${c.ico} ${c.label} — N° ${nextNum}</div>
+            <button onclick="cerrarModalCot()" style="background:none;border:none;color:var(--c-muted);font-size:20px;cursor:pointer">✕</button>
+          </div>
+          <div style="padding:18px 20px;max-height:82vh;overflow-y:auto;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Cliente / Razón Social *", inp("cot-cliente","text","Nombre del cliente"))}</div>
+              <div>${formField("RUT Cliente", inp("cot-rut","text","12.345.678-9"))}</div>
+            </div>
+            ${formField("Descripción / Alcance *", inp("cot-desc","text","Resumen de la propuesta"))}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Fecha Emisión", `<input type="date" id="cot-fecha" value="${hoy}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("Válida Hasta", `<input type="date" id="cot-vigencia" value="${venceStr}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+            ${extraSW}
+            <div style="font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">Ítems del Documento</div>
+            <div style="overflow-x:auto;margin-bottom:12px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead><tr style="background:var(--c-bg)">
+                  <th style="padding:6px;text-align:left;color:var(--c-muted)">#</th>
+                  <th style="padding:6px;text-align:left;color:var(--c-muted)">${tipo==='productos'?'SKU + Descripción':'Descripción'}</th>
+                  <th style="padding:6px;text-align:center;color:var(--c-muted)">Unidad</th>
+                  <th style="padding:6px;text-align:center;color:var(--c-muted)">Cant.</th>
+                  <th style="padding:6px;text-align:right;color:var(--c-muted)">Precio Unit.</th>
+                  <th style="padding:6px;text-align:right;color:var(--c-muted)">Total</th>
+                </tr></thead>
+                <tbody id="cot-items">
+                  <tr>
+                    <td style="padding:4px">1</td>
+                    <td style="padding:4px">${tipo==='productos'?'<input type="text" id="ci1-sku" placeholder="SKU-001" style="width:70px;background:var(--c-bg);border:1px solid var(--c-border);color:#7c3aed;padding:4px;border-radius:3px;font-size:11px;margin-right:4px;"> ':''}<input type="text" id="ci1-desc" placeholder="Descripción" style="width:${tipo==='productos'?'110px':'100%'};background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;font-size:12px;"></td>
+                    <td style="padding:4px"><input type="text" id="ci1-unidad" value="${tipo==='servicios'?'Mensual':'Unidad'}" style="width:65px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;font-size:12px;text-align:center"></td>
+                    <td style="padding:4px"><input type="number" id="ci1-cant" value="1" oninput="recalcCotModal()" style="width:45px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;text-align:center"></td>
+                    <td style="padding:4px"><input type="number" id="ci1-precio" value="0" oninput="recalcCotModal()" style="width:95px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;text-align:right"></td>
+                    <td id="ci1-tot" style="padding:4px;text-align:right;font-family:monospace;color:var(--c-accent)">$0</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px">2</td>
+                    <td style="padding:4px">${tipo==='productos'?'<input type="text" id="ci2-sku" placeholder="SKU-002" style="width:70px;background:var(--c-bg);border:1px solid var(--c-border);color:#7c3aed;padding:4px;border-radius:3px;font-size:11px;margin-right:4px;"> ':''}<input type="text" id="ci2-desc" placeholder="Descripción" style="width:${tipo==='productos'?'110px':'100%'};background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;font-size:12px;"></td>
+                    <td style="padding:4px"><input type="text" id="ci2-unidad" value="${tipo==='servicios'?'Mensual':'Unidad'}" style="width:65px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;font-size:12px;text-align:center"></td>
+                    <td style="padding:4px"><input type="number" id="ci2-cant" value="1" oninput="recalcCotModal()" style="width:45px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;text-align:center"></td>
+                    <td style="padding:4px"><input type="number" id="ci2-precio" value="0" oninput="recalcCotModal()" style="width:95px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;text-align:right"></td>
+                    <td id="ci2-tot" style="padding:4px;text-align:right;font-family:monospace;color:var(--c-accent)">$0</td>
+                  </tr>
+                </tbody>
+              </table>
+              <button onclick="agregarItemCot(${tipo==='productos'?'true':'false'})" style="background:none;border:1px dashed var(--c-border);color:var(--c-muted);padding:5px;border-radius:4px;cursor:pointer;font-size:11px;width:100%;margin-top:4px">+ Agregar ítem</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("¿Afecto a IVA?", sel("cot-iva",[{v:"si",l:"Sí — 19% IVA"},{v:"no",l:"No — Exento"}]))}</div>
+              <div>${formField("Observaciones", inp("cot-obs","text","Condiciones, plazos..."))}</div>
+            </div>
+            <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:12px;margin-bottom:14px;">
+              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;"><span style="color:var(--c-muted)">Subtotal Neto</span><span id="cot-sub" style="font-family:monospace">$0</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;"><span style="color:var(--c-muted)">IVA 19%</span><span id="cot-iva-val" style="font-family:monospace">$0</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:800;border-top:1px solid var(--c-border);margin-top:5px;"><span>TOTAL</span><span id="cot-total-val" style="font-family:monospace;color:${c.txt}">$0</span></div>
+            </div>
+            <input type="hidden" id="cot-tipo-act" value="${tipo}">
+            <input type="hidden" id="cot-empid-act" value="${empId}">
+            <input type="hidden" id="cot-num-act" value="${nextNum}">
+            <button onclick="guardarCotizacion()" class="btn-entrar" style="width:100%">💾 Guardar y Registrar</button>
+          </div>
+        </div>`;
+      modal.style.display = 'flex';
+      document.getElementById("cot-iva").addEventListener("change", recalcCotModal);
+    };
+
+    window.cerrarModalCot = () => {
+      const m = document.getElementById('modal-cotizacion-universal');
+      if (m) { m.style.display='none'; m.innerHTML=''; }
+    };
+
+    window.recalcCotModal = () => {
+      let sub=0, i=1;
+      while(document.getElementById('ci'+i+'-cant')) {
+        const c=parseFloat(document.getElementById('ci'+i+'-cant')?.value)||0;
+        const p=parseFloat(document.getElementById('ci'+i+'-precio')?.value)||0;
+        const t=c*p; sub+=t;
+        const totEl=document.getElementById('ci'+i+'-tot');
+        if(totEl) totEl.textContent='$'+Math.round(t).toLocaleString('es-CL');
+        i++;
+      }
+      const descPct=(parseFloat(document.getElementById('cot-x-desc')?.value)||0)/100;
+      const neto=Math.round(sub*(1-descPct));
+      const conIva=document.getElementById('cot-iva')?.value==='si';
+      const iva=conIva?Math.round(neto*0.19):0;
+      if(document.getElementById('cot-sub')) document.getElementById('cot-sub').textContent='$'+neto.toLocaleString('es-CL');
+      if(document.getElementById('cot-iva-val')) document.getElementById('cot-iva-val').textContent='$'+iva.toLocaleString('es-CL');
+      if(document.getElementById('cot-total-val')) document.getElementById('cot-total-val').textContent='$'+(neto+iva).toLocaleString('es-CL');
+    };
+
+    window.agregarItemCot = (conSku=false) => {
+      const tbody=document.getElementById('cot-items'); if(!tbody) return;
+      const i=tbody.querySelectorAll('tr').length+1;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td style="padding:4px">${i}</td>
+        <td style="padding:4px">${conSku?`<input type="text" id="ci${i}-sku" placeholder="SKU-00${i}" style="width:70px;background:var(--c-bg);border:1px solid var(--c-border);color:#7c3aed;padding:4px;border-radius:3px;font-size:11px;margin-right:4px;"> `:''}<input type="text" id="ci${i}-desc" placeholder="Descripción" style="width:${conSku?'110px':'100%'};background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;font-size:12px;"></td>
+        <td style="padding:4px"><input type="text" id="ci${i}-unidad" value="Unidad" style="width:65px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;font-size:12px;text-align:center"></td>
+        <td style="padding:4px"><input type="number" id="ci${i}-cant" value="1" oninput="recalcCotModal()" style="width:45px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;text-align:center"></td>
+        <td style="padding:4px"><input type="number" id="ci${i}-precio" value="0" oninput="recalcCotModal()" style="width:95px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);padding:4px;border-radius:3px;text-align:right"></td>
+        <td id="ci${i}-tot" style="padding:4px;text-align:right;font-family:monospace;color:var(--c-accent)">$0</td>`;
+      tbody.appendChild(tr);
+    };
+
+    window.guardarCotizacion = async () => {
+      const tipo=document.getElementById('cot-tipo-act')?.value;
+      const empId=document.getElementById('cot-empid-act')?.value;
+      const num=document.getElementById('cot-num-act')?.value;
+      const cliente=document.getElementById('cot-cliente')?.value.trim();
+      if(!cliente){alert('El nombre del cliente es obligatorio');return;}
+      const items=[]; let i=1;
+      while(document.getElementById('ci'+i+'-cant')){
+        const desc=(document.getElementById('ci'+i+'-desc')?.value||'').trim();
+        const sku=(document.getElementById('ci'+i+'-sku')?.value||'').trim();
+        const cant=parseFloat(document.getElementById('ci'+i+'-cant')?.value)||0;
+        const precio=parseFloat(document.getElementById('ci'+i+'-precio')?.value)||0;
+        const unidad=(document.getElementById('ci'+i+'-unidad')?.value||'').trim();
+        if(desc) items.push({desc,sku,cant,precio,total:cant*precio,unidad});
+        i++;
+      }
+      const sub=items.reduce((a,x)=>a+x.total,0);
+      const descPct=(parseFloat(document.getElementById('cot-x-desc')?.value)||0)/100;
+      const neto=Math.round(sub*(1-descPct));
+      const conIva=document.getElementById('cot-iva')?.value==='si';
+      const iva=conIva?Math.round(neto*0.19):0;
+      const data={
+        entityId:empId, numero:parseInt(num)||1, tipo_cotizacion:tipo,
+        cliente, rut_cliente:document.getElementById('cot-rut')?.value.trim()||'',
+        descripcion:document.getElementById('cot-desc')?.value.trim()||'',
+        fecha_emision:document.getElementById('cot-fecha')?.value||'',
+        vigencia:document.getElementById('cot-vigencia')?.value||'',
+        items, monto_neto:neto, descuento_pct:Math.round(descPct*100),
+        iva, total:neto+iva,
+        observaciones:document.getElementById('cot-obs')?.value.trim()||'',
+        extra_usuarios:document.getElementById('cot-x-usuarios')?.value||'',
+        extra_capacitacion:document.getElementById('cot-x-cap')?.value||'',
+        extra_soporte:document.getElementById('cot-x-sop')?.value||'',
+        extra_hitos:document.getElementById('cot-x-hitos')?.value||'',
+        extra_entrega:document.getElementById('cot-x-entrega')?.value||'',
+        extra_subtipo:document.getElementById('cot-x-subtipo')?.value||'',
+        estado:'enviada',
+        creado:firebase.firestore.FieldValue.serverTimestamp()
+      };
+      try {
+        await db.collection('cotizaciones').add(data);
+        cerrarModalCot();
+        alert('✓ Cotización N°'+num+' guardada correctamente.');
+        cargarTablaCotizaciones(empId);
+      } catch(e){alert('Error: '+e.message);}
+    };
+
+    async function cargarTablaCotizaciones(empId) {
+      if(!empId) return;
+      const snap=await db.collection('cotizaciones').where('entityId','==',empId).orderBy('creado','desc').get();
+      const tb=document.getElementById('tbl-cot-tbody');
+      if(!tb) return;
+      const tipos={software:'💻 Software',servicios:'🔧 Servicios',productos:'📦 Productos',presupuesto:'📊 Presupuesto'};
+      if(snap.empty){tb.innerHTML=emptyRow(11);return;}
+      tb.innerHTML='';
+      snap.forEach(d=>{
         const r=d.data();
-        const hoy = new Date(); const vig = r.vigencia ? new Date(r.vigencia) : null;
-        const vencida = vig && vig < hoy;
-        const eCls = {enviada:"warn",aceptada:"green",rechazada:"red"}[r.estado]||"gray";
-        tb.innerHTML += `<tr>
-          <td style="font-family:var(--mono)">${r.numero||"—"}</td>
-          <td><strong>${r.cliente||"—"}</strong></td>
-          <td>${r.descripcion||"—"}</td>
+        const hoy=new Date(), vig=r.vigencia?new Date(r.vigencia):null;
+        const vencida=vig&&vig<hoy;
+        const eCls={enviada:'warn',aceptada:'green',rechazada:'red'}[r.estado]||'gray';
+        tb.innerHTML+=`<tr>
+          <td style="font-family:var(--mono)">${r.numero||'—'}</td>
+          <td><span class="badge badge-gray" style="font-size:10px">${tipos[r.tipo_cotizacion]||r.tipo_cotizacion||'—'}</span></td>
+          <td><strong>${r.cliente||'—'}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut_cliente||'—'}</td>
+          <td style="font-size:12px">${r.descripcion||'—'}</td>
           <td>${formatMonto(r.monto_neto)}</td>
           <td>${formatMonto(r.iva)}</td>
           <td style="font-weight:700">${formatMonto(r.total)}</td>
-          <td style="color:${vencida?"var(--c-danger)":"var(--c-text)"}">${r.vigencia||"—"}${vencida?" ⚠️":""}</td>
-          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
-          <td>
-            <button onclick="aceptarCot('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✓</button>
-            <button onclick="deleteCot('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          <td style="color:${vencida?'var(--c-danger)':'var(--c-text)';font-size:11px}">${r.vigencia||'—'}${vencida?' ⚠️':''}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||'—'}</span></td>
+          <td style="white-space:nowrap">
+            <button onclick="aceptarCot('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;" title="Marcar aceptada">✓</button>
+            <button onclick="deleteCot('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:3px;" title="Eliminar">🗑</button>
           </td>
         </tr>`;
       });
     }
     window.aceptarCot = async (docId, empId) => {
-      await db.collection("cotizaciones").doc(docId).update({estado:"aceptada"});
-      renderFact_Cotizaciones(document.getElementById("module-dynamic-zone"), empId);
+      await db.collection('cotizaciones').doc(docId).update({estado:'aceptada'});
+      cargarTablaCotizaciones(empId);
     };
     window.deleteCot = async (docId, empId) => {
-      if (!confirm("¿Eliminar esta cotización?")) return;
-      await db.collection("cotizaciones").doc(docId).delete();
-      renderFact_Cotizaciones(document.getElementById("module-dynamic-zone"), empId);
+      if(!confirm('¿Eliminar esta cotización?')) return;
+      await db.collection('cotizaciones').doc(docId).delete();
+      cargarTablaCotizaciones(empId);
     };
 
     // ── SINCRONIZACIÓN SII ──
@@ -5437,9 +5766,11 @@ Clave: ${clavePortal}`);
               <div style="font-weight:700;font-size:14px">${r.nombre||"—"}</div>
               <div style="font-size:12px;color:var(--c-muted);margin-top:2px">${r.rut||""} · ${r.giro||r.tipo||""} · ${r.ciudad||""}</div>
               <div style="font-size:11px;color:var(--c-muted)">${r.correo||""} · ${r.telefono||""}</div>
+              ${r.banco?`<div style="font-size:11px;color:var(--c-muted)">🏦 ${r.banco} ${r.num_cuenta?"N°"+r.num_cuenta:""}</div>`:""}
             </div>
-            <div style="display:flex;gap:6px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
               <span class="badge badge-${r.activa!==false?"green":"gray"}">${r.activa!==false?"Activa":"Inactiva"}</span>
+              <button onclick="editarEntidadSA('${r.docId}','${r.coleccion}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:5px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;">✏️ Editar</button>
               <button class="btn-sa-action btn-sa-danger" onclick="eliminarEntidad('${r.docId}','${r.coleccion}','${r.nombre||""}')">🗑</button>
             </div>
           </div>`;
@@ -5573,15 +5904,35 @@ Si necesita clave, edita el cliente y agrega una.`;
       const uid = STATE.user?.uid;
       const coleccion = tipo==="condominio" ? "condominios" : "empresas";
       try {
+        const tipoGratif = document.getElementById("ne-tipo-gratif")?.value || "art47_mensual";
         const ref = await db.collection(coleccion).add({
           nombre, rut,
-          giro:       document.getElementById("ne-giro").value.trim(),
-          direccion:  document.getElementById("ne-dir").value.trim(),
-          ciudad:     document.getElementById("ne-ciudad").value.trim(),
-          telefono:   document.getElementById("ne-tel").value.trim(),
-          correo:     document.getElementById("ne-correo").value.trim().toLowerCase(),
+          giro:         document.getElementById("ne-giro").value.trim(),
+          direccion:    document.getElementById("ne-dir").value.trim(),
+          ciudad:       document.getElementById("ne-ciudad").value.trim(),
+          region:       document.getElementById("ne-region")?.value || "",
+          telefono:     document.getElementById("ne-tel").value.trim(),
+          correo:       document.getElementById("ne-correo").value.trim().toLowerCase(),
+          tipo_empresa: document.getElementById("ne-tipo-empresa")?.value || "juridica",
+          actividad_economica: document.getElementById("ne-actividad")?.value.trim() || "",
+          rep_legal_rut:    document.getElementById("ne-rep-rut")?.value.trim() || "",
+          rep_legal_nombre: document.getElementById("ne-rep-nombre")?.value.trim() || "",
+          banco:        document.getElementById("ne-banco")?.value || "",
+          tipo_cuenta:  document.getElementById("ne-tipo-cuenta")?.value || "",
+          num_cuenta:   document.getElementById("ne-num-cuenta")?.value.trim() || "",
+          logo_url:     document.getElementById("ne-logo")?.value.trim() || "",
+          config_rem: {
+            tipo_gratificacion:  tipoGratif,
+            paga_gratificacion:  tipoGratif !== "no_paga",
+            tope_imponible:      document.getElementById("ne-tope-imponible")?.value || "78uf",
+            descuento_ausencia:  document.getElementById("ne-descuento-ausencia")?.value || "base_mixta",
+            caja_compensacion:   document.getElementById("ne-caja-compensacion")?.value || "",
+            mutual:              document.getElementById("ne-mutual")?.value || "achs",
+            paga_colacion:       document.getElementById("ne-paga-colacion")?.checked || false,
+            paga_movilizacion:   document.getElementById("ne-paga-movil")?.checked || false,
+          },
           tipo, uid_owner: uid, activa: true,
-          creado:     firebase.firestore.FieldValue.serverTimestamp()
+          creado: firebase.firestore.FieldValue.serverTimestamp()
         });
         msg.style.color="var(--c-accent)";
         msg.textContent=`✓ Entidad "${nombre}" registrada. ID: ${ref.id}`;
@@ -5620,11 +5971,80 @@ Si necesita clave, edita el cliente y agrega una.`;
     // ── ACCIONES SOBRE CLIENTES ──
     window.editarCliente = async (docId) => {
       const d = await db.collection("sa_clientes").doc(docId).get();
+      if (!d.exists) return;
       const r = d.data();
-      const nuevoPlan = prompt(`Plan actual: ${r.plan}\nIngresa el nuevo plan (demo/basico/completo/premium):`, r.plan);
-      if (!nuevoPlan) return;
-      await db.collection("sa_clientes").doc(docId).update({plan:nuevoPlan.toLowerCase()});
-      loadSAClientes();
+
+      const modal = document.createElement("div");
+      modal.id = "modal-editar-cliente";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;";
+      const modsHtml = ['condominios','residentes','rrhh','contabilidad','facturacion','logistica','auditoria'].map(m =>
+        `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" class="ec-mod-cb" value="${m}" ${(r.modulos||[]).includes(m)?'checked':''} style="accent-color:var(--c-accent)">
+          ${m.charAt(0).toUpperCase()+m.slice(1)}</label>`
+      ).join('');
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:520px;">
+          <div style="background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:800;color:#fff;">✏️ Editar Cliente — ${r.nombre||"—"}</div>
+            <button onclick="document.getElementById('modal-editar-cliente').remove()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+          </div>
+          <div style="padding:20px;">
+            <div style="margin-bottom:12px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nombre / Razón Social</label>
+              <input id="ec-nombre" type="text" value="${r.nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Plan Contratado</label>
+                <select id="ec-plan" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                  <option value="demo" ${r.plan==='demo'?'selected':''}>Demo (7 días)</option>
+                  <option value="basico" ${r.plan==='basico'?'selected':''}>Básico</option>
+                  <option value="completo" ${r.plan==='completo'?'selected':''}>Completo</option>
+                  <option value="premium" ${r.plan==='premium'?'selected':''}>Premium</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Estado</label>
+                <select id="ec-estado" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                  <option value="activo" ${(r.estado||'activo')==='activo'?'selected':''}>Activo</option>
+                  <option value="suspendido" ${r.estado==='suspendido'?'selected':''}>Suspendido</option>
+                  <option value="cancelado" ${r.estado==='cancelado'?'selected':''}>Cancelado</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Módulos Habilitados</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">${modsHtml}</div>
+            </div>
+            <div style="margin-bottom:16px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Fecha Vencimiento</label>
+              <input id="ec-vencimiento" type="date" value="${r.fecha_vencimiento||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <button id="btn-guardar-ec" class="btn-entrar" style="width:100%">💾 Guardar Cambios</button>
+            <p id="ec-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:14px;"></p>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      document.getElementById("btn-guardar-ec").onclick = async () => {
+        const modulos = [];
+        document.querySelectorAll(".ec-mod-cb:checked").forEach(c => modulos.push(c.value));
+        try {
+          await db.collection("sa_clientes").doc(docId).update({
+            nombre:   document.getElementById("ec-nombre").value.trim(),
+            plan:     document.getElementById("ec-plan").value,
+            estado:   document.getElementById("ec-estado").value,
+            modulos,
+            fecha_vencimiento: document.getElementById("ec-vencimiento").value,
+            actualizado: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          document.getElementById("ec-msg").style.color = "var(--c-accent)";
+          document.getElementById("ec-msg").textContent = "✓ Cliente actualizado.";
+          setTimeout(() => { document.getElementById("modal-editar-cliente")?.remove(); loadSAClientes(); }, 700);
+        } catch(e) {
+          document.getElementById("ec-msg").style.color = "var(--c-danger)";
+          document.getElementById("ec-msg").textContent = "Error: " + e.message;
+        }
+      };
     };
 
     window.gestionarModulos = async (docId) => {
@@ -7823,6 +8243,144 @@ Correo: ${correoPortal}
         }
       }
     }, true);
+
+
+    // ─────────────────────────────────────────────────────────
+    // EDITAR ENTIDAD PROPIA — SA Panel → Mis Entidades
+    // ─────────────────────────────────────────────────────────
+    window.editarEntidadSA = async (docId, coleccion) => {
+      const d = await db.collection(coleccion).doc(docId).get();
+      if (!d.exists) { alert("No se encontró la entidad"); return; }
+      const r = d.data();
+      const esCondo = coleccion === "condominios";
+
+      const modal = document.createElement("div");
+      modal.id = "modal-editar-entidad-sa";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:660px;margin:auto;">
+          <div style="background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:800;font-size:15px;color:#fff;">✏️ Editar ${esCondo?'Condominio':'Empresa'} — ${r.nombre||'—'}</div>
+            <button onclick="document.getElementById('modal-editar-entidad-sa').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+          </div>
+          <div style="padding:20px;overflow-y:auto;max-height:85vh;">
+
+            <div style="font-size:12px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📋 Datos Básicos</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Nombre / Razón Social *", `<input id="ee-nombre" type="text" value="${r.nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("RUT *", `<input id="ee-rut" type="text" value="${r.rut||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Giro / Actividad", `<input id="ee-giro" type="text" value="${r.giro||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("Región", `<select id="ee-region" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                ${["I — Tarapacá","II — Antofagasta","III — Atacama","IV — Coquimbo","V — Valparaíso","VI — O'Higgins","VII — Maule","VIII — Biobío","IX — La Araucanía","X — Los Lagos","XI — Aysén","XII — Magallanes","XIII — Metropolitana","XIV — Los Ríos","XV — Arica y Parinacota","XVI — Ñuble"].map(reg=>`<option ${(r.region||'').includes(reg.split('—')[1]?.trim())?'selected':''}>${reg}</option>`).join('')}
+              </select>`)}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Dirección", `<input id="ee-dir" type="text" value="${r.direccion||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("Ciudad", `<input id="ee-ciudad" type="text" value="${r.ciudad||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Teléfono", `<input id="ee-tel" type="tel" value="${r.telefono||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("Correo", `<input id="ee-correo" type="email" value="${r.correo||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+
+            <div style="font-size:12px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">👤 Representante Legal</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("RUT Representante", `<input id="ee-rep-rut" type="text" value="${r.rep_legal_rut||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("Nombre Representante", `<input id="ee-rep-nombre" type="text" value="${r.rep_legal_nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+
+            <div style="font-size:12px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">🏦 Datos Bancarios</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 10px;">
+              <div>${formField("Banco", `<select id="ee-banco" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                <option value="">— Seleccionar —</option>
+                ${["Santander","BCI","Banco de Chile","BancoEstado","Scotiabank","Itaú","Banco Security","Banco Falabella","Banco Ripley"].map(b=>`<option ${r.banco===b?'selected':''}>${b}</option>`).join('')}
+              </select>`)}</div>
+              <div>${formField("Tipo Cuenta", `<select id="ee-tipo-cuenta" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                <option value="corriente" ${(r.tipo_cuenta||'')=='corriente'?'selected':''}>Cuenta Corriente</option>
+                <option value="vista" ${(r.tipo_cuenta||'')=='vista'?'selected':''}>Cuenta Vista / RUT</option>
+                <option value="ahorro" ${(r.tipo_cuenta||'')=='ahorro'?'selected':''}>Cuenta Ahorro</option>
+              </select>`)}</div>
+              <div>${formField("N° Cuenta", `<input id="ee-num-cuenta" type="text" value="${r.num_cuenta||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+
+            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">🖼️ Logo</div>
+            ${formField("URL del Logo", `<input id="ee-logo" type="url" value="${r.logo_url||''}" placeholder="https://..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}
+            ${r.logo_url?`<div style="margin-top:4px;"><img src="${r.logo_url}" style="height:50px;border-radius:6px;border:1px solid var(--c-border);" onerror="this.style.display='none'"></div>`:''}
+
+            <div style="font-size:12px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">⚙️ Configuración de Remuneraciones</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Gratificación Legal", `<select id="ee-gratif" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                <option value="art47_mensual" ${(r.config_rem?.tipo_gratificacion||'art47_mensual')==='art47_mensual'?'selected':''}>Art. 47 — Mensual (sueldo/12)</option>
+                <option value="art50_25" ${(r.config_rem?.tipo_gratificacion||'')==='art50_25'?'selected':''}>Art. 50 — 25% utilidades</option>
+                <option value="no_paga" ${(r.config_rem?.tipo_gratificacion||'')==='no_paga'?'selected':''}>No paga gratificación</option>
+              </select>`)}</div>
+              <div>${formField("Mutual de Seguridad", `<select id="ee-mutual" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                <option value="achs" ${(r.config_rem?.mutual||'achs')==='achs'?'selected':''}>ACHS</option>
+                <option value="museg" ${(r.config_rem?.mutual||'')==='museg'?'selected':''}>Mutual de Seguridad</option>
+                <option value="ist" ${(r.config_rem?.mutual||'')==='ist'?'selected':''}>IST</option>
+              </select>`)}</div>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:6px;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="ee-colacion" ${r.config_rem?.paga_colacion?'checked':''} style="accent-color:var(--c-accent)"> Paga colación
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="ee-movil" ${r.config_rem?.paga_movilizacion?'checked':''} style="accent-color:var(--c-accent)"> Paga movilización
+              </label>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:18px;">
+              <button id="btn-guardar-ee" class="btn-entrar" style="flex:1">💾 Guardar Cambios</button>
+              <button onclick="document.getElementById('modal-editar-entidad-sa').remove()" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);padding:10px 20px;border-radius:var(--radius);cursor:pointer;font-weight:600;">Cancelar</button>
+            </div>
+            <p id="ee-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:14px;"></p>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+
+      document.getElementById("btn-guardar-ee").onclick = async () => {
+        const nombre = document.getElementById("ee-nombre").value.trim();
+        if (!nombre) { document.getElementById("ee-msg").textContent = "El nombre es obligatorio"; return; }
+        try {
+          await db.collection(coleccion).doc(docId).update({
+            nombre, rut: document.getElementById("ee-rut").value.trim(),
+            giro: document.getElementById("ee-giro").value.trim(),
+            region: document.getElementById("ee-region")?.value||"",
+            direccion: document.getElementById("ee-dir").value.trim(),
+            ciudad: document.getElementById("ee-ciudad").value.trim(),
+            telefono: document.getElementById("ee-tel").value.trim(),
+            correo: document.getElementById("ee-correo").value.trim().toLowerCase(),
+            rep_legal_rut: document.getElementById("ee-rep-rut").value.trim(),
+            rep_legal_nombre: document.getElementById("ee-rep-nombre").value.trim(),
+            banco: document.getElementById("ee-banco")?.value||"",
+            tipo_cuenta: document.getElementById("ee-tipo-cuenta")?.value||"",
+            num_cuenta: document.getElementById("ee-num-cuenta")?.value.trim()||"",
+            logo_url: document.getElementById("ee-logo")?.value.trim()||"",
+            config_rem: {
+              tipo_gratificacion: document.getElementById("ee-gratif")?.value||"art47_mensual",
+              paga_gratificacion: (document.getElementById("ee-gratif")?.value||"") !== "no_paga",
+              mutual: document.getElementById("ee-mutual")?.value||"achs",
+              paga_colacion: document.getElementById("ee-colacion")?.checked||false,
+              paga_movilizacion: document.getElementById("ee-movil")?.checked||false,
+            },
+            actualizado: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          document.getElementById("ee-msg").style.color = "var(--c-accent)";
+          document.getElementById("ee-msg").textContent = "✓ Entidad actualizada correctamente.";
+          // Recargar entidades y dropdown
+          await loadEntities(STATE.user?.uid);
+          setTimeout(() => {
+            document.getElementById("modal-editar-entidad-sa")?.remove();
+            loadSAEntidades();
+          }, 700);
+        } catch(e) {
+          document.getElementById("ee-msg").style.color = "var(--c-danger)";
+          document.getElementById("ee-msg").textContent = "Error: " + e.message;
+        }
+      };
+    };
 
   })();
   </script>
