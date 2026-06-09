@@ -779,6 +779,129 @@
       color: var(--c-muted);
     }
 
+
+    /* ═══════════════════════════════════════════════
+       SA PANEL — SUPERADMIN
+    ═══════════════════════════════════════════════ */
+    #screen-sa {
+      padding: 28px;
+      min-height: calc(100vh - var(--header-h));
+    }
+    .sa-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .sa-header h2 { font-size: 20px; font-weight: 700; }
+    .sa-header p  { font-size: 13px; color: var(--c-muted); margin-top: 3px; }
+    .sa-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--c-border);
+      padding-bottom: 0;
+    }
+    .sa-tab {
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: var(--font);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.15s;
+    }
+    .sa-tab.active { color: var(--c-accent); border-bottom-color: var(--c-accent); }
+    .sa-tab:hover  { color: var(--c-text); }
+    .sa-section    { display: none; }
+    .sa-section.active { display: block; }
+    .client-card {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .client-card:hover { border-color: rgba(46,168,79,0.3); }
+    .client-info h4 { font-size: 14px; font-weight: 700; }
+    .client-info p  { font-size: 12px; color: var(--c-muted); margin-top: 3px; }
+    .client-modules {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .client-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .btn-sa-action {
+      background: transparent;
+      border: 1px solid var(--c-border);
+      color: var(--c-muted);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .btn-sa-action:hover { border-color: var(--c-accent); color: var(--c-accent); }
+    .btn-sa-danger { border-color: var(--c-danger); color: var(--c-danger); }
+    .btn-sa-danger:hover { background: rgba(248,81,73,0.1); }
+    .sa-empty {
+      text-align: center;
+      padding: 48px;
+      color: var(--c-muted);
+      font-size: 13px;
+    }
+    .entity-card {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .entity-card:hover { border-color: rgba(46,168,79,0.3); }
+    .entity-icon {
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      background: rgba(46,168,79,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .btn-sa-header {
+      background: rgba(46,168,79,0.15);
+      border: 1px solid rgba(46,168,79,0.3);
+      color: var(--c-accent);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .btn-sa-header:hover { background: rgba(46,168,79,0.25); }
+
     /* ═══════════════════════════════════════════════
        UTILITIES
     ═══════════════════════════════════════════════ */
@@ -853,6 +976,7 @@
     </div>
 
     <div class="header-right">
+      <button class="btn-sa-header hidden" id="btn-sa-panel">⚙️ SA Panel</button>
       <button class="btn-salir" id="btn-salir">Cerrar sesión</button>
     </div>
   </header>
@@ -942,6 +1066,179 @@
         </button>
       </div>
     </div>
+
+
+    <!-- ── PANTALLA: SUPERADMIN PANEL ── -->
+    <div id="screen-sa" class="hidden">
+      <div class="sa-header">
+        <div>
+          <h2>⚙️ Panel Superadmin</h2>
+          <p>Control total del ecosistema Martinez Services ERP · Solo visible para ti</p>
+        </div>
+        <button class="btn-entrar" id="btn-sa-volver">← Volver al ERP</button>
+      </div>
+
+      <div class="sa-tabs">
+        <button class="sa-tab active" data-tab="sa-clientes">👥 Mis Clientes</button>
+        <button class="sa-tab" data-tab="sa-entidades">🏢 Mis Entidades</button>
+        <button class="sa-tab" data-tab="sa-nuevo-cliente">➕ Nuevo Cliente</button>
+        <button class="sa-tab" data-tab="sa-nueva-entidad">➕ Nueva Entidad</button>
+        <button class="sa-tab" data-tab="sa-config">🔧 Config Sistema</button>
+      </div>
+
+      <!-- TAB: CLIENTES -->
+      <div id="sa-clientes" class="sa-section active">
+        <div id="sa-clientes-list"><div class="sa-empty">Cargando clientes…</div></div>
+      </div>
+
+      <!-- TAB: ENTIDADES PROPIAS -->
+      <div id="sa-entidades" class="sa-section">
+        <div id="sa-entidades-list"><div class="sa-empty">Cargando entidades…</div></div>
+      </div>
+
+      <!-- TAB: NUEVO CLIENTE -->
+      <div id="sa-nuevo-cliente" class="sa-section">
+        <div style="max-width:520px;">
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:20px;">Crear Nueva Cuenta Cliente</h3>
+
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nombre / Razón Social</label>
+              <input id="nc-nombre" type="text" placeholder="Nombre del cliente o empresa"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Correo Electrónico</label>
+              <input id="nc-correo" type="email" placeholder="correo@cliente.cl"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Teléfono</label>
+              <input id="nc-tel" type="tel" placeholder="+56 9 xxxx xxxx"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Tipo de Cliente</label>
+              <select id="nc-tipo" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                <option value="condominio">Condominio</option>
+                <option value="empresa">Empresa Comercial</option>
+                <option value="pyme">PyME</option>
+                <option value="persona">Persona Natural</option>
+              </select>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Plan Contratado</label>
+              <select id="nc-plan" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                <option value="demo">Demo (7 días gratis)</option>
+                <option value="basico">Básico</option>
+                <option value="completo">Completo</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Módulos habilitados</label>
+              <div id="nc-modulos-checks" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+                <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="condominios" style="accent-color:var(--c-accent)"> Condominios</label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="residentes" style="accent-color:var(--c-accent)"> App Residentes</label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="rrhh" style="accent-color:var(--c-accent)"> RRHH</label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="contabilidad" style="accent-color:var(--c-accent)"> Contabilidad</label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="facturacion" style="accent-color:var(--c-accent)"> Facturación</label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="logistica" style="accent-color:var(--c-accent)"> Logística</label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="auditoria" style="accent-color:var(--c-accent)"> Auditoría</label>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <button id="btn-nc-todos" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);font-family:var(--font);font-size:11px;padding:5px 10px;border-radius:5px;cursor:pointer;">✓ Marcar todos</button>
+                <button id="btn-nc-ninguno" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);font-family:var(--font);font-size:11px;padding:5px 10px;border-radius:5px;cursor:pointer;">✗ Desmarcar todos</button>
+              </div>
+            </div>
+            <div style="margin-bottom:20px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Días de Demo</label>
+              <input id="nc-dias-demo" type="number" value="7" min="1" max="90"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <button id="btn-crear-cliente" class="btn-entrar" style="width:100%">Crear Cliente</button>
+            <p id="nc-msg" style="margin-top:10px;font-size:12px;text-align:center;min-height:16px;"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: NUEVA ENTIDAD PROPIA -->
+      <div id="sa-nueva-entidad" class="sa-section">
+        <div style="max-width:520px;">
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:20px;">Registrar Nueva Entidad Propia</h3>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Tipo de Entidad</label>
+              <select id="ne-tipo" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                <option value="empresa">Empresa (SpA, Ltda, SA, etc.)</option>
+                <option value="condominio">Condominio / Copropiedad</option>
+              </select>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nombre / Razón Social</label>
+              <input id="ne-nombre" type="text" placeholder="Nombre de la empresa o condominio"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">RUT</label>
+              <input id="ne-rut" type="text" placeholder="76.xxx.xxx-x"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Giro / Rubro</label>
+              <input id="ne-giro" type="text" placeholder="Giro comercial o tipo de copropiedad"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Dirección</label>
+              <input id="ne-dir" type="text" placeholder="Dirección completa"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Ciudad</label>
+                <input id="ne-ciudad" type="text" placeholder="Alto Hospicio"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Teléfono</label>
+                <input id="ne-tel" type="tel" placeholder="+56 9 xxxx xxxx"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+            </div>
+            <div style="margin-bottom:20px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Correo de Contacto</label>
+              <input id="ne-correo" type="email" placeholder="correo@empresa.cl"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <button id="btn-crear-entidad" class="btn-entrar" style="width:100%">Registrar Entidad</button>
+            <p id="ne-msg" style="margin-top:10px;font-size:12px;text-align:center;min-height:16px;"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CONFIG SISTEMA -->
+      <div id="sa-config" class="sa-section">
+        <div style="max-width:520px;">
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:16px;">🔐 Configurar Superadmin</h3>
+            <p style="font-size:12px;color:var(--c-muted);margin-bottom:16px;">Este botón crea automáticamente tu documento de superadmin en Firestore con acceso total a todos los módulos.</p>
+            <button id="btn-init-superadmin" class="btn-entrar" style="width:100%">⚡ Inicializar mi cuenta como Superadmin</button>
+            <p id="sa-init-msg" style="margin-top:10px;font-size:12px;text-align:center;color:var(--c-accent);min-height:16px;"></p>
+          </div>
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:16px;">📊 Estadísticas del Sistema</h3>
+            <div id="sa-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="kpi-card"><div class="kpi-label">Total Clientes</div><div class="kpi-value" id="stat-clientes">—</div></div>
+              <div class="kpi-card"><div class="kpi-label">Entidades Propias</div><div class="kpi-value green" id="stat-entidades">—</div></div>
+              <div class="kpi-card"><div class="kpi-label">Demos Activas</div><div class="kpi-value warn" id="stat-demos">—</div></div>
+              <div class="kpi-card"><div class="kpi-label">Demos Vencidas</div><div class="kpi-value danger" id="stat-vencidas">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /screen-sa -->
 
   </div><!-- /app-root -->
 
@@ -4695,6 +4992,327 @@
       await db.collection("kpis").doc(docId).delete();
       renderAud_KPIs(document.getElementById("module-dynamic-zone"), empId);
     };
+
+
+    // ═══════════════════════════════════════════════
+    // SUPERADMIN PANEL — MOTOR COMPLETO
+    // ═══════════════════════════════════════════════
+    const SUPERADMIN_UID = "R4yUrD8lPuhYCSjha1QLZDoR"; // UID de Gaudy
+    const TODOS_MODULOS  = ["condominios","residentes","rrhh","contabilidad","facturacion","logistica","auditoria"];
+
+    function isSuperadmin() {
+      return STATE.user && (
+        STATE.tenantData?.es_superadmin === true ||
+        STATE.tenantData?.rol === "superadmin" ||
+        STATE.user.uid.startsWith("R4yUrD8") ||
+        STATE.user.email === "aybserviciosg@gmail.com"
+      );
+    }
+
+    function showSAButton() {
+      const btn = document.getElementById("btn-sa-panel");
+      if (btn && isSuperadmin()) btn.classList.remove("hidden");
+    }
+
+    // Navegación al SA Panel
+    document.getElementById("btn-sa-panel").addEventListener("click", () => {
+      SCREENS.forEach(s => document.getElementById(s)?.classList.add("hidden"));
+      document.getElementById("screen-sa").classList.remove("hidden");
+      loadSAPanel();
+    });
+
+    document.getElementById("btn-sa-volver").addEventListener("click", () => {
+      document.getElementById("screen-sa").classList.add("hidden");
+      renderLevel1();
+    });
+
+    // Tabs del SA Panel
+    document.querySelectorAll(".sa-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".sa-tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".sa-section").forEach(s => s.classList.remove("active"));
+        tab.classList.add("active");
+        const target = tab.dataset.tab;
+        document.getElementById(target)?.classList.add("active");
+        if (target==="sa-clientes")  loadSAClientes();
+        if (target==="sa-entidades") loadSAEntidades();
+        if (target==="sa-config")    loadSAStats();
+      });
+    });
+
+    // ── CARGAR TODO EL PANEL ──
+    async function loadSAPanel() {
+      loadSAClientes();
+      loadSAStats();
+    }
+
+    // ── CLIENTES ──
+    async function loadSAClientes() {
+      const cont = document.getElementById("sa-clientes-list");
+      cont.innerHTML = `<div class="sa-empty">Cargando clientes…</div>`;
+      try {
+        const snap = await db.collection("sa_clientes").orderBy("creado","desc").get();
+        if (snap.empty) {
+          cont.innerHTML = `<div class="sa-empty">Sin clientes registrados aún.<br>Usa la pestaña "Nuevo Cliente" para agregar el primero.</div>`;
+          return;
+        }
+        cont.innerHTML = "";
+        snap.forEach(d => {
+          const r = d.data();
+          const ahora  = new Date();
+          const vence  = r.fecha_vencimiento ? new Date(r.fecha_vencimiento) : null;
+          const dias   = vence ? Math.ceil((vence-ahora)/(1000*60*60*24)) : null;
+          const vencido= vence && vence < ahora;
+          const eCls   = vencido?"red":dias!==null&&dias<=3?"warn":"green";
+          const eLabel = vencido?"Vencido":dias!==null?`${dias}d restantes`:"Activo";
+
+          const modBadges = (r.modulos||[]).map(m => {
+            const nombres={condominios:"Condo",residentes:"Resid.",rrhh:"RRHH",contabilidad:"Cont.",facturacion:"Fact.",logistica:"Log.",auditoria:"Audit."};
+            return `<span class="badge badge-green">${nombres[m]||m}</span>`;
+          }).join("");
+
+          cont.innerHTML += `<div class="client-card">
+            <div class="client-info" style="flex:1">
+              <h4>${r.nombre||"—"} <span class="badge badge-gray" style="margin-left:6px;font-size:10px;">${r.tipo||"—"}</span></h4>
+              <p>${r.correo||"—"} · ${r.telefono||"—"}</p>
+              <p>Plan: <strong>${r.plan||"—"}</strong> · Creado: ${r.creado?.toDate?.().toLocaleDateString("es-CL")||"—"}</p>
+              <div class="client-modules" style="margin-top:6px;">${modBadges||'<span style="color:var(--c-muted);font-size:11px">Sin módulos asignados</span>'}</div>
+            </div>
+            <div class="client-actions" style="flex-direction:column;align-items:flex-end;gap:8px;">
+              <span class="badge badge-${eCls}">${eLabel}</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                <button class="btn-sa-action" onclick="editarCliente('${d.id}')">✏️ Editar</button>
+                <button class="btn-sa-action" onclick="gestionarModulos('${d.id}')">🧩 Módulos</button>
+                <button class="btn-sa-action" onclick="extenderDemo('${d.id}')">📅 Extender</button>
+                <button class="btn-sa-action btn-sa-danger" onclick="eliminarCliente('${d.id}','${r.nombre||""}')">🗑 Eliminar</button>
+              </div>
+            </div>
+          </div>`;
+        });
+      } catch(e) {
+        cont.innerHTML = `<div class="sa-empty" style="color:var(--c-danger)">Error cargando clientes: ${e.message}</div>`;
+      }
+    }
+
+    // ── ENTIDADES PROPIAS ──
+    async function loadSAEntidades() {
+      const cont = document.getElementById("sa-entidades-list");
+      cont.innerHTML = `<div class="sa-empty">Cargando entidades…</div>`;
+      try {
+        const uid = STATE.user?.uid;
+        const [empSnap, condoSnap] = await Promise.all([
+          db.collection("empresas").where("uid_owner","==",uid).get(),
+          db.collection("condominios").where("uid_owner","==",uid).get()
+        ]);
+
+        const all = [];
+        empSnap.forEach(d   => all.push({...d.data(), docId:d.id, coleccion:"empresas"}));
+        condoSnap.forEach(d => all.push({...d.data(), docId:d.id, coleccion:"condominios"}));
+
+        if (all.length===0) {
+          cont.innerHTML = `<div class="sa-empty">Sin entidades registradas.<br>Usa la pestaña "Nueva Entidad" para registrar tus empresas y condominios.</div>`;
+          return;
+        }
+
+        cont.innerHTML = `<div style="font-size:12px;color:var(--c-muted);margin-bottom:12px;">Total: ${all.length} entidad(es) registrada(s)</div>`;
+        all.forEach(r => {
+          const icono = r.coleccion==="condominios"?"🏘️":"🏢";
+          cont.innerHTML += `<div class="entity-card">
+            <div class="entity-icon">${icono}</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:14px">${r.nombre||"—"}</div>
+              <div style="font-size:12px;color:var(--c-muted);margin-top:2px">${r.rut||""} · ${r.giro||r.tipo||""} · ${r.ciudad||""}</div>
+              <div style="font-size:11px;color:var(--c-muted)">${r.correo||""} · ${r.telefono||""}</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <span class="badge badge-${r.activa!==false?"green":"gray"}">${r.activa!==false?"Activa":"Inactiva"}</span>
+              <button class="btn-sa-action btn-sa-danger" onclick="eliminarEntidad('${r.docId}','${r.coleccion}','${r.nombre||""}')">🗑</button>
+            </div>
+          </div>`;
+        });
+      } catch(e) {
+        cont.innerHTML = `<div class="sa-empty" style="color:var(--c-danger)">Error: ${e.message}</div>`;
+      }
+    }
+
+    // ── STATS ──
+    async function loadSAStats() {
+      try {
+        const uid = STATE.user?.uid;
+        const [cliSnap, empSnap, condoSnap] = await Promise.all([
+          db.collection("sa_clientes").get(),
+          db.collection("empresas").where("uid_owner","==",uid).get(),
+          db.collection("condominios").where("uid_owner","==",uid).get()
+        ]);
+        const ahora = new Date();
+        let demos=0, vencidas=0;
+        cliSnap.forEach(d => {
+          const r=d.data();
+          if (r.plan==="demo") {
+            const v = r.fecha_vencimiento ? new Date(r.fecha_vencimiento) : null;
+            if (v && v > ahora) demos++;
+            if (v && v < ahora) vencidas++;
+          }
+        });
+        document.getElementById("stat-clientes").textContent  = cliSnap.size;
+        document.getElementById("stat-entidades").textContent = empSnap.size + condoSnap.size;
+        document.getElementById("stat-demos").textContent     = demos;
+        document.getElementById("stat-vencidas").textContent  = vencidas;
+      } catch(_){}
+    }
+
+    // ── CREAR CLIENTE ──
+    document.getElementById("btn-nc-todos").onclick = () => {
+      document.querySelectorAll("#nc-modulos-checks input[type=checkbox]").forEach(c=>c.checked=true);
+    };
+    document.getElementById("btn-nc-ninguno").onclick = () => {
+      document.querySelectorAll("#nc-modulos-checks input[type=checkbox]").forEach(c=>c.checked=false);
+    };
+
+    document.getElementById("btn-crear-cliente").addEventListener("click", async () => {
+      const msg    = document.getElementById("nc-msg");
+      const nombre = document.getElementById("nc-nombre").value.trim();
+      const correo = document.getElementById("nc-correo").value.trim().toLowerCase();
+      if (!nombre || !correo) { msg.style.color="var(--c-danger)"; msg.textContent="Nombre y correo son obligatorios."; return; }
+
+      const modulos = [];
+      document.querySelectorAll("#nc-modulos-checks input[type=checkbox]:checked").forEach(c=>modulos.push(c.value));
+
+      const plan   = document.getElementById("nc-plan").value;
+      const dias   = parseInt(document.getElementById("nc-dias-demo").value)||7;
+      const vence  = new Date(); vence.setDate(vence.getDate()+dias);
+
+      msg.style.color="var(--c-muted)"; msg.textContent="Creando cliente…";
+      try {
+        await db.collection("sa_clientes").add({
+          nombre, correo,
+          telefono:    document.getElementById("nc-tel").value.trim(),
+          tipo:        document.getElementById("nc-tipo").value,
+          plan, modulos,
+          dias_demo:   dias,
+          fecha_vencimiento: vence.toISOString().slice(0,10),
+          estado:      "activo",
+          creado_por:  STATE.user?.email||"",
+          creado:      firebase.firestore.FieldValue.serverTimestamp()
+        });
+        msg.style.color="var(--c-accent)";
+        msg.textContent=`✓ Cliente "${nombre}" creado exitosamente.`;
+        ["nc-nombre","nc-correo","nc-tel"].forEach(id=>document.getElementById(id).value="");
+        document.querySelectorAll("#nc-modulos-checks input[type=checkbox]").forEach(c=>c.checked=false);
+        loadSAStats();
+      } catch(e) {
+        msg.style.color="var(--c-danger)"; msg.textContent="Error: "+e.message;
+      }
+    });
+
+    // ── CREAR ENTIDAD PROPIA ──
+    document.getElementById("btn-crear-entidad").addEventListener("click", async () => {
+      const msg    = document.getElementById("ne-msg");
+      const tipo   = document.getElementById("ne-tipo").value;
+      const nombre = document.getElementById("ne-nombre").value.trim();
+      const rut    = document.getElementById("ne-rut").value.trim();
+      if (!nombre) { msg.style.color="var(--c-danger)"; msg.textContent="El nombre es obligatorio."; return; }
+
+      msg.style.color="var(--c-muted)"; msg.textContent="Registrando entidad…";
+      const uid = STATE.user?.uid;
+      const coleccion = tipo==="condominio" ? "condominios" : "empresas";
+      try {
+        const ref = await db.collection(coleccion).add({
+          nombre, rut,
+          giro:       document.getElementById("ne-giro").value.trim(),
+          direccion:  document.getElementById("ne-dir").value.trim(),
+          ciudad:     document.getElementById("ne-ciudad").value.trim(),
+          telefono:   document.getElementById("ne-tel").value.trim(),
+          correo:     document.getElementById("ne-correo").value.trim().toLowerCase(),
+          tipo, uid_owner: uid, activa: true,
+          creado:     firebase.firestore.FieldValue.serverTimestamp()
+        });
+        msg.style.color="var(--c-accent)";
+        msg.textContent=`✓ Entidad "${nombre}" registrada. ID: ${ref.id}`;
+        // Recargar entidades en el dropdown
+        await loadEntities(uid);
+        ["ne-nombre","ne-rut","ne-giro","ne-dir","ne-ciudad","ne-tel","ne-correo"].forEach(id=>document.getElementById(id).value="");
+        loadSAStats();
+      } catch(e) {
+        msg.style.color="var(--c-danger)"; msg.textContent="Error: "+e.message;
+      }
+    });
+
+    // ── INICIALIZAR SUPERADMIN ──
+    document.getElementById("btn-init-superadmin").addEventListener("click", async () => {
+      const msg = document.getElementById("sa-init-msg");
+      msg.textContent = "Inicializando…";
+      try {
+        const uid = STATE.user?.uid;
+        await db.collection("usuarios").doc(uid).set({
+          nombre:       "Gaudy Martínez",
+          correo:       STATE.user.email,
+          plan:         "Superadmin",
+          rol:          "superadmin",
+          es_superadmin:true,
+          modulos:      TODOS_MODULOS,
+          creado:       firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge:true});
+        STATE.tenantData = {...(STATE.tenantData||{}), es_superadmin:true, modulos:TODOS_MODULOS, plan:"Superadmin"};
+        updateHeaderPlan();
+        msg.textContent = "✓ ¡Listo! Eres Superadmin. Recarga el ERP para ver todos los módulos activos.";
+      } catch(e) {
+        msg.style.color="var(--c-danger)"; msg.textContent="Error: "+e.message;
+      }
+    });
+
+    // ── ACCIONES SOBRE CLIENTES ──
+    window.editarCliente = async (docId) => {
+      const d = await db.collection("sa_clientes").doc(docId).get();
+      const r = d.data();
+      const nuevoPlan = prompt(`Plan actual: ${r.plan}\nIngresa el nuevo plan (demo/basico/completo/premium):`, r.plan);
+      if (!nuevoPlan) return;
+      await db.collection("sa_clientes").doc(docId).update({plan:nuevoPlan.toLowerCase()});
+      loadSAClientes();
+    };
+
+    window.gestionarModulos = async (docId) => {
+      const d = await db.collection("sa_clientes").doc(docId).get();
+      const r = d.data();
+      const actual = (r.modulos||[]).join(", ");
+      const nuevos = prompt(`Módulos actuales:\n${actual}\n\nEscribe los módulos separados por coma:\ncondominios, residentes, rrhh, contabilidad, facturacion, logistica, auditoria`, actual);
+      if (nuevos===null) return;
+      const arr = nuevos.split(",").map(m=>m.trim().toLowerCase()).filter(m=>TODOS_MODULOS.includes(m));
+      await db.collection("sa_clientes").doc(docId).update({modulos:arr});
+      alert(`✓ Módulos actualizados: ${arr.join(", ")}`);
+      loadSAClientes();
+    };
+
+    window.extenderDemo = async (docId) => {
+      const dias = prompt("¿Cuántos días adicionales deseas agregar?", "7");
+      if (!dias) return;
+      const d = await db.collection("sa_clientes").doc(docId).get();
+      const r = d.data();
+      const base  = r.fecha_vencimiento ? new Date(r.fecha_vencimiento) : new Date();
+      const nueva = new Date(base); nueva.setDate(nueva.getDate()+parseInt(dias));
+      await db.collection("sa_clientes").doc(docId).update({
+        fecha_vencimiento: nueva.toISOString().slice(0,10)
+      });
+      alert(`✓ Demo extendida hasta: ${nueva.toLocaleDateString("es-CL")}`);
+      loadSAClientes();
+    };
+
+    window.eliminarCliente = async (docId, nombre) => {
+      if (!confirm(`¿Eliminar permanentemente al cliente "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+      await db.collection("sa_clientes").doc(docId).delete();
+      loadSAClientes();
+      loadSAStats();
+    };
+
+    window.eliminarEntidad = async (docId, coleccion, nombre) => {
+      if (!confirm(`¿Eliminar la entidad "${nombre}"?\nSus datos en Firestore se conservarán pero dejará de aparecer en el sistema.`)) return;
+      await db.collection(coleccion).doc(docId).update({activa:false});
+      loadSAEntidades();
+    };
+
+    // ── MOSTRAR BOTÓN SA AL CARGAR ──
+    // Se llama desde el auth observer después de cargar el tenant
+    const _origLoadTenant = loadTenantData;
 
   })();
   </script>
