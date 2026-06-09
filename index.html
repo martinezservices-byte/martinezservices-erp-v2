@@ -2715,6 +2715,568 @@
       renderRes_Alerta(document.getElementById("module-dynamic-zone"), condoId);
     };
 
+
+    // ═══════════════════════════════════════════════
+    // MÓDULO 3: RECURSOS HUMANOS — MOTOR COMPLETO
+    // ═══════════════════════════════════════════════
+    function renderRRHHZone(zone, navId) {
+      const empId = STATE.activeEntityId
+        || document.getElementById("entity-dropdown")?.value;
+      switch(navId) {
+        case "fichas":         renderRRHH_Fichas(zone, empId);         break;
+        case "remuneraciones": renderRRHH_Remuneraciones(zone, empId); break;
+        case "liquidaciones":  renderRRHH_Liquidaciones(zone, empId);  break;
+        case "asistencia":     renderRRHH_Asistencia(zone, empId);     break;
+        case "contratos":      renderRRHH_Contratos(zone, empId);      break;
+        case "vacaciones":     renderRRHH_Vacaciones(zone, empId);     break;
+        default:               renderRRHH_Fichas(zone, empId);
+      }
+    }
+
+    // ── 1. FICHAS DEL PERSONAL ──
+    async function renderRRHH_Fichas(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-emp","Agregar Trabajador","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Total Trabajadores</div><div class="kpi-value" id="kpi-emp-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Activos</div><div class="kpi-value green" id="kpi-emp-activos">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Masa Salarial</div><div class="kpi-value" id="kpi-emp-masa">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Con Contrato</div><div class="kpi-value green" id="kpi-emp-contrato">—</div></div>
+        </div>` +
+        tableWrap("tbl-emp","Nómina General — Fichas de Colaboradores","Personal activo e inactivo",
+          ["RUT","Nombre Completo","Cargo","Sueldo Base","AFP","Salud","Estado","Acciones"]) +
+        modalHtml("modal-emp","Ficha del Trabajador", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("RUT", inp("emp-rut","text","12.345.678-9"))}</div>
+            <div>${formField("Estado", sel("emp-estado",[{v:"activo",l:"Activo"},{v:"inactivo",l:"Inactivo"},{v:"licencia",l:"Licencia médica"},{v:"vacaciones",l:"Vacaciones"}]))}</div>
+          </div>
+          ${formField("Nombre Completo", inp("emp-nombre","text","Nombre y apellidos"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Cargo / Función", inp("emp-cargo","text","Ej: Conserje"))}</div>
+            <div>${formField("Fecha de Ingreso", inp("emp-ingreso","date",""))}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Sueldo Base ($)", inp("emp-sueldo","number","0"))}</div>
+            <div>${formField("Tipo Contrato", sel("emp-contrato",[{v:"indefinido",l:"Indefinido"},{v:"plazo_fijo",l:"Plazo Fijo"},{v:"obra_faena",l:"Obra o Faena"},{v:"honorarios",l:"Honorarios"}]))}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("AFP", sel("emp-afp",[{v:"capital",l:"Capital"},{v:"cuprum",l:"Cuprum"},{v:"habitat",l:"Hábitat"},{v:"modelo",l:"Modelo"},{v:"planvital",l:"PlanVital"},{v:"provida",l:"ProVida"},{v:"uno",l:"AFP Uno"}]))}</div>
+            <div>${formField("Salud", sel("emp-salud",[{v:"fonasa_a",l:"Fonasa A"},{v:"fonasa_b",l:"Fonasa B"},{v:"fonasa_c",l:"Fonasa C"},{v:"fonasa_d",l:"Fonasa D"},{v:"isapre",l:"Isapre"}]))}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Correo", inp("emp-correo","email","correo@empresa.cl"))}</div>
+            <div>${formField("Teléfono", inp("emp-tel","tel","+56 9 xxxx xxxx"))}</div>
+          </div>
+          ${formField("Dirección", inp("emp-dir","text","Calle, número, ciudad"))}
+          <input type="hidden" id="emp-docid">
+          <button id="btn-save-emp" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Ficha</button>
+        `);
+
+      document.getElementById("btn-add-emp").onclick = () => {
+        ["emp-rut","emp-nombre","emp-cargo","emp-correo","emp-tel","emp-dir","emp-docid"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("emp-sueldo").value = 0;
+        document.getElementById("modal-emp").style.display = "flex";
+      };
+      document.getElementById("btn-save-emp").onclick = async () => {
+        if (!empId) { alert("Sin empresa/entidad activa"); return; }
+        const rut    = document.getElementById("emp-rut").value.trim();
+        const nombre = document.getElementById("emp-nombre").value.trim();
+        if (!rut || !nombre) { alert("RUT y nombre son obligatorios"); return; }
+        const docId = document.getElementById("emp-docid").value;
+        const data = {
+          rut, nombre, cargo: document.getElementById("emp-cargo").value.trim(),
+          fecha_ingreso: document.getElementById("emp-ingreso").value,
+          sueldo_base: parseFloat(document.getElementById("emp-sueldo").value)||0,
+          tipo_contrato: document.getElementById("emp-contrato").value,
+          afp: document.getElementById("emp-afp").value,
+          salud: document.getElementById("emp-salud").value,
+          correo: document.getElementById("emp-correo").value.trim().toLowerCase(),
+          telefono: document.getElementById("emp-tel").value.trim(),
+          direccion: document.getElementById("emp-dir").value.trim(),
+          estado: document.getElementById("emp-estado").value,
+          entityId: empId,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("empleados");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-emp").style.display = "none";
+        renderRRHH_Fichas(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+      const tb = document.getElementById("tbl-emp-tbody");
+      let total=0, activos=0, masa=0, conContrato=0;
+      if (snap.empty) { tb.innerHTML = emptyRow(8); }
+      else {
+        tb.innerHTML = "";
+        snap.forEach(d => {
+          const r = d.data(); total++;
+          if (r.estado==="activo") activos++;
+          if (r.tipo_contrato && r.tipo_contrato!=="honorarios") conContrato++;
+          masa += r.sueldo_base||0;
+          const eCls = {activo:"green",inactivo:"gray",licencia:"warn",vacaciones:"warn"}[r.estado]||"gray";
+          tb.innerHTML += `<tr>
+            <td style="font-family:var(--mono);font-size:12px">${r.rut||"—"}</td>
+            <td><strong>${r.nombre||"—"}</strong></td>
+            <td>${r.cargo||"—"}</td>
+            <td>${formatMonto(r.sueldo_base)}</td>
+            <td><span class="badge badge-gray">${r.afp||"—"}</span></td>
+            <td><span class="badge badge-gray">${r.salud||"—"}</span></td>
+            <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+            <td>
+              <button onclick="editEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
+              <button onclick="deleteEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+            </td>
+          </tr>`;
+        });
+      }
+      document.getElementById("kpi-emp-total").textContent   = total;
+      document.getElementById("kpi-emp-activos").textContent = activos;
+      document.getElementById("kpi-emp-masa").textContent    = formatMonto(masa);
+      document.getElementById("kpi-emp-contrato").textContent= conContrato;
+    }
+    window.editEmpleado = async (docId, empId) => {
+      const d = await db.collection("empleados").doc(docId).get();
+      const r = d.data();
+      document.getElementById("emp-docid").value   = docId;
+      document.getElementById("emp-rut").value     = r.rut||"";
+      document.getElementById("emp-nombre").value  = r.nombre||"";
+      document.getElementById("emp-cargo").value   = r.cargo||"";
+      document.getElementById("emp-ingreso").value = r.fecha_ingreso||"";
+      document.getElementById("emp-sueldo").value  = r.sueldo_base||0;
+      document.getElementById("emp-contrato").value= r.tipo_contrato||"indefinido";
+      document.getElementById("emp-afp").value     = r.afp||"capital";
+      document.getElementById("emp-salud").value   = r.salud||"fonasa_b";
+      document.getElementById("emp-correo").value  = r.correo||"";
+      document.getElementById("emp-tel").value     = r.telefono||"";
+      document.getElementById("emp-dir").value     = r.direccion||"";
+      document.getElementById("emp-estado").value  = r.estado||"activo";
+      document.getElementById("modal-emp").style.display = "flex";
+    };
+    window.deleteEmpleado = async (docId, empId) => {
+      if (!confirm("¿Eliminar este trabajador?")) return;
+      await db.collection("empleados").doc(docId).delete();
+      renderRRHH_Fichas(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── 2. PROCESO DE REMUNERACIONES ──
+    async function renderRRHH_Remuneraciones(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-procesar-rem","Procesar Remuneraciones del Mes","⚙️") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Período Activo</div><div class="kpi-value" id="kpi-rem-periodo">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Haberes</div><div class="kpi-value green" id="kpi-rem-haberes">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Descuentos</div><div class="kpi-value danger" id="kpi-rem-desc">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Líquido</div><div class="kpi-value" id="kpi-rem-liquido">—</div></div>
+        </div>` +
+        tableWrap("tbl-rem","Proceso de Remuneraciones","Período activo — valores calculados automáticamente",
+          ["RUT","Trabajador","Sueldo Base","Gratificación","Horas Extra","Total Haberes","AFP","Salud","Total Desc.","Líquido a Pagar","Estado"]);
+
+      document.getElementById("btn-procesar-rem").onclick = async () => {
+        if (!empId) { alert("Sin entidad activa"); return; }
+        const periodo = prompt("Período a procesar (YYYY-MM):", new Date().toISOString().slice(0,7));
+        if (!periodo) return;
+
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).where("estado","==","activo").get();
+        if (empSnap.empty) { alert("No hay trabajadores activos"); return; }
+
+        const batch = db.batch();
+        let totalH=0, totalD=0, totalL=0;
+
+        empSnap.forEach(d => {
+          const r = d.data();
+          const base       = r.sueldo_base||0;
+          // Cálculo Chile: gratificación legal = base/12, tope 4.75 IMM
+          const gratif     = Math.min(base/12, 40000);
+          const horasExtra = 0; // Se puede editar después
+          const totalHaberes = base + gratif + horasExtra;
+          // Descuentos legales Chile 2025
+          const afpPct     = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[r.afp]||0.1145;
+          const saludPct   = (r.salud||"").startsWith("fonasa") ? 0.07 : 0.07;
+          const descAfp    = Math.round(totalHaberes * afpPct);
+          const descSalud  = Math.round(totalHaberes * saludPct);
+          const totalDesc  = descAfp + descSalud;
+          const liquido    = totalHaberes - totalDesc;
+          totalH += totalHaberes; totalD += totalDesc; totalL += liquido;
+
+          const ref = db.collection("remuneraciones").doc(`${empId}_${periodo}_${d.id}`);
+          batch.set(ref, {
+            entityId: empId, periodo, empleado_id: d.id,
+            rut: r.rut, nombre: r.nombre, cargo: r.cargo,
+            sueldo_base: base, gratificacion: Math.round(gratif),
+            horas_extra: horasExtra, total_haberes: Math.round(totalHaberes),
+            desc_afp: descAfp, desc_salud: descSalud, total_descuentos: totalDesc,
+            liquido_pagar: Math.round(liquido), afp: r.afp, salud: r.salud,
+            estado: "procesado",
+            creado: firebase.firestore.FieldValue.serverTimestamp()
+          }, {merge:true});
+        });
+        await batch.commit();
+        alert(`✓ Remuneraciones procesadas para ${empSnap.size} trabajadores.\nPeríodo: ${periodo}\nTotal Líquido: ${formatMonto(totalL)}`);
+        renderRRHH_Remuneraciones(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("remuneraciones").where("entityId","==",empId).orderBy("periodo","desc").limit(50).get();
+      const tb = document.getElementById("tbl-rem-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(11); return; }
+      tb.innerHTML = "";
+      let tH=0, tD=0, tL=0; let periodoActual="";
+      snap.forEach(d => {
+        const r = d.data();
+        if (!periodoActual) periodoActual = r.periodo;
+        tH += r.total_haberes||0; tD += r.total_descuentos||0; tL += r.liquido_pagar||0;
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td>${formatMonto(r.sueldo_base)}</td>
+          <td>${formatMonto(r.gratificacion)}</td>
+          <td>${formatMonto(r.horas_extra)}</td>
+          <td style="color:var(--c-accent);font-weight:700">${formatMonto(r.total_haberes)}</td>
+          <td style="font-size:11px">${formatMonto(r.desc_afp)}</td>
+          <td style="font-size:11px">${formatMonto(r.desc_salud)}</td>
+          <td style="color:var(--c-danger)">${formatMonto(r.total_descuentos)}</td>
+          <td style="font-weight:800;color:var(--c-text)">${formatMonto(r.liquido_pagar)}</td>
+          <td>${badgeHtml(r.estado,{procesado:{cls:"green",lbl:"Procesado"},_:{cls:"gray",lbl:"—"}})}</td>
+        </tr>`;
+      });
+      tb.innerHTML += `<tr style="background:var(--c-bg)">
+        <td colspan="5" style="font-weight:700;text-align:right">TOTALES:</td>
+        <td style="color:var(--c-accent);font-weight:800">${formatMonto(tH)}</td>
+        <td colspan="2"></td>
+        <td style="color:var(--c-danger);font-weight:700">${formatMonto(tD)}</td>
+        <td style="font-weight:800">${formatMonto(tL)}</td>
+        <td></td>
+      </tr>`;
+      document.getElementById("kpi-rem-periodo").textContent = periodoActual||"—";
+      document.getElementById("kpi-rem-haberes").textContent = formatMonto(tH);
+      document.getElementById("kpi-rem-desc").textContent    = formatMonto(tD);
+      document.getElementById("kpi-rem-liquido").textContent = formatMonto(tL);
+    }
+
+    // ── 3. LIQUIDACIONES ──
+    async function renderRRHH_Liquidaciones(zone, empId) {
+      zone.innerHTML =
+        `<div style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Filtrar por período</label>
+            <input id="liq-filtro-periodo" type="month" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+          </div>
+          <button id="btn-filtrar-liq" class="btn-entrar">Ver Liquidaciones</button>
+        </div>` +
+        tableWrap("tbl-liq","Liquidaciones de Sueldo Emitidas","Historial por trabajador y período",
+          ["Período","RUT","Trabajador","Cargo","Haberes","Descuentos","Líquido","AFP","Salud"]);
+
+      document.getElementById("btn-filtrar-liq").onclick = async () => {
+        const periodo = document.getElementById("liq-filtro-periodo").value;
+        const tb = document.getElementById("tbl-liq-tbody");
+        if (!periodo || !empId) { tb.innerHTML = emptyRow(9,"Selecciona un período"); return; }
+        const snap = await db.collection("remuneraciones")
+          .where("entityId","==",empId).where("periodo","==",periodo).get();
+        if (snap.empty) { tb.innerHTML = emptyRow(9,`Sin liquidaciones para ${periodo}`); return; }
+        tb.innerHTML = "";
+        snap.forEach(d => {
+          const r = d.data();
+          tb.innerHTML += `<tr>
+            <td><strong>${r.periodo||"—"}</strong></td>
+            <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+            <td>${r.nombre||"—"}</td>
+            <td>${r.cargo||"—"}</td>
+            <td style="color:var(--c-accent)">${formatMonto(r.total_haberes)}</td>
+            <td style="color:var(--c-danger)">${formatMonto(r.total_descuentos)}</td>
+            <td style="font-weight:800">${formatMonto(r.liquido_pagar)}</td>
+            <td style="font-size:11px">${r.afp||"—"}</td>
+            <td style="font-size:11px">${r.salud||"—"}</td>
+          </tr>`;
+        });
+      };
+    }
+
+    // ── 4. ASISTENCIA ──
+    async function renderRRHH_Asistencia(zone, empId) {
+      const hoy = new Date().toISOString().slice(0,10);
+      zone.innerHTML =
+        `<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end;">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Fecha</label>
+            <input id="asist-fecha" type="date" value="${hoy}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+          </div>
+          <button id="btn-cargar-asist" class="btn-entrar">Ver Asistencia</button>
+          <button id="btn-marcar-todos" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">✓ Marcar todos Presentes</button>
+        </div>` +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Presentes</div><div class="kpi-value green" id="kpi-asist-p">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Ausentes</div><div class="kpi-value danger" id="kpi-asist-a">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Tardanzas</div><div class="kpi-value warn" id="kpi-asist-t">—</div></div>
+        </div>` +
+        tableWrap("tbl-asist","Registro de Asistencia Diaria","Control por trabajador",
+          ["RUT","Trabajador","Cargo","Entrada","Salida","Horas","Estado","Acciones"]);
+
+      const cargarAsist = async () => {
+        const fecha = document.getElementById("asist-fecha").value;
+        if (!fecha || !empId) return;
+        const tb = document.getElementById("tbl-asist-tbody");
+        // Cargar empleados activos
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).where("estado","==","activo").get();
+        const asistSnap = await db.collection("asistencia").where("entityId","==",empId).where("fecha","==",fecha).get();
+        const asistMap = {};
+        asistSnap.forEach(d => asistMap[d.data().empleado_id] = {...d.data(), docId: d.id});
+
+        if (empSnap.empty) { tb.innerHTML = emptyRow(8,"Sin trabajadores activos"); return; }
+        tb.innerHTML = "";
+        let p=0, a=0, t=0;
+        empSnap.forEach(d => {
+          const r = d.data();
+          const reg = asistMap[d.id];
+          const est = reg?.estado||"no_registrado";
+          if (est==="presente") p++;
+          else if (est==="ausente") a++;
+          else if (est==="tardanza") t++;
+          const eCls = {presente:"green",ausente:"red",tardanza:"warn",licencia:"warn",no_registrado:"gray"}[est]||"gray";
+          const horas = (reg?.entrada && reg?.salida) ?
+            (() => { const e=reg.entrada.split(":"); const s=reg.salida.split(":"); return ((parseInt(s[0])*60+parseInt(s[1]))-(parseInt(e[0])*60+parseInt(e[1])))/60; })().toFixed(1)+"h" : "—";
+          tb.innerHTML += `<tr id="asist-row-${d.id}">
+            <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+            <td><strong>${r.nombre||"—"}</strong></td>
+            <td>${r.cargo||"—"}</td>
+            <td><input type="time" value="${reg?.entrada||""}" id="asist-entrada-${d.id}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-size:12px;padding:3px 6px;border-radius:4px;outline:none;width:80px;"></td>
+            <td><input type="time" value="${reg?.salida||""}" id="asist-salida-${d.id}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-size:12px;padding:3px 6px;border-radius:4px;outline:none;width:80px;"></td>
+            <td style="font-family:var(--mono)">${horas}</td>
+            <td><span class="badge badge-${eCls}" id="asist-badge-${d.id}">${est}</span></td>
+            <td>
+              <button onclick="guardarAsistencia('${d.id}','${empId}','${fecha}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">💾 Guardar</button>
+              <select id="asist-est-${d.id}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-size:11px;padding:3px 6px;border-radius:4px;margin-left:4px;">
+                ${["presente","ausente","tardanza","licencia"].map(o=>`<option value="${o}"${est===o?" selected":""}>${o}</option>`).join("")}
+              </select>
+            </td>
+          </tr>`;
+        });
+        document.getElementById("kpi-asist-p").textContent = p;
+        document.getElementById("kpi-asist-a").textContent = a;
+        document.getElementById("kpi-asist-t").textContent = t;
+      };
+
+      document.getElementById("btn-cargar-asist").onclick = cargarAsist;
+      document.getElementById("btn-marcar-todos").onclick = async () => {
+        const fecha = document.getElementById("asist-fecha").value;
+        if (!fecha || !empId) return;
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).where("estado","==","activo").get();
+        const batch = db.batch();
+        empSnap.forEach(d => {
+          const ref = db.collection("asistencia").doc(`${empId}_${fecha}_${d.id}`);
+          batch.set(ref,{entityId:empId,fecha,empleado_id:d.id,rut:d.data().rut,nombre:d.data().nombre,
+            entrada:"08:00",salida:"17:00",estado:"presente",creado:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        });
+        await batch.commit();
+        cargarAsist();
+      };
+      cargarAsist();
+    }
+
+    window.guardarAsistencia = async (empDocId, empId, fecha) => {
+      const entrada = document.getElementById(`asist-entrada-${empDocId}`)?.value||"";
+      const salida  = document.getElementById(`asist-salida-${empDocId}`)?.value||"";
+      const estado  = document.getElementById(`asist-est-${empDocId}`)?.value||"presente";
+      const empDoc  = await db.collection("empleados").doc(empDocId).get();
+      const r = empDoc.data();
+      await db.collection("asistencia").doc(`${empId}_${fecha}_${empDocId}`).set({
+        entityId:empId, fecha, empleado_id:empDocId,
+        rut:r?.rut||"", nombre:r?.nombre||"",
+        entrada, salida, estado,
+        actualizado:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      const badge = document.getElementById(`asist-badge-${empDocId}`);
+      if (badge) { const cls={presente:"green",ausente:"red",tardanza:"warn",licencia:"warn"}[estado]||"gray"; badge.className=`badge badge-${cls}`; badge.textContent=estado; }
+    };
+
+    // ── 5. CONTRATOS ──
+    async function renderRRHH_Contratos(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-cont","Nuevo Contrato / Anexo","📝") +
+        tableWrap("tbl-cont","Contratos y Anexos","Documentos contractuales vigentes e históricos",
+          ["RUT","Trabajador","Tipo","Fecha Inicio","Fecha Término","Estado","Acciones"]) +
+        modalHtml("modal-cont","Registrar Contrato", `
+          ${formField("Trabajador", `<select id="cont-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
+          ${formField("Tipo de Contrato", sel("cont-tipo",[{v:"indefinido",l:"Contrato Indefinido"},{v:"plazo_fijo",l:"Plazo Fijo"},{v:"obra_faena",l:"Obra o Faena"},{v:"honorarios",l:"Honorarios"},{v:"anexo",l:"Anexo de Contrato"}]))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Fecha Inicio", inp("cont-inicio","date",""))}</div>
+            <div>${formField("Fecha Término", inp("cont-fin","date","(Dejar vacío si es indefinido)"))}</div>
+          </div>
+          ${formField("Sueldo Pactado ($)", inp("cont-sueldo","number","0"))}
+          ${formField("Observaciones", inp("cont-obs","text","Notas adicionales"))}
+          <input type="hidden" id="cont-docid">
+          <button id="btn-save-cont" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Contrato</button>
+        `);
+
+      // Cargar empleados en el select
+      if (empId) {
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+        const sel2 = document.getElementById("cont-emp");
+        empSnap.forEach(d => { const o=document.createElement("option"); o.value=d.id; o.textContent=`${d.data().rut} — ${d.data().nombre}`; sel2.appendChild(o); });
+      }
+
+      document.getElementById("btn-add-cont").onclick = () => {
+        ["cont-inicio","cont-fin","cont-obs","cont-docid"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("cont-sueldo").value = 0;
+        document.getElementById("modal-cont").style.display = "flex";
+      };
+      document.getElementById("btn-save-cont").onclick = async () => {
+        if (!empId) return;
+        const empDocId = document.getElementById("cont-emp").value;
+        if (!empDocId) { alert("Selecciona un trabajador"); return; }
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const r = empDoc.data();
+        const docId = document.getElementById("cont-docid").value;
+        const finStr = document.getElementById("cont-fin").value;
+        const data = {
+          entityId: empId, empleado_id: empDocId,
+          rut: r?.rut||"", nombre: r?.nombre||"",
+          tipo: document.getElementById("cont-tipo").value,
+          fecha_inicio: document.getElementById("cont-inicio").value,
+          fecha_fin: finStr||null,
+          sueldo_pactado: parseFloat(document.getElementById("cont-sueldo").value)||0,
+          observaciones: document.getElementById("cont-obs").value.trim(),
+          estado: (!finStr || new Date(finStr) > new Date()) ? "vigente" : "vencido",
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("contratos");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-cont").style.display = "none";
+        renderRRHH_Contratos(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("contratos").where("entityId","==",empId).orderBy("fecha_inicio","desc").get();
+      const tb = document.getElementById("tbl-cont-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(7); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const eCls = {vigente:"green",vencido:"red",terminado:"gray"}[r.estado]||"gray";
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td><span class="badge badge-gray">${r.tipo||"—"}</span></td>
+          <td>${r.fecha_inicio||"—"}</td>
+          <td>${r.fecha_fin||"Sin fecha término"}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+          <td><button onclick="deleteCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      });
+    }
+    window.deleteCont = async (docId, empId) => {
+      if (!confirm("¿Eliminar este contrato?")) return;
+      await db.collection("contratos").doc(docId).delete();
+      renderRRHH_Contratos(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── 6. VACACIONES Y PERMISOS ──
+    async function renderRRHH_Vacaciones(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-vac","Nueva Solicitud","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Solicitudes Pendientes</div><div class="kpi-value warn" id="kpi-vac-pend">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Aprobadas este mes</div><div class="kpi-value green" id="kpi-vac-apro">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Días Tomados (mes)</div><div class="kpi-value" id="kpi-vac-dias">—</div></div>
+        </div>` +
+        tableWrap("tbl-vac","Vacaciones y Permisos","Solicitudes y aprobaciones",
+          ["RUT","Trabajador","Tipo","Desde","Hasta","Días","Estado","Acciones"]) +
+        modalHtml("modal-vac","Registrar Solicitud", `
+          ${formField("Trabajador", `<select id="vac-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
+          ${formField("Tipo", sel("vac-tipo",[{v:"vacaciones",l:"Vacaciones Legales"},{v:"permiso_sin_goce",l:"Permiso sin Goce de Sueldo"},{v:"permiso_con_goce",l:"Permiso con Goce de Sueldo"},{v:"licencia",l:"Licencia Médica"},{v:"otro",l:"Otro"}]))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Desde", inp("vac-desde","date",""))}</div>
+            <div>${formField("Hasta", inp("vac-hasta","date",""))}</div>
+          </div>
+          ${formField("Observación", inp("vac-obs","text","Motivo o detalle"))}
+          ${formField("Estado", sel("vac-estado",[{v:"pendiente",l:"Pendiente"},{v:"aprobada",l:"Aprobada"},{v:"rechazada",l:"Rechazada"}]))}
+          <input type="hidden" id="vac-docid">
+          <button id="btn-save-vac" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Solicitud</button>
+        `);
+
+      if (empId) {
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+        const selEmp = document.getElementById("vac-emp");
+        empSnap.forEach(d => { const o=document.createElement("option"); o.value=d.id; o.textContent=`${d.data().rut} — ${d.data().nombre}`; selEmp.appendChild(o); });
+      }
+
+      document.getElementById("btn-add-vac").onclick = () => {
+        ["vac-desde","vac-hasta","vac-obs","vac-docid"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("modal-vac").style.display = "flex";
+      };
+      document.getElementById("btn-save-vac").onclick = async () => {
+        if (!empId) return;
+        const empDocId = document.getElementById("vac-emp").value;
+        if (!empDocId) { alert("Selecciona un trabajador"); return; }
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const r = empDoc.data();
+        const desde = document.getElementById("vac-desde").value;
+        const hasta = document.getElementById("vac-hasta").value;
+        const dias  = desde && hasta ? Math.ceil((new Date(hasta)-new Date(desde))/(1000*60*60*24))+1 : 0;
+        const docId = document.getElementById("vac-docid").value;
+        const data = {
+          entityId:empId, empleado_id:empDocId,
+          rut:r?.rut||"", nombre:r?.nombre||"",
+          tipo: document.getElementById("vac-tipo").value,
+          desde, hasta, dias_solicitados: dias,
+          observacion: document.getElementById("vac-obs").value.trim(),
+          estado: document.getElementById("vac-estado").value,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("vacaciones");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-vac").style.display = "none";
+        renderRRHH_Vacaciones(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("vacaciones").where("entityId","==",empId).orderBy("desde","desc").get();
+      const tb = document.getElementById("tbl-vac-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = "";
+      let pend=0, apro=0, diasTotales=0;
+      snap.forEach(d => {
+        const r = d.data();
+        if (r.estado==="pendiente") pend++;
+        if (r.estado==="aprobada")  { apro++; diasTotales += r.dias_solicitados||0; }
+        const eCls = {pendiente:"warn",aprobada:"green",rechazada:"red"}[r.estado]||"gray";
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td><span class="badge badge-gray">${r.tipo||"—"}</span></td>
+          <td>${r.desde||"—"}</td>
+          <td>${r.hasta||"—"}</td>
+          <td style="font-family:var(--mono);font-weight:700">${r.dias_solicitados||0}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+          <td>
+            <button onclick="aprobarVac('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✓</button>
+            <button onclick="rechazarVac('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">✗</button>
+            <button onclick="deleteVac('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+      document.getElementById("kpi-vac-pend").textContent = pend;
+      document.getElementById("kpi-vac-apro").textContent = apro;
+      document.getElementById("kpi-vac-dias").textContent = diasTotales;
+    }
+    window.aprobarVac = async (docId, empId) => {
+      await db.collection("vacaciones").doc(docId).update({estado:"aprobada"});
+      renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+    window.rechazarVac = async (docId, empId) => {
+      await db.collection("vacaciones").doc(docId).update({estado:"rechazada"});
+      renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+    window.deleteVac = async (docId, empId) => {
+      if (!confirm("¿Eliminar esta solicitud?")) return;
+      await db.collection("vacaciones").doc(docId).delete();
+      renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+
   })();
   </script>
 </body>
