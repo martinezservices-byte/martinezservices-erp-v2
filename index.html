@@ -3277,6 +3277,1425 @@
       renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
     };
 
+
+    // ═══════════════════════════════════════════════
+    // MÓDULO 4: CONTABILIDAD AUTOMATIZADA
+    // ═══════════════════════════════════════════════
+    function renderContabilidadZone(zone, navId) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      switch(navId) {
+        case "librodiario":  renderCont_LibroDiario(zone, empId);  break;
+        case "balance8":     renderCont_Balance8(zone, empId);     break;
+        case "conciliacion": renderCont_Conciliacion(zone, empId); break;
+        case "ivaf29":       renderCont_IVA(zone, empId);          break;
+        default:             renderCont_LibroDiario(zone, empId);
+      }
+    }
+
+    // ── LIBRO DIARIO ──
+    async function renderCont_LibroDiario(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-asiento","Nuevo Asiento Contable","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Asientos del Mes</div><div class="kpi-value" id="kpi-ld-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Débitos</div><div class="kpi-value green" id="kpi-ld-debe">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Créditos</div><div class="kpi-value danger" id="kpi-ld-haber">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Diferencia</div><div class="kpi-value" id="kpi-ld-dif">—</div></div>
+        </div>` +
+        tableWrap("tbl-ld","Libro Diario","Asientos contables del período",
+          ["Fecha","N° Asiento","Glosa","Cuenta Debe","Debe","Cuenta Haber","Haber","Acciones"]) +
+        modalHtml("modal-asiento","Nuevo Asiento Contable", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Fecha", inp("as-fecha","date",""))}</div>
+            <div>${formField("N° Asiento", inp("as-num","text","Auto"))}</div>
+          </div>
+          ${formField("Glosa / Descripción", inp("as-glosa","text","Descripción del asiento"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Cuenta Débito", inp("as-cta-debe","text","Ej: 1101 Caja"))}</div>
+            <div>${formField("Monto Débito ($)", inp("as-debe","number","0"))}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Cuenta Crédito", inp("as-cta-haber","text","Ej: 2101 Proveedores"))}</div>
+            <div>${formField("Monto Crédito ($)", inp("as-haber","number","0"))}</div>
+          </div>
+          <input type="hidden" id="as-docid">
+          <button id="btn-save-asiento" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Asiento</button>
+        `);
+
+      document.getElementById("btn-add-asiento").onclick = async () => {
+        ["as-glosa","as-cta-debe","as-cta-haber","as-docid"].forEach(id=>document.getElementById(id).value="");
+        ["as-debe","as-haber"].forEach(id=>document.getElementById(id).value=0);
+        // Autonumerar
+        if (empId) {
+          const snap = await db.collection("asientos_contables").where("entityId","==",empId).get();
+          document.getElementById("as-num").value = String(snap.size+1).padStart(4,"0");
+        }
+        document.getElementById("modal-asiento").style.display="flex";
+      };
+      document.getElementById("btn-save-asiento").onclick = async () => {
+        if (!empId) return;
+        const debe  = parseFloat(document.getElementById("as-debe").value)||0;
+        const haber = parseFloat(document.getElementById("as-haber").value)||0;
+        if (!document.getElementById("as-glosa").value.trim()) { alert("La glosa es obligatoria"); return; }
+        const docId = document.getElementById("as-docid").value;
+        const data = {
+          entityId: empId,
+          fecha: document.getElementById("as-fecha").value,
+          numero_asiento: document.getElementById("as-num").value.trim(),
+          glosa: document.getElementById("as-glosa").value.trim(),
+          cuenta_debe: document.getElementById("as-cta-debe").value.trim(),
+          debe, cuenta_haber: document.getElementById("as-cta-haber").value.trim(), haber,
+          cuadrado: Math.abs(debe-haber)<0.01,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("asientos_contables");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-asiento").style.display="none";
+        renderCont_LibroDiario(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("asientos_contables").where("entityId","==",empId).orderBy("fecha","desc").limit(100).get();
+      const tb = document.getElementById("tbl-ld-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = ""; let tD=0, tH=0;
+      snap.forEach(d => {
+        const r = d.data(); tD+=r.debe||0; tH+=r.haber||0;
+        tb.innerHTML += `<tr>
+          <td>${r.fecha||"—"}</td>
+          <td style="font-family:var(--mono)">${r.numero_asiento||"—"}</td>
+          <td>${r.glosa||"—"}</td>
+          <td style="font-size:11px;color:var(--c-muted)">${r.cuenta_debe||"—"}</td>
+          <td style="color:var(--c-accent)">${formatMonto(r.debe)}</td>
+          <td style="font-size:11px;color:var(--c-muted)">${r.cuenta_haber||"—"}</td>
+          <td style="color:var(--c-danger)">${formatMonto(r.haber)}</td>
+          <td><button onclick="deleteAsiento('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      });
+      const dif = tD-tH;
+      document.getElementById("kpi-ld-total").textContent = snap.size;
+      document.getElementById("kpi-ld-debe").textContent  = formatMonto(tD);
+      document.getElementById("kpi-ld-haber").textContent = formatMonto(tH);
+      const difEl = document.getElementById("kpi-ld-dif");
+      difEl.textContent = formatMonto(Math.abs(dif));
+      difEl.className = "kpi-value " + (Math.abs(dif)<1?"green":"danger");
+    }
+    window.deleteAsiento = async (docId, empId) => {
+      if (!confirm("¿Eliminar este asiento?")) return;
+      await db.collection("asientos_contables").doc(docId).delete();
+      renderCont_LibroDiario(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── BALANCE DE 8 COLUMNAS ──
+    async function renderCont_Balance8(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-cuenta","Agregar Cuenta","＋") +
+        `<div style="margin-bottom:12px;display:flex;gap:8px;">
+          <button id="btn-export-bal" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar CSV</button>
+        </div>` +
+        tableWrap("tbl-bal8","Balance de 8 Columnas","Saldos por cuenta contable — Período tributario activo",
+          ["Código","Cuenta Contable","Débitos","Créditos","Saldo Deudor","Saldo Acreedor","Resultado Pérdida","Resultado Ganancia"]) +
+        modalHtml("modal-cuenta","Agregar / Editar Cuenta", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Código", inp("bal-codigo","text","Ej: 1101"))}</div>
+            <div>${formField("Tipo", sel("bal-tipo",[{v:"activo",l:"Activo"},{v:"pasivo",l:"Pasivo"},{v:"patrimonio",l:"Patrimonio"},{v:"ingreso",l:"Ingreso"},{v:"gasto",l:"Gasto"}]))}</div>
+          </div>
+          ${formField("Nombre de la Cuenta", inp("bal-nombre","text","Ej: Caja Moneda Nacional"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Débitos ($)", inp("bal-debitos","number","0"))}</div>
+            <div>${formField("Créditos ($)", inp("bal-creditos","number","0"))}</div>
+          </div>
+          <input type="hidden" id="bal-docid">
+          <button id="btn-save-cuenta" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Cuenta</button>
+        `);
+
+      document.getElementById("btn-add-cuenta").onclick = () => {
+        ["bal-codigo","bal-nombre","bal-docid"].forEach(id=>document.getElementById(id).value="");
+        ["bal-debitos","bal-creditos"].forEach(id=>document.getElementById(id).value=0);
+        document.getElementById("modal-cuenta").style.display="flex";
+      };
+      document.getElementById("btn-save-cuenta").onclick = async () => {
+        if (!empId) return;
+        const debitos  = parseFloat(document.getElementById("bal-debitos").value)||0;
+        const creditos = parseFloat(document.getElementById("bal-creditos").value)||0;
+        const saldo    = debitos - creditos;
+        const docId    = document.getElementById("bal-docid").value;
+        const tipo     = document.getElementById("bal-tipo").value;
+        const data = {
+          entityId: empId,
+          codigo: document.getElementById("bal-codigo").value.trim(),
+          nombre: document.getElementById("bal-nombre").value.trim(),
+          tipo, debitos, creditos,
+          saldo_deudor:   saldo>0 ? saldo : 0,
+          saldo_acreedor: saldo<0 ? Math.abs(saldo) : 0,
+          resultado_perdida:  (tipo==="gasto"  && saldo>0) ? saldo : 0,
+          resultado_ganancia: (tipo==="ingreso" && saldo<0) ? Math.abs(saldo) : 0,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("cuentas");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-cuenta").style.display="none";
+        renderCont_Balance8(zone, empId);
+      };
+
+      document.getElementById("btn-export-bal").onclick = async () => {
+        if (!empId) return;
+        const snap = await db.collection("cuentas").where("entityId","==",empId).orderBy("codigo").get();
+        let csv = "Código,Cuenta,Débitos,Créditos,Saldo Deudor,Saldo Acreedor\n";
+        snap.forEach(d => {
+          const r = d.data();
+          csv += `${r.codigo},${r.nombre},${r.debitos},${r.creditos},${r.saldo_deudor},${r.saldo_acreedor}\n`;
+        });
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+        a.download = `balance8_${empId}_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("cuentas").where("entityId","==",empId).orderBy("codigo").get();
+      const tb = document.getElementById("tbl-bal8-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = ""; let tDeb=0,tCred=0,tSD=0,tSA=0,tRP=0,tRG=0;
+      snap.forEach(d => {
+        const r = d.data();
+        tDeb+=r.debitos||0; tCred+=r.creditos||0;
+        tSD+=r.saldo_deudor||0; tSA+=r.saldo_acreedor||0;
+        tRP+=r.resultado_perdida||0; tRG+=r.resultado_ganancia||0;
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-weight:700">${r.codigo||"—"}</td>
+          <td>${r.nombre||"—"}</td>
+          <td>${formatMonto(r.debitos)}</td>
+          <td>${formatMonto(r.creditos)}</td>
+          <td style="color:var(--c-accent)">${r.saldo_deudor>0?formatMonto(r.saldo_deudor):"—"}</td>
+          <td style="color:var(--c-danger)">${r.saldo_acreedor>0?formatMonto(r.saldo_acreedor):"—"}</td>
+          <td style="color:var(--c-danger)">${r.resultado_perdida>0?formatMonto(r.resultado_perdida):"—"}</td>
+          <td style="color:var(--c-accent)">${r.resultado_ganancia>0?formatMonto(r.resultado_ganancia):"—"}</td>
+        </tr>`;
+      });
+      tb.innerHTML += `<tr style="background:var(--c-bg);font-weight:800">
+        <td colspan="2" style="text-align:right">TOTALES:</td>
+        <td>${formatMonto(tDeb)}</td><td>${formatMonto(tCred)}</td>
+        <td style="color:var(--c-accent)">${formatMonto(tSD)}</td>
+        <td style="color:var(--c-danger)">${formatMonto(tSA)}</td>
+        <td style="color:var(--c-danger)">${formatMonto(tRP)}</td>
+        <td style="color:var(--c-accent)">${formatMonto(tRG)}</td>
+      </tr>`;
+    }
+
+    // ── CONCILIACIÓN BANCARIA ──
+    async function renderCont_Conciliacion(zone, empId) {
+      zone.innerHTML = `
+        <div style="margin-bottom:16px;">
+          <p style="font-size:13px;color:var(--c-muted);margin-bottom:12px;">Carga tu cartola bancaria en CSV/Excel. El sistema concilia automáticamente por monto y fecha contra el libro contable.</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <label style="background:var(--c-accent);color:#fff;padding:9px 16px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:700;">
+              📂 Cargar Cartola CSV
+              <input type="file" id="cartola-file" accept=".csv,.txt" style="display:none;">
+            </label>
+            <span id="cartola-filename" style="font-size:12px;color:var(--c-muted)">Sin archivo seleccionado</span>
+          </div>
+        </div>` +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Movimientos Cartola</div><div class="kpi-value" id="kpi-conc-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Conciliados</div><div class="kpi-value green" id="kpi-conc-ok">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Diferencias</div><div class="kpi-value danger" id="kpi-conc-dif">—</div></div>
+        </div>` +
+        tableWrap("tbl-conc","Conciliación Bancaria","Cartola vs. Libro Contable",
+          ["Fecha","Descripción Cartola","Monto Cartola","Monto Libro","Diferencia","Estado"]);
+
+      document.getElementById("cartola-file").onchange = async function() {
+        const file = this.files[0];
+        if (!file) return;
+        document.getElementById("cartola-filename").textContent = file.name;
+        const text = await file.text();
+        const lines = text.split("\n").filter(l=>l.trim());
+        const tb = document.getElementById("tbl-conc-tbody");
+        tb.innerHTML = "";
+        let total=0, conciliados=0, diferencias=0;
+        // Parsear CSV simple: fecha,descripcion,monto
+        for (let i=1; i<lines.length; i++) {
+          const cols = lines[i].split(",");
+          if (cols.length < 3) continue;
+          const fecha = (cols[0]||"").trim().replace(/"/g,"");
+          const desc  = (cols[1]||"").trim().replace(/"/g,"");
+          const monto = parseFloat((cols[2]||"0").replace(/[^0-9.-]/g,""))||0;
+          total++;
+          // Buscar en asientos
+          let montoLibro = 0, estado = "sin_registro";
+          if (empId) {
+            const q = await db.collection("asientos_contables")
+              .where("entityId","==",empId).where("debe","==",monto).limit(1).get();
+            if (!q.empty) { montoLibro=monto; estado="conciliado"; conciliados++; }
+            else diferencias++;
+          }
+          const eCls = {conciliado:"green",sin_registro:"warn"}[estado]||"gray";
+          const dif = monto - montoLibro;
+          tb.innerHTML += `<tr>
+            <td>${fecha}</td><td>${desc}</td>
+            <td>${formatMonto(monto)}</td>
+            <td>${montoLibro?formatMonto(montoLibro):"—"}</td>
+            <td style="color:${Math.abs(dif)>0?"var(--c-danger)":"var(--c-accent)"}">${dif!==0?formatMonto(Math.abs(dif)):"✓"}</td>
+            <td><span class="badge badge-${eCls}">${estado}</span></td>
+          </tr>`;
+          // Guardar en Firestore
+          if (empId) await db.collection("conciliacion_bancaria").add({
+            entityId:empId, fecha, descripcion:desc, monto_cartola:monto,
+            monto_libro:montoLibro, diferencia:dif, estado,
+            creado: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        document.getElementById("kpi-conc-total").textContent = total;
+        document.getElementById("kpi-conc-ok").textContent    = conciliados;
+        document.getElementById("kpi-conc-dif").textContent   = diferencias;
+      };
+
+      // Cargar conciliaciones previas
+      if (!empId) return;
+      const snap = await db.collection("conciliacion_bancaria").where("entityId","==",empId).orderBy("creado","desc").limit(50).get();
+      if (snap.empty) return;
+      const tb = document.getElementById("tbl-conc-tbody");
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const eCls = {conciliado:"green",sin_registro:"warn"}[r.estado]||"gray";
+        tb.innerHTML += `<tr>
+          <td>${r.fecha||"—"}</td><td>${r.descripcion||"—"}</td>
+          <td>${formatMonto(r.monto_cartola)}</td>
+          <td>${r.monto_libro?formatMonto(r.monto_libro):"—"}</td>
+          <td style="color:${Math.abs(r.diferencia||0)>0?"var(--c-danger)":"var(--c-accent)"}">${Math.abs(r.diferencia||0)>0?formatMonto(Math.abs(r.diferencia)):"✓"}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+        </tr>`;
+      });
+    }
+
+    // ── IVA F29 ──
+    async function renderCont_IVA(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-iva","Registrar Período IVA","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Débito Fiscal (mes)</div><div class="kpi-value danger" id="kpi-iva-debito">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Crédito Fiscal (mes)</div><div class="kpi-value green" id="kpi-iva-credito">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">IVA Neto a Pagar</div><div class="kpi-value" id="kpi-iva-neto">—</div></div>
+        </div>` +
+        tableWrap("tbl-iva","Declaración IVA F29","Resumen mensual de IVA",
+          ["Período","Débito Fiscal","Crédito Fiscal","IVA Neto","Estado SII","Fecha Declaración"]) +
+        modalHtml("modal-iva","Registrar Período IVA F29", `
+          ${formField("Período (Mes/Año)", inp("iva-periodo","month",""))}
+          ${formField("Total Ventas Netas ($)", inp("iva-ventas","number","0"))}
+          ${formField("Total Compras Netas ($)", inp("iva-compras","number","0"))}
+          ${formField("Fecha Declaración SII", inp("iva-fecha","date",""))}
+          ${formField("Estado SII", sel("iva-estado",[{v:"pendiente",l:"Pendiente"},{v:"declarado",l:"Declarado"},{v:"pagado",l:"Pagado"},{v:"observado",l:"Observado por SII"}]))}
+          <button id="btn-save-iva" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Período</button>
+        `);
+
+      document.getElementById("btn-add-iva").onclick = () => {
+        ["iva-ventas","iva-compras"].forEach(id=>document.getElementById(id).value=0);
+        document.getElementById("modal-iva").style.display="flex";
+      };
+      document.getElementById("btn-save-iva").onclick = async () => {
+        if (!empId) return;
+        const ventas  = parseFloat(document.getElementById("iva-ventas").value)||0;
+        const compras = parseFloat(document.getElementById("iva-compras").value)||0;
+        const debito  = Math.round(ventas  * 0.19);
+        const credito = Math.round(compras * 0.19);
+        const neto    = debito - credito;
+        await db.collection("declaraciones_iva").add({
+          entityId: empId,
+          periodo:  document.getElementById("iva-periodo").value,
+          ventas_netas: ventas, compras_netas: compras,
+          debito_fiscal: debito, credito_fiscal: credito,
+          iva_neto: neto, estado_sii: document.getElementById("iva-estado").value,
+          fecha_declaracion: document.getElementById("iva-fecha").value,
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("modal-iva").style.display="none";
+        renderCont_IVA(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("declaraciones_iva").where("entityId","==",empId).orderBy("periodo","desc").get();
+      const tb = document.getElementById("tbl-iva-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(6); return; }
+      tb.innerHTML = "";
+      const last = snap.docs[0]?.data()||{};
+      snap.forEach(d => {
+        const r = d.data();
+        const eCls = {pendiente:"warn",declarado:"green",pagado:"green",observado:"red"}[r.estado_sii]||"gray";
+        tb.innerHTML += `<tr>
+          <td><strong>${r.periodo||"—"}</strong></td>
+          <td style="color:var(--c-danger)">${formatMonto(r.debito_fiscal)}</td>
+          <td style="color:var(--c-accent)">${formatMonto(r.credito_fiscal)}</td>
+          <td style="font-weight:800;color:${r.iva_neto>0?"var(--c-danger)":"var(--c-accent)"}">${formatMonto(Math.abs(r.iva_neto))}${r.iva_neto<0?" (CF)":""}</td>
+          <td><span class="badge badge-${eCls}">${r.estado_sii||"—"}</span></td>
+          <td>${r.fecha_declaracion||"—"}</td>
+        </tr>`;
+      });
+      document.getElementById("kpi-iva-debito").textContent  = formatMonto(last.debito_fiscal||0);
+      document.getElementById("kpi-iva-credito").textContent = formatMonto(last.credito_fiscal||0);
+      const netoEl = document.getElementById("kpi-iva-neto");
+      netoEl.textContent = formatMonto(Math.abs(last.iva_neto||0));
+      netoEl.className = "kpi-value " + ((last.iva_neto||0)>0?"danger":"green");
+    }
+
+    // ═══════════════════════════════════════════════
+    // MÓDULO 5: FACTURACIÓN COMERCIAL
+    // ═══════════════════════════════════════════════
+    function renderFacturacionZone(zone, navId) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      switch(navId) {
+        case "dte":          renderFact_DTE(zone, empId);          break;
+        case "ventas":       renderFact_LibroVentas(zone, empId);  break;
+        case "compras":      renderFact_LibroCompras(zone, empId); break;
+        case "cotizaciones": renderFact_Cotizaciones(zone, empId); break;
+        case "sii":          renderFact_SII(zone, empId);          break;
+        default:             renderFact_DTE(zone, empId);
+      }
+    }
+
+    // ── EMISIÓN DTE ──
+    async function renderFact_DTE(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-dte","Nuevo Documento Tributario","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">DTE del Mes</div><div class="kpi-value" id="kpi-dte-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Neto</div><div class="kpi-value green" id="kpi-dte-neto">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total IVA</div><div class="kpi-value" id="kpi-dte-iva">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Bruto</div><div class="kpi-value" id="kpi-dte-bruto">—</div></div>
+        </div>` +
+        tableWrap("tbl-dte","Documentos Tributarios Emitidos","Boletas, facturas, notas de crédito/débito",
+          ["Folio","Tipo DTE","Receptor","RUT Receptor","Neto","IVA 19%","Total","Estado SII","Acciones"]) +
+        modalHtml("modal-dte","Emitir Documento Tributario", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Tipo DTE", sel("dte-tipo",[{v:"33",l:"Factura Electrónica (33)"},{v:"34",l:"Factura No Afecta (34)"},{v:"39",l:"Boleta Electrónica (39)"},{v:"61",l:"Nota de Crédito (61)"},{v:"56",l:"Nota de Débito (56)"}]))}</div>
+            <div>${formField("Fecha Emisión", inp("dte-fecha","date",""))}</div>
+          </div>
+          ${formField("Razón Social Receptor", inp("dte-receptor","text","Nombre o razón social"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("RUT Receptor", inp("dte-rut","text","12.345.678-9"))}</div>
+            <div>${formField("Giro Receptor", inp("dte-giro","text","Giro comercial"))}</div>
+          </div>
+          ${formField("Glosa / Descripción", inp("dte-glosa","text","Descripción del servicio o producto"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Monto Neto ($)", inp("dte-neto","number","0"))}</div>
+            <div id="dte-iva-wrap">${formField("IVA 19% (calculado)", inp("dte-iva-val","number","0","readonly"))}</div>
+          </div>
+          <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:12px;margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--c-muted)">Total a Cobrar:</span><strong id="dte-total-preview" style="font-size:16px;">$0</strong></div>
+          </div>
+          <input type="hidden" id="dte-docid">
+          <button id="btn-emitir-dte" class="btn-entrar" style="width:100%;margin-top:4px">📤 Emitir Documento</button>
+        `);
+
+      // Calcular IVA en tiempo real
+      document.getElementById("dte-neto").oninput = function() {
+        const tipo = document.getElementById("dte-tipo").value;
+        const neto = parseFloat(this.value)||0;
+        const afecto = ["33","56","61"].includes(tipo);
+        const iva   = afecto ? Math.round(neto*0.19) : 0;
+        document.getElementById("dte-iva-val").value = iva;
+        document.getElementById("dte-total-preview").textContent = formatMonto(neto+iva);
+      };
+      document.getElementById("dte-tipo").onchange = function() {
+        document.getElementById("dte-neto").dispatchEvent(new Event("input"));
+      };
+
+      document.getElementById("btn-add-dte").onclick = async () => {
+        ["dte-receptor","dte-rut","dte-giro","dte-glosa","dte-docid"].forEach(id=>document.getElementById(id).value="");
+        ["dte-neto","dte-iva-val"].forEach(id=>document.getElementById(id).value=0);
+        // Autonumerar folio
+        if (empId) {
+          const snap = await db.collection("documentos_emitidos").where("entityId","==",empId).get();
+          // Folio simple por tipo se puede mejorar por sprint posterior
+        }
+        document.getElementById("dte-total-preview").textContent="$0";
+        document.getElementById("modal-dte").style.display="flex";
+      };
+
+      document.getElementById("btn-emitir-dte").onclick = async () => {
+        if (!empId) return;
+        const tipo     = document.getElementById("dte-tipo").value;
+        const neto     = parseFloat(document.getElementById("dte-neto").value)||0;
+        const iva      = parseFloat(document.getElementById("dte-iva-val").value)||0;
+        const receptor = document.getElementById("dte-receptor").value.trim();
+        if (!receptor || !neto) { alert("Receptor y monto neto son obligatorios"); return; }
+        // Obtener siguiente folio
+        const folioSnap = await db.collection("documentos_emitidos")
+          .where("entityId","==",empId).where("tipo_dte","==",tipo).get();
+        const folio = folioSnap.size + 1;
+        const docId = document.getElementById("dte-docid").value;
+        const data = {
+          entityId:empId, tipo_dte:tipo, folio,
+          fecha: document.getElementById("dte-fecha").value,
+          receptor, rut_receptor: document.getElementById("dte-rut").value.trim(),
+          giro_receptor: document.getElementById("dte-giro").value.trim(),
+          glosa: document.getElementById("dte-glosa").value.trim(),
+          monto_neto:neto, iva, total:neto+iva,
+          estado_sii:"pendiente",
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("documentos_emitidos");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-dte").style.display="none";
+        renderFact_DTE(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("documentos_emitidos").where("entityId","==",empId).orderBy("creado","desc").limit(100).get();
+      const tb = document.getElementById("tbl-dte-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
+      tb.innerHTML = ""; let tN=0,tI=0,tB=0;
+      snap.forEach(d => {
+        const r = d.data(); tN+=r.monto_neto||0; tI+=r.iva||0; tB+=r.total||0;
+        const eCls={pendiente:"warn",enviado:"green",aceptado:"green",rechazado:"red"}[r.estado_sii]||"gray";
+        const tipNom={33:"Factura",34:"Fact. No Afecta",39:"Boleta",61:"Nota Crédito",56:"Nota Débito"}[r.tipo_dte]||r.tipo_dte;
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-weight:700">${r.folio||"—"}</td>
+          <td><span class="badge badge-gray">${tipNom}</span></td>
+          <td>${r.receptor||"—"}</td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut_receptor||"—"}</td>
+          <td>${formatMonto(r.monto_neto)}</td>
+          <td>${formatMonto(r.iva)}</td>
+          <td style="font-weight:700">${formatMonto(r.total)}</td>
+          <td><span class="badge badge-${eCls}">${r.estado_sii||"—"}</span></td>
+          <td><button onclick="deleteDTE('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      });
+      document.getElementById("kpi-dte-total").textContent = snap.size;
+      document.getElementById("kpi-dte-neto").textContent  = formatMonto(tN);
+      document.getElementById("kpi-dte-iva").textContent   = formatMonto(tI);
+      document.getElementById("kpi-dte-bruto").textContent = formatMonto(tB);
+    }
+    window.deleteDTE = async (docId, empId) => {
+      if (!confirm("¿Anular este documento?")) return;
+      await db.collection("documentos_emitidos").doc(docId).delete();
+      renderFact_DTE(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── LIBRO DE VENTAS ──
+    async function renderFact_LibroVentas(zone, empId) {
+      zone.innerHTML = `
+        <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap;">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Período</label>
+            <input id="lv-periodo" type="month" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+          </div>
+          <button id="btn-cargar-lv" class="btn-entrar">Ver Libro</button>
+          <button id="btn-export-lv" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar CSV</button>
+        </div>` +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">N° Documentos</div><div class="kpi-value" id="kpi-lv-docs">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Ventas Netas</div><div class="kpi-value green" id="kpi-lv-neto">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">IVA Débito</div><div class="kpi-value danger" id="kpi-lv-iva">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Bruto</div><div class="kpi-value" id="kpi-lv-bruto">—</div></div>
+        </div>` +
+        tableWrap("tbl-lv","Libro de Ventas","Período mensual SII",
+          ["Fecha","Folio","Tipo","Receptor","RUT","Neto","IVA","Total"]);
+
+      const cargarLV = async () => {
+        const periodo = document.getElementById("lv-periodo").value;
+        const tb = document.getElementById("tbl-lv-tbody");
+        if (!periodo || !empId) { tb.innerHTML = emptyRow(8,"Selecciona un período"); return; }
+        const snap = await db.collection("documentos_emitidos")
+          .where("entityId","==",empId)
+          .where("fecha",">=",periodo+"-01")
+          .where("fecha","<=",periodo+"-31").get();
+        if (snap.empty) { tb.innerHTML = emptyRow(8,`Sin ventas para ${periodo}`); return; }
+        tb.innerHTML = ""; let tN=0,tI=0,tB=0;
+        snap.forEach(d => {
+          const r=d.data(); tN+=r.monto_neto||0; tI+=r.iva||0; tB+=r.total||0;
+          const tipNom={33:"Factura",34:"F.NoAfecta",39:"Boleta",61:"N.Crédito",56:"N.Débito"}[r.tipo_dte]||r.tipo_dte;
+          tb.innerHTML += `<tr>
+            <td>${r.fecha||"—"}</td>
+            <td style="font-family:var(--mono)">${r.folio||"—"}</td>
+            <td><span class="badge badge-gray">${tipNom}</span></td>
+            <td>${r.receptor||"—"}</td>
+            <td style="font-family:var(--mono);font-size:11px">${r.rut_receptor||"—"}</td>
+            <td>${formatMonto(r.monto_neto)}</td>
+            <td>${formatMonto(r.iva)}</td>
+            <td style="font-weight:700">${formatMonto(r.total)}</td>
+          </tr>`;
+        });
+        tb.innerHTML += `<tr style="background:var(--c-bg);font-weight:800"><td colspan="5" style="text-align:right">TOTALES:</td><td style="color:var(--c-accent)">${formatMonto(tN)}</td><td style="color:var(--c-danger)">${formatMonto(tI)}</td><td>${formatMonto(tB)}</td></tr>`;
+        document.getElementById("kpi-lv-docs").textContent  = snap.size;
+        document.getElementById("kpi-lv-neto").textContent  = formatMonto(tN);
+        document.getElementById("kpi-lv-iva").textContent   = formatMonto(tI);
+        document.getElementById("kpi-lv-bruto").textContent = formatMonto(tB);
+      };
+      document.getElementById("btn-cargar-lv").onclick = cargarLV;
+    }
+
+    // ── LIBRO DE COMPRAS ──
+    async function renderFact_LibroCompras(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-compra","Registrar Compra","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Compras del Mes</div><div class="kpi-value" id="kpi-lc-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Neto Compras</div><div class="kpi-value" id="kpi-lc-neto">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">IVA Crédito Fiscal</div><div class="kpi-value green" id="kpi-lc-iva">—</div></div>
+        </div>` +
+        tableWrap("tbl-lc","Libro de Compras","Período mensual SII — crédito fiscal",
+          ["Fecha","Folio","Tipo","Proveedor","RUT","Neto","IVA","Total","Acciones"]) +
+        modalHtml("modal-compra","Registrar Compra / Factura Proveedor", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Tipo Documento", sel("lc-tipo",[{v:"33",l:"Factura (33)"},{v:"34",l:"Fact. No Afecta (34)"},{v:"56",l:"Nota de Débito (56)"}]))}</div>
+            <div>${formField("Fecha", inp("lc-fecha","date",""))}</div>
+          </div>
+          ${formField("Proveedor / Razón Social", inp("lc-proveedor","text","Nombre del proveedor"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("RUT Proveedor", inp("lc-rut","text","12.345.678-9"))}</div>
+            <div>${formField("N° Folio / Factura", inp("lc-folio","text","Ej: 00123"))}</div>
+          </div>
+          ${formField("Descripción", inp("lc-desc","text","Descripción de la compra"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Monto Neto ($)", inp("lc-neto","number","0"))}</div>
+            <div>${formField("IVA Crédito ($)", inp("lc-iva","number","0","readonly"))}</div>
+          </div>
+          <button id="btn-save-compra" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Compra</button>
+        `);
+
+      document.getElementById("lc-neto").oninput = function() {
+        const tipo = document.getElementById("lc-tipo").value;
+        const neto = parseFloat(this.value)||0;
+        document.getElementById("lc-iva").value = tipo==="33" ? Math.round(neto*0.19) : 0;
+      };
+      document.getElementById("btn-add-compra").onclick = () => {
+        ["lc-proveedor","lc-rut","lc-folio","lc-desc"].forEach(id=>document.getElementById(id).value="");
+        ["lc-neto","lc-iva"].forEach(id=>document.getElementById(id).value=0);
+        document.getElementById("modal-compra").style.display="flex";
+      };
+      document.getElementById("btn-save-compra").onclick = async () => {
+        if (!empId) return;
+        const neto = parseFloat(document.getElementById("lc-neto").value)||0;
+        const iva  = parseFloat(document.getElementById("lc-iva").value)||0;
+        const prov = document.getElementById("lc-proveedor").value.trim();
+        if (!prov || !neto) { alert("Proveedor y monto neto son obligatorios"); return; }
+        await db.collection("libro_compras").add({
+          entityId:empId,
+          tipo_dte: document.getElementById("lc-tipo").value,
+          fecha: document.getElementById("lc-fecha").value,
+          proveedor: prov,
+          rut_proveedor: document.getElementById("lc-rut").value.trim(),
+          folio: document.getElementById("lc-folio").value.trim(),
+          descripcion: document.getElementById("lc-desc").value.trim(),
+          monto_neto:neto, iva, total:neto+iva,
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("modal-compra").style.display="none";
+        renderFact_LibroCompras(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("libro_compras").where("entityId","==",empId).orderBy("creado","desc").limit(100).get();
+      const tb = document.getElementById("tbl-lc-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
+      tb.innerHTML = ""; let tN=0,tI=0;
+      snap.forEach(d => {
+        const r=d.data(); tN+=r.monto_neto||0; tI+=r.iva||0;
+        tb.innerHTML += `<tr>
+          <td>${r.fecha||"—"}</td>
+          <td style="font-family:var(--mono)">${r.folio||"—"}</td>
+          <td><span class="badge badge-gray">${r.tipo_dte||"—"}</span></td>
+          <td>${r.proveedor||"—"}</td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut_proveedor||"—"}</td>
+          <td>${formatMonto(r.monto_neto)}</td>
+          <td style="color:var(--c-accent)">${formatMonto(r.iva)}</td>
+          <td style="font-weight:700">${formatMonto(r.total)}</td>
+          <td><button onclick="deleteCompra('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      });
+      document.getElementById("kpi-lc-total").textContent = snap.size;
+      document.getElementById("kpi-lc-neto").textContent  = formatMonto(tN);
+      document.getElementById("kpi-lc-iva").textContent   = formatMonto(tI);
+    }
+    window.deleteCompra = async (docId, empId) => {
+      if (!confirm("¿Eliminar esta compra?")) return;
+      await db.collection("libro_compras").doc(docId).delete();
+      renderFact_LibroCompras(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── COTIZACIONES ──
+    async function renderFact_Cotizaciones(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-cot","Nueva Cotización","＋") +
+        tableWrap("tbl-cot","Cotizaciones y Presupuestos","Propuestas comerciales emitidas",
+          ["N°","Cliente","Descripción","Neto","IVA","Total","Vigencia","Estado","Acciones"]) +
+        modalHtml("modal-cot","Nueva Cotización", `
+          ${formField("Cliente / Razón Social", inp("cot-cliente","text","Nombre del cliente"))}
+          ${formField("RUT Cliente", inp("cot-rut","text","12.345.678-9"))}
+          ${formField("Descripción del Servicio", inp("cot-desc","text","Resumen de la propuesta"))}
+          ${formField("Monto Neto ($)", inp("cot-neto","number","0"))}
+          ${formField("¿Afecto a IVA?", sel("cot-iva",[{v:"si",l:"Sí — 19% IVA"},{v:"no",l:"No — Exento"}]))}
+          ${formField("Fecha Vigencia Hasta", inp("cot-vigencia","date",""))}
+          ${formField("Observaciones", inp("cot-obs","text","Condiciones, plazos, etc."))}
+          <input type="hidden" id="cot-docid">
+          <button id="btn-save-cot" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Cotización</button>
+        `);
+
+      document.getElementById("btn-add-cot").onclick = () => {
+        ["cot-cliente","cot-rut","cot-desc","cot-obs","cot-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("cot-neto").value=0;
+        document.getElementById("modal-cot").style.display="flex";
+      };
+      document.getElementById("btn-save-cot").onclick = async () => {
+        if (!empId) return;
+        const neto   = parseFloat(document.getElementById("cot-neto").value)||0;
+        const conIva = document.getElementById("cot-iva").value==="si";
+        const iva    = conIva ? Math.round(neto*0.19) : 0;
+        const cliente= document.getElementById("cot-cliente").value.trim();
+        if (!cliente || !neto) { alert("Cliente y monto son obligatorios"); return; }
+        const snap = await db.collection("cotizaciones").where("entityId","==",empId).get();
+        const docId = document.getElementById("cot-docid").value;
+        const data  = {
+          entityId:empId, numero: snap.size+1, cliente,
+          rut_cliente: document.getElementById("cot-rut").value.trim(),
+          descripcion: document.getElementById("cot-desc").value.trim(),
+          monto_neto:neto, iva, total:neto+iva,
+          vigencia: document.getElementById("cot-vigencia").value,
+          observaciones: document.getElementById("cot-obs").value.trim(),
+          estado:"enviada",
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("cotizaciones");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-cot").style.display="none";
+        renderFact_Cotizaciones(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("cotizaciones").where("entityId","==",empId).orderBy("creado","desc").get();
+      const tb = document.getElementById("tbl-cot-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r=d.data();
+        const hoy = new Date(); const vig = r.vigencia ? new Date(r.vigencia) : null;
+        const vencida = vig && vig < hoy;
+        const eCls = {enviada:"warn",aceptada:"green",rechazada:"red"}[r.estado]||"gray";
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono)">${r.numero||"—"}</td>
+          <td><strong>${r.cliente||"—"}</strong></td>
+          <td>${r.descripcion||"—"}</td>
+          <td>${formatMonto(r.monto_neto)}</td>
+          <td>${formatMonto(r.iva)}</td>
+          <td style="font-weight:700">${formatMonto(r.total)}</td>
+          <td style="color:${vencida?"var(--c-danger)":"var(--c-text)"}">${r.vigencia||"—"}${vencida?" ⚠️":""}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+          <td>
+            <button onclick="aceptarCot('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✓</button>
+            <button onclick="deleteCot('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+    window.aceptarCot = async (docId, empId) => {
+      await db.collection("cotizaciones").doc(docId).update({estado:"aceptada"});
+      renderFact_Cotizaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+    window.deleteCot = async (docId, empId) => {
+      if (!confirm("¿Eliminar esta cotización?")) return;
+      await db.collection("cotizaciones").doc(docId).delete();
+      renderFact_Cotizaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── SINCRONIZACIÓN SII ──
+    async function renderFact_SII(zone, empId) {
+      zone.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;max-width:540px;margin-bottom:20px;">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:16px;">⚙️ Configuración SII</h3>
+          ${formField("RUT Empresa Emisora", inp("sii-rut","text","12.345.678-9"))}
+          ${formField("Razón Social", inp("sii-razon","text",""))}
+          ${formField("Giro Comercial", inp("sii-giro","text",""))}
+          ${formField("Ambiente SII", sel("sii-amb",[{v:"certificacion",l:"Certificación (pruebas)"},{v:"produccion",l:"Producción (real)"}]))}
+          ${formField("N° Resolución SII", inp("sii-res","text","Ej: 80"))}
+          ${formField("Fecha Resolución", inp("sii-fecha-res","date",""))}
+          <button id="btn-save-sii" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Configuración SII</button>
+        </div>` +
+        tableWrap("tbl-sii","Folios Autorizados por Tipo DTE","Estado de folios CAF",
+          ["Tipo DTE","Descripción","Folio Desde","Folio Hasta","Folios Usados","Disponibles","Estado"]);
+
+      document.getElementById("btn-save-sii").onclick = async () => {
+        if (!empId) return;
+        await db.collection("config_sii").doc(empId).set({
+          rut: document.getElementById("sii-rut").value.trim(),
+          razon_social: document.getElementById("sii-razon").value.trim(),
+          giro: document.getElementById("sii-giro").value.trim(),
+          ambiente: document.getElementById("sii-amb").value,
+          num_resolucion: document.getElementById("sii-res").value.trim(),
+          fecha_resolucion: document.getElementById("sii-fecha-res").value,
+          entityId: empId,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        },{merge:true});
+        alert("✓ Configuración SII guardada.");
+      };
+
+      // Cargar config previa
+      if (empId) {
+        const cfg = await db.collection("config_sii").doc(empId).get();
+        if (cfg.exists) {
+          const r = cfg.data();
+          document.getElementById("sii-rut").value       = r.rut||"";
+          document.getElementById("sii-razon").value     = r.razon_social||"";
+          document.getElementById("sii-giro").value      = r.giro||"";
+          document.getElementById("sii-amb").value       = r.ambiente||"certificacion";
+          document.getElementById("sii-res").value       = r.num_resolucion||"";
+          document.getElementById("sii-fecha-res").value = r.fecha_resolucion||"";
+        }
+        // Resumen de folios usados por tipo
+        const tipos = [{v:"33",l:"Factura Electrónica"},{v:"34",l:"Fact. No Afecta"},{v:"39",l:"Boleta Electrónica"},{v:"61",l:"Nota de Crédito"},{v:"56",l:"Nota de Débito"}];
+        const tb = document.getElementById("tbl-sii-tbody");
+        tb.innerHTML = "";
+        for (const t of tipos) {
+          const usados = (await db.collection("documentos_emitidos").where("entityId","==",empId).where("tipo_dte","==",t.v).get()).size;
+          const disp = 100 - usados; // Simplificado; CAF real se configura por sprint posterior
+          const cls = disp<10?"red":disp<30?"warn":"green";
+          tb.innerHTML += `<tr>
+            <td style="font-family:var(--mono);font-weight:700">${t.v}</td>
+            <td>${t.l}</td>
+            <td style="font-family:var(--mono)">1</td>
+            <td style="font-family:var(--mono)">100</td>
+            <td style="font-family:var(--mono)">${usados}</td>
+            <td style="font-family:var(--mono);color:${disp<10?"var(--c-danger)":"var(--c-accent)"}">${disp}</td>
+            <td><span class="badge badge-${cls}">${disp<10?"Crítico":disp<30?"Bajo":"OK"}</span></td>
+          </tr>`;
+        }
+      }
+    }
+
+
+    // ═══════════════════════════════════════════════
+    // MÓDULO 6: CONTROL GESTIÓN Y LOGÍSTICA
+    // ═══════════════════════════════════════════════
+    function renderLogisticaZone(zone, navId) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      switch(navId) {
+        case "inventario":  renderLog_Inventario(zone, empId);  break;
+        case "bodegas":     renderLog_Bodegas(zone, empId);     break;
+        case "arriendos":   renderLog_Arriendos(zone, empId);   break;
+        case "flota":       renderLog_Flota(zone, empId);       break;
+        case "compras_log": renderLog_Compras(zone, empId);     break;
+        default:            renderLog_Inventario(zone, empId);
+      }
+    }
+
+    // ── INVENTARIO ──
+    async function renderLog_Inventario(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-inv","Agregar Producto","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Total Productos</div><div class="kpi-value" id="kpi-inv-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Stock Crítico</div><div class="kpi-value danger" id="kpi-inv-critico">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Valorización Total</div><div class="kpi-value green" id="kpi-inv-valor">—</div></div>
+        </div>` +
+        tableWrap("tbl-inv","Inventario Valorizado","Stock por bodega y SKU",
+          ["SKU","Producto","Bodega","Stock Actual","Stock Mínimo","Precio Unit.","Valorización","Alerta","Acciones"]) +
+        modalHtml("modal-inv","Agregar / Editar Producto", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("SKU", inp("inv-sku","text","Ej: PROD-001"))}</div>
+            <div>${formField("Bodega", inp("inv-bodega","text","Ej: Bodega Principal"))}</div>
+          </div>
+          ${formField("Nombre del Producto", inp("inv-nombre","text","Descripción del producto"))}
+          ${formField("Categoría", inp("inv-cat","text","Ej: Herramientas, Materiales, Repuestos"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;">
+            <div>${formField("Stock Actual", inp("inv-stock","number","0"))}</div>
+            <div>${formField("Stock Mínimo", inp("inv-stock-min","number","0"))}</div>
+            <div>${formField("Precio Unitario ($)", inp("inv-precio","number","0"))}</div>
+          </div>
+          ${formField("Unidad de Medida", sel("inv-unidad",[{v:"unidad",l:"Unidad"},{v:"kg",l:"Kilogramo"},{v:"lt",l:"Litro"},{v:"mt",l:"Metro"},{v:"caja",l:"Caja"},{v:"otro",l:"Otro"}]))}
+          <input type="hidden" id="inv-docid">
+          <button id="btn-save-inv" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Producto</button>
+        `);
+
+      document.getElementById("btn-add-inv").onclick = () => {
+        ["inv-sku","inv-bodega","inv-nombre","inv-cat","inv-docid"].forEach(id=>document.getElementById(id).value="");
+        ["inv-stock","inv-stock-min","inv-precio"].forEach(id=>document.getElementById(id).value=0);
+        document.getElementById("modal-inv").style.display="flex";
+      };
+      document.getElementById("btn-save-inv").onclick = async () => {
+        if (!empId) return;
+        const stock  = parseInt(document.getElementById("inv-stock").value)||0;
+        const minimo = parseInt(document.getElementById("inv-stock-min").value)||0;
+        const precio = parseFloat(document.getElementById("inv-precio").value)||0;
+        const nombre = document.getElementById("inv-nombre").value.trim();
+        if (!nombre) { alert("El nombre del producto es obligatorio"); return; }
+        const docId = document.getElementById("inv-docid").value;
+        const data = {
+          entityId:empId,
+          sku: document.getElementById("inv-sku").value.trim(),
+          bodega: document.getElementById("inv-bodega").value.trim(),
+          nombre, categoria: document.getElementById("inv-cat").value.trim(),
+          stock_actual:stock, stock_minimo:minimo, precio_unitario:precio,
+          valorizacion: stock*precio,
+          unidad: document.getElementById("inv-unidad").value,
+          alerta_stock: stock <= minimo,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("inventarios");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-inv").style.display="none";
+        renderLog_Inventario(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("inventarios").where("entityId","==",empId).orderBy("nombre").get();
+      const tb = document.getElementById("tbl-inv-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
+      tb.innerHTML = ""; let total=0,critico=0,valor=0;
+      snap.forEach(d => {
+        const r=d.data(); total++;
+        if (r.alerta_stock) critico++;
+        valor += r.valorizacion||0;
+        const alertaCls = r.alerta_stock?"red":"green";
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-size:12px">${r.sku||"—"}</td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td>${r.bodega||"—"}</td>
+          <td style="font-family:var(--mono);font-weight:700;color:${r.alerta_stock?"var(--c-danger)":"var(--c-text)"}">${r.stock_actual||0} ${r.unidad||""}</td>
+          <td style="font-family:var(--mono)">${r.stock_minimo||0}</td>
+          <td>${formatMonto(r.precio_unitario)}</td>
+          <td>${formatMonto(r.valorizacion)}</td>
+          <td><span class="badge badge-${alertaCls}">${r.alerta_stock?"⚠️ Crítico":"OK"}</span></td>
+          <td>
+            <button onclick="editInventario('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
+            <button onclick="deleteInventario('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+      document.getElementById("kpi-inv-total").textContent   = total;
+      document.getElementById("kpi-inv-critico").textContent = critico;
+      document.getElementById("kpi-inv-valor").textContent   = formatMonto(valor);
+    }
+    window.editInventario = async (docId, empId) => {
+      const d = await db.collection("inventarios").doc(docId).get(); const r=d.data();
+      document.getElementById("inv-docid").value    = docId;
+      document.getElementById("inv-sku").value      = r.sku||"";
+      document.getElementById("inv-bodega").value   = r.bodega||"";
+      document.getElementById("inv-nombre").value   = r.nombre||"";
+      document.getElementById("inv-cat").value      = r.categoria||"";
+      document.getElementById("inv-stock").value    = r.stock_actual||0;
+      document.getElementById("inv-stock-min").value= r.stock_minimo||0;
+      document.getElementById("inv-precio").value   = r.precio_unitario||0;
+      document.getElementById("inv-unidad").value   = r.unidad||"unidad";
+      document.getElementById("modal-inv").style.display="flex";
+    };
+    window.deleteInventario = async (docId, empId) => {
+      if (!confirm("¿Eliminar este producto?")) return;
+      await db.collection("inventarios").doc(docId).delete();
+      renderLog_Inventario(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── BODEGAS ──
+    async function renderLog_Bodegas(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-bod","Nueva Bodega","＋") +
+        tableWrap("tbl-bod","Control de Bodegas","Centros de almacenamiento",
+          ["ID","Nombre","Ubicación","Capacidad","Productos","Stock Total","Acciones"]) +
+        modalHtml("modal-bod","Registrar Bodega", `
+          ${formField("Nombre", inp("bod-nombre","text","Ej: Bodega Principal"))}
+          ${formField("Ubicación / Dirección", inp("bod-ubic","text",""))}
+          ${formField("Capacidad (unidades)", inp("bod-cap","number","0"))}
+          ${formField("Responsable", inp("bod-resp","text",""))}
+          <input type="hidden" id="bod-docid">
+          <button id="btn-save-bod" class="btn-entrar" style="width:100%;margin-top:8px">Guardar</button>
+        `);
+
+      document.getElementById("btn-add-bod").onclick = () => {
+        ["bod-nombre","bod-ubic","bod-resp","bod-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("bod-cap").value=0;
+        document.getElementById("modal-bod").style.display="flex";
+      };
+      document.getElementById("btn-save-bod").onclick = async () => {
+        if (!empId) return;
+        const nombre = document.getElementById("bod-nombre").value.trim();
+        if (!nombre) { alert("Nombre obligatorio"); return; }
+        const docId = document.getElementById("bod-docid").value;
+        const data = {
+          entityId:empId, nombre,
+          ubicacion: document.getElementById("bod-ubic").value.trim(),
+          capacidad: parseInt(document.getElementById("bod-cap").value)||0,
+          responsable: document.getElementById("bod-resp").value.trim(),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("bodegas");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-bod").style.display="none";
+        renderLog_Bodegas(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("bodegas").where("entityId","==",empId).get();
+      const tb = document.getElementById("tbl-bod-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(7); return; }
+      tb.innerHTML = "";
+      for (const d of snap.docs) {
+        const r = d.data();
+        const invSnap = await db.collection("inventarios").where("entityId","==",empId).where("bodega","==",r.nombre).get();
+        let stockTotal=0; invSnap.forEach(i=>stockTotal+=i.data().stock_actual||0);
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-size:11px">${d.id.slice(0,8)}</td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td>${r.ubicacion||"—"}</td>
+          <td>${r.capacidad||0}</td>
+          <td>${invSnap.size}</td>
+          <td style="font-family:var(--mono)">${stockTotal}</td>
+          <td><button onclick="deleteBodega('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      }
+    }
+    window.deleteBodega = async (docId, empId) => {
+      if (!confirm("¿Eliminar esta bodega?")) return;
+      await db.collection("bodegas").doc(docId).delete();
+      renderLog_Bodegas(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── ARRIENDOS ──
+    async function renderLog_Arriendos(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-arr","Nuevo Contrato de Arriendo","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Contratos Activos</div><div class="kpi-value green" id="kpi-arr-activos">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Por Vencer (30 días)</div><div class="kpi-value warn" id="kpi-arr-vence">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Ingresos Mensuales</div><div class="kpi-value" id="kpi-arr-ingresos">—</div></div>
+        </div>` +
+        tableWrap("tbl-arr","Contratos de Arriendo","Activos y vencimientos próximos",
+          ["N°","Cliente","Activo Arrendado","Inicio","Término","Monto/Mes","Estado","Alerta","Acciones"]) +
+        modalHtml("modal-arr","Nuevo Contrato de Arriendo", `
+          ${formField("Cliente / Arrendatario", inp("arr-cliente","text","Nombre o razón social"))}
+          ${formField("RUT Cliente", inp("arr-rut","text","12.345.678-9"))}
+          ${formField("Activo / Bien Arrendado", inp("arr-activo","text","Ej: Camión patente ABCD12, Bodega N°2"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Fecha Inicio", inp("arr-inicio","date",""))}</div>
+            <div>${formField("Fecha Término", inp("arr-termino","date",""))}</div>
+          </div>
+          ${formField("Monto Mensual ($)", inp("arr-monto","number","0"))}
+          ${formField("Estado", sel("arr-estado",[{v:"activo",l:"Activo"},{v:"vencido",l:"Vencido"},{v:"terminado",l:"Terminado"}]))}
+          ${formField("Observaciones", inp("arr-obs","text",""))}
+          <input type="hidden" id="arr-docid">
+          <button id="btn-save-arr" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Contrato</button>
+        `);
+
+      document.getElementById("btn-add-arr").onclick = () => {
+        ["arr-cliente","arr-rut","arr-activo","arr-obs","arr-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("arr-monto").value=0;
+        document.getElementById("modal-arr").style.display="flex";
+      };
+      document.getElementById("btn-save-arr").onclick = async () => {
+        if (!empId) return;
+        const cliente = document.getElementById("arr-cliente").value.trim();
+        if (!cliente) { alert("El cliente es obligatorio"); return; }
+        const docId = document.getElementById("arr-docid").value;
+        const termino = document.getElementById("arr-termino").value;
+        const data = {
+          entityId:empId, cliente,
+          rut_cliente: document.getElementById("arr-rut").value.trim(),
+          activo: document.getElementById("arr-activo").value.trim(),
+          fecha_inicio: document.getElementById("arr-inicio").value,
+          fecha_termino: termino,
+          monto_mensual: parseFloat(document.getElementById("arr-monto").value)||0,
+          estado: document.getElementById("arr-estado").value,
+          observaciones: document.getElementById("arr-obs").value.trim(),
+          dias_para_vencer: termino ? Math.ceil((new Date(termino)-new Date())/(1000*60*60*24)) : null,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("arriendos");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, numero: Date.now(), creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-arr").style.display="none";
+        renderLog_Arriendos(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("arriendos").where("entityId","==",empId).orderBy("creado","desc").get();
+      const tb = document.getElementById("tbl-arr-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
+      tb.innerHTML = ""; let activos=0,vence=0,ingresos=0;
+      snap.forEach(d => {
+        const r=d.data();
+        const dias = r.dias_para_vencer;
+        if (r.estado==="activo") { activos++; ingresos+=r.monto_mensual||0; }
+        if (dias!==null && dias<=30 && dias>=0) vence++;
+        const eCls={activo:"green",vencido:"red",terminado:"gray"}[r.estado]||"gray";
+        const alertaTxt = dias===null?"—":dias<0?"⚠️ Vencido":dias<=30?`⚠️ ${dias}d`:"OK";
+        const alertaCls = dias===null?"gray":dias<0?"red":dias<=30?"warn":"green";
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-size:11px">${String(r.numero||"").slice(-6)||"—"}</td>
+          <td><strong>${r.cliente||"—"}</strong></td>
+          <td>${r.activo||"—"}</td>
+          <td>${r.fecha_inicio||"—"}</td>
+          <td>${r.fecha_termino||"Sin término"}</td>
+          <td style="font-weight:700">${formatMonto(r.monto_mensual)}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+          <td><span class="badge badge-${alertaCls}">${alertaTxt}</span></td>
+          <td>
+            <button onclick="deleteArriendo('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+      document.getElementById("kpi-arr-activos").textContent  = activos;
+      document.getElementById("kpi-arr-vence").textContent    = vence;
+      document.getElementById("kpi-arr-ingresos").textContent = formatMonto(ingresos);
+    }
+    window.deleteArriendo = async (docId, empId) => {
+      if (!confirm("¿Eliminar este contrato?")) return;
+      await db.collection("arriendos").doc(docId).delete();
+      renderLog_Arriendos(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── FLOTA ──
+    async function renderLog_Flota(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-flota","Agregar Vehículo / Máquina","＋") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Total Activos</div><div class="kpi-value" id="kpi-fl-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Mantención Próxima</div><div class="kpi-value warn" id="kpi-fl-mant">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Disponibles</div><div class="kpi-value green" id="kpi-fl-disp">—</div></div>
+        </div>` +
+        tableWrap("tbl-fl","Control de Flota","Vehículos y maquinaria",
+          ["Patente / ID","Descripción","Tipo","Última Mantención","Próxima Mantención","Estado","Alerta","Acciones"]) +
+        modalHtml("modal-flota","Agregar Activo de Flota", `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Patente / ID", inp("fl-patente","text","Ej: ABCD12"))}</div>
+            <div>${formField("Tipo", sel("fl-tipo",[{v:"camion",l:"Camión"},{v:"furgon",l:"Furgón"},{v:"auto",l:"Auto"},{v:"maquinaria",l:"Maquinaria"},{v:"otro",l:"Otro"}]))}</div>
+          </div>
+          ${formField("Descripción", inp("fl-desc","text","Marca, modelo, año"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Última Mantención", inp("fl-ult-mant","date",""))}</div>
+            <div>${formField("Próxima Mantención", inp("fl-prox-mant","date",""))}</div>
+          </div>
+          ${formField("Estado", sel("fl-estado",[{v:"disponible",l:"Disponible"},{v:"en_uso",l:"En Uso"},{v:"mantención",l:"En Mantención"},{v:"fuera_servicio",l:"Fuera de Servicio"}]))}
+          <input type="hidden" id="fl-docid">
+          <button id="btn-save-flota" class="btn-entrar" style="width:100%;margin-top:8px">Guardar</button>
+        `);
+
+      document.getElementById("btn-add-flota").onclick = () => {
+        ["fl-patente","fl-desc","fl-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("modal-flota").style.display="flex";
+      };
+      document.getElementById("btn-save-flota").onclick = async () => {
+        if (!empId) return;
+        const patente = document.getElementById("fl-patente").value.trim();
+        if (!patente) { alert("Patente/ID obligatorio"); return; }
+        const proxMant = document.getElementById("fl-prox-mant").value;
+        const diasMant = proxMant ? Math.ceil((new Date(proxMant)-new Date())/(1000*60*60*24)) : null;
+        const docId = document.getElementById("fl-docid").value;
+        const data = {
+          entityId:empId, patente,
+          descripcion: document.getElementById("fl-desc").value.trim(),
+          tipo: document.getElementById("fl-tipo").value,
+          ultima_mantencion: document.getElementById("fl-ult-mant").value,
+          proxima_mantencion: proxMant, dias_para_mantencion: diasMant,
+          estado: document.getElementById("fl-estado").value,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("flota");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-flota").style.display="none";
+        renderLog_Flota(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("flota").where("entityId","==",empId).get();
+      const tb = document.getElementById("tbl-fl-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = ""; let total=0,mantProx=0,disp=0;
+      snap.forEach(d => {
+        const r=d.data(); total++;
+        if (r.estado==="disponible") disp++;
+        const dias = r.dias_para_mantencion;
+        if (dias!==null && dias<=30) mantProx++;
+        const eCls={disponible:"green",en_uso:"warn",mantención:"warn",fuera_servicio:"red"}[r.estado]||"gray";
+        const alertaTxt = dias===null?"—":dias<0?"⚠️ Vencida":dias<=30?`⚠️ ${dias}d`:"OK";
+        const alertaCls = dias===null?"gray":dias<0?"red":dias<=30?"warn":"green";
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-weight:700">${r.patente||"—"}</td>
+          <td>${r.descripcion||"—"}</td>
+          <td><span class="badge badge-gray">${r.tipo||"—"}</span></td>
+          <td>${r.ultima_mantencion||"—"}</td>
+          <td>${r.proxima_mantencion||"—"}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+          <td><span class="badge badge-${alertaCls}">${alertaTxt}</span></td>
+          <td><button onclick="deleteFlota('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      });
+      document.getElementById("kpi-fl-total").textContent = total;
+      document.getElementById("kpi-fl-mant").textContent  = mantProx;
+      document.getElementById("kpi-fl-disp").textContent  = disp;
+    }
+    window.deleteFlota = async (docId, empId) => {
+      if (!confirm("¿Eliminar este activo?")) return;
+      await db.collection("flota").doc(docId).delete();
+      renderLog_Flota(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── COMPRAS / PROVEEDORES ──
+    async function renderLog_Compras(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-oc","Nueva Orden de Compra","＋") +
+        tableWrap("tbl-oc","Órdenes de Compra","Gestión de proveedores y cuentas por pagar",
+          ["N° OC","Proveedor","RUT","Descripción","Monto","Fecha","Estado","Acciones"]) +
+        modalHtml("modal-oc","Nueva Orden de Compra", `
+          ${formField("Proveedor", inp("oc-prov","text","Nombre o razón social"))}
+          ${formField("RUT Proveedor", inp("oc-rut","text","12.345.678-9"))}
+          ${formField("Descripción / Items", inp("oc-desc","text","Descripción de lo que se compra"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Monto Total ($)", inp("oc-monto","number","0"))}</div>
+            <div>${formField("Fecha", inp("oc-fecha","date",""))}</div>
+          </div>
+          ${formField("Estado", sel("oc-estado",[{v:"pendiente",l:"Pendiente"},{v:"aprobada",l:"Aprobada"},{v:"recibida",l:"Recibida"},{v:"pagada",l:"Pagada"},{v:"cancelada",l:"Cancelada"}]))}
+          <input type="hidden" id="oc-docid">
+          <button id="btn-save-oc" class="btn-entrar" style="width:100%;margin-top:8px">Guardar OC</button>
+        `);
+
+      document.getElementById("btn-add-oc").onclick = () => {
+        ["oc-prov","oc-rut","oc-desc","oc-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("oc-monto").value=0;
+        document.getElementById("modal-oc").style.display="flex";
+      };
+      document.getElementById("btn-save-oc").onclick = async () => {
+        if (!empId) return;
+        const prov = document.getElementById("oc-prov").value.trim();
+        if (!prov) { alert("Proveedor obligatorio"); return; }
+        const docId = document.getElementById("oc-docid").value;
+        const snap = await db.collection("ordenes_compra").where("entityId","==",empId).get();
+        const data = {
+          entityId:empId, numero_oc: snap.size+1,
+          proveedor: prov, rut_proveedor: document.getElementById("oc-rut").value.trim(),
+          descripcion: document.getElementById("oc-desc").value.trim(),
+          monto: parseFloat(document.getElementById("oc-monto").value)||0,
+          fecha: document.getElementById("oc-fecha").value,
+          estado: document.getElementById("oc-estado").value,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("ordenes_compra");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-oc").style.display="none";
+        renderLog_Compras(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("ordenes_compra").where("entityId","==",empId).orderBy("creado","desc").get();
+      const tb = document.getElementById("tbl-oc-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r=d.data();
+        const eCls={pendiente:"warn",aprobada:"green",recibida:"green",pagada:"green",cancelada:"red"}[r.estado]||"gray";
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono)">${r.numero_oc||"—"}</td>
+          <td><strong>${r.proveedor||"—"}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut_proveedor||"—"}</td>
+          <td>${r.descripcion||"—"}</td>
+          <td style="font-weight:700">${formatMonto(r.monto)}</td>
+          <td>${r.fecha||"—"}</td>
+          <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
+          <td><button onclick="deleteOC('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      });
+    }
+    window.deleteOC = async (docId, empId) => {
+      if (!confirm("¿Eliminar esta OC?")) return;
+      await db.collection("ordenes_compra").doc(docId).delete();
+      renderLog_Compras(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ═══════════════════════════════════════════════
+    // MÓDULO 7: AUDITORÍA E INTELIGENCIA CORPORATIVA
+    // ═══════════════════════════════════════════════
+    function renderAuditoriaZone(zone, navId) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      switch(navId) {
+        case "logs":   renderAud_Logs(zone, empId);   break;
+        case "flujos": renderAud_Flujos(zone, empId); break;
+        case "kpis":   renderAud_KPIs(zone, empId);   break;
+        default:       renderAud_Logs(zone, empId);
+      }
+    }
+
+    // ── LOGS DE ACCESO ──
+    async function renderAud_Logs(zone, empId) {
+      // Registrar acceso automáticamente
+      if (empId && STATE.user) {
+        await db.collection("system_logs").add({
+          entityId: empId,
+          usuario: STATE.user.email,
+          modulo: "auditoria",
+          accion: "Acceso al módulo de Auditoría",
+          ip_origen: "Web Client",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(()=>{});
+      }
+
+      zone.innerHTML =
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Eventos este Mes</div><div class="kpi-value" id="kpi-log-total">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Usuarios Activos</div><div class="kpi-value green" id="kpi-log-users">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Integridad BD</div><div class="kpi-value green" id="kpi-log-integ">100%</div></div>
+          <div class="kpi-card"><div class="kpi-label">Eventos Anómalos</div><div class="kpi-value danger" id="kpi-log-anom">0</div></div>
+        </div>` +
+        tableWrap("tbl-logs","Registro de Trazabilidad y Seguridad","Logs del sistema en tiempo real",
+          ["Fecha/Hora","Usuario","Módulo Operado","Acción Ejecutada","IP Origen"]);
+
+      if (!empId) return;
+      const snap = await db.collection("system_logs").where("entityId","==",empId).orderBy("timestamp","desc").limit(100).get();
+      const tb = document.getElementById("tbl-logs-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(5,"Sin registros de acceso aún"); return; }
+      tb.innerHTML = "";
+      const usuarios = new Set();
+      snap.forEach(d => {
+        const r=d.data();
+        if (r.usuario) usuarios.add(r.usuario);
+        const ts = r.timestamp?.toDate?.() || new Date();
+        tb.innerHTML += `<tr>
+          <td style="font-family:var(--mono);font-size:11px">${ts.toLocaleString("es-CL")}</td>
+          <td>${r.usuario||"—"}</td>
+          <td><span class="badge badge-gray">${r.modulo||"—"}</span></td>
+          <td>${r.accion||"—"}</td>
+          <td style="font-family:var(--mono);font-size:11px">${r.ip_origen||"—"}</td>
+        </tr>`;
+      });
+      document.getElementById("kpi-log-total").textContent = snap.size;
+      document.getElementById("kpi-log-users").textContent = usuarios.size;
+    }
+
+    // ── AUDITORÍA DE FLUJOS DE CAJA ──
+    async function renderAud_Flujos(zone, empId) {
+      zone.innerHTML =
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Total Ingresos</div><div class="kpi-value green" id="kpi-fl-ing">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Egresos</div><div class="kpi-value danger" id="kpi-fl-eg">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Flujo Neto</div><div class="kpi-value" id="kpi-fl-neto">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Módulos con Movimientos</div><div class="kpi-value" id="kpi-fl-mods">—</div></div>
+        </div>` +
+        tableWrap("tbl-flujos","Flujos de Caja por Módulo","Resumen consolidado multiempresa",
+          ["Módulo","Tipo","N° Movimientos","Total ($)","Último Registro"]);
+
+      if (!empId) return;
+      const fuentes = [
+        {col:"gastos_comunes", modulo:"Gastos Comunes", tipo:"ingreso", campo:"monto_total"},
+        {col:"egresos",        modulo:"Egresos Condominio", tipo:"egreso", campo:"monto"},
+        {col:"remuneraciones", modulo:"Remuneraciones",  tipo:"egreso", campo:"liquido_pagar"},
+        {col:"documentos_emitidos", modulo:"Facturación", tipo:"ingreso", campo:"total"},
+        {col:"libro_compras",  modulo:"Compras",         tipo:"egreso",  campo:"total"},
+      ];
+      const tb = document.getElementById("tbl-flujos-tbody");
+      tb.innerHTML = "";
+      let totalIng=0, totalEg=0, modsCount=0;
+      for (const f of fuentes) {
+        try {
+          const snap = await db.collection(f.col).where("entityId","==",empId).limit(200).get();
+          if (snap.empty) continue;
+          modsCount++;
+          let total=0, ultimaFecha="";
+          snap.forEach(d => { const r=d.data(); total+=r[f.campo]||0; if (r.fecha) ultimaFecha=r.fecha; });
+          if (f.tipo==="ingreso") totalIng+=total; else totalEg+=total;
+          tb.innerHTML += `<tr>
+            <td><strong>${f.modulo}</strong></td>
+            <td><span class="badge badge-${f.tipo==="ingreso"?"green":"red"}">${f.tipo}</span></td>
+            <td style="font-family:var(--mono)">${snap.size}</td>
+            <td style="font-weight:700;color:${f.tipo==="ingreso"?"var(--c-accent)":"var(--c-danger)"}">${formatMonto(total)}</td>
+            <td>${ultimaFecha||"—"}</td>
+          </tr>`;
+        } catch(_){}
+      }
+      if (tb.innerHTML==="") tb.innerHTML = emptyRow(5);
+      const neto = totalIng - totalEg;
+      document.getElementById("kpi-fl-ing").textContent  = formatMonto(totalIng);
+      document.getElementById("kpi-fl-eg").textContent   = formatMonto(totalEg);
+      const netoEl = document.getElementById("kpi-fl-neto");
+      netoEl.textContent = formatMonto(Math.abs(neto));
+      netoEl.className = "kpi-value " + (neto>=0?"green":"danger");
+      document.getElementById("kpi-fl-mods").textContent = modsCount;
+    }
+
+    // ── KPIs Y OKR ──
+    async function renderAud_KPIs(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-kpi","Agregar KPI","＋") +
+        tableWrap("tbl-kpi","KPIs y Estrategia OKR","Indicadores estratégicos del negocio",
+          ["Indicador","Meta","Valor Actual","Variación","Estado","Acciones"]) +
+        modalHtml("modal-kpi","Agregar / Editar KPI", `
+          ${formField("Nombre del Indicador", inp("kpi-nombre","text","Ej: Tasa de Morosidad"))}
+          ${formField("Meta / Objetivo", inp("kpi-meta","text","Ej: < 5%"))}
+          ${formField("Valor Actual", inp("kpi-valor","text","Ej: 3.2%"))}
+          ${formField("Variación vs. mes anterior", inp("kpi-var","text","Ej: -1.2%"))}
+          ${formField("Estado", sel("kpi-estado",[{v:"en_meta",l:"✅ En Meta"},{v:"en_riesgo",l:"⚠️ En Riesgo"},{v:"fuera_meta",l:"❌ Fuera de Meta"}]))}
+          ${formField("Observación", inp("kpi-obs","text",""))}
+          <input type="hidden" id="kpi-docid">
+          <button id="btn-save-kpi" class="btn-entrar" style="width:100%;margin-top:8px">Guardar KPI</button>
+        `);
+
+      document.getElementById("btn-add-kpi").onclick = () => {
+        ["kpi-nombre","kpi-meta","kpi-valor","kpi-var","kpi-obs","kpi-docid"].forEach(id=>document.getElementById(id).value="");
+        document.getElementById("modal-kpi").style.display="flex";
+      };
+      document.getElementById("btn-save-kpi").onclick = async () => {
+        if (!empId) return;
+        const nombre = document.getElementById("kpi-nombre").value.trim();
+        if (!nombre) { alert("Nombre obligatorio"); return; }
+        const docId = document.getElementById("kpi-docid").value;
+        const data = {
+          entityId:empId, nombre,
+          meta: document.getElementById("kpi-meta").value.trim(),
+          valor_actual: document.getElementById("kpi-valor").value.trim(),
+          variacion: document.getElementById("kpi-var").value.trim(),
+          estado: document.getElementById("kpi-estado").value,
+          observacion: document.getElementById("kpi-obs").value.trim(),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("kpis");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-kpi").style.display="none";
+        renderAud_KPIs(zone, empId);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("kpis").where("entityId","==",empId).get();
+      const tb = document.getElementById("tbl-kpi-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(6); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r=d.data();
+        const eCls={en_meta:"green",en_riesgo:"warn",fuera_meta:"red"}[r.estado]||"gray";
+        const varColor = (r.variacion||"").startsWith("-")?"var(--c-danger)":"var(--c-accent)";
+        tb.innerHTML += `<tr>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td>${r.meta||"—"}</td>
+          <td style="font-family:var(--mono);font-weight:700">${r.valor_actual||"—"}</td>
+          <td style="color:${varColor};font-family:var(--mono)">${r.variacion||"—"}</td>
+          <td><span class="badge badge-${eCls}">${r.estado?.replace("_"," ")||"—"}</span></td>
+          <td>
+            <button onclick="editKPI('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
+            <button onclick="deleteKPI('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+    window.editKPI = async (docId, empId) => {
+      const d = await db.collection("kpis").doc(docId).get(); const r=d.data();
+      document.getElementById("kpi-docid").value  = docId;
+      document.getElementById("kpi-nombre").value = r.nombre||"";
+      document.getElementById("kpi-meta").value   = r.meta||"";
+      document.getElementById("kpi-valor").value  = r.valor_actual||"";
+      document.getElementById("kpi-var").value    = r.variacion||"";
+      document.getElementById("kpi-estado").value = r.estado||"en_meta";
+      document.getElementById("kpi-obs").value    = r.observacion||"";
+      document.getElementById("modal-kpi").style.display="flex";
+    };
+    window.deleteKPI = async (docId, empId) => {
+      if (!confirm("¿Eliminar este KPI?")) return;
+      await db.collection("kpis").doc(docId).delete();
+      renderAud_KPIs(document.getElementById("module-dynamic-zone"), empId);
+    };
+
   })();
   </script>
 </body>
