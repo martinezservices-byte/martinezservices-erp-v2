@@ -393,8 +393,8 @@
       <h1>El ERP que tu<br><em>empresa y condominio</em><br>necesitaban</h1>
       <p>Gestiona condominios, empresas y PyMEs desde una sola plataforma en la nube. Contabilidad, Facturación SII, RRHH, Inventario y más — sin instalaciones, desde cualquier dispositivo.</p>
       <div class="hero-btns">
-        <a href="#contacto" class="btn-hero-p">🚀 Solicitar Demo Gratis</a>
-        <a href="#planes" class="btn-hero-s">Ver Planes y Precios</a>
+        <a href="#contacto" class="btn-hero-p" onclick="event.preventDefault();document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">🚀 Solicitar Demo Gratis</a>
+        <a href="#planes" class="btn-hero-s" onclick="event.preventDefault();document.getElementById('planes').scrollIntoView({behavior:'smooth',block:'start'})">Ver Planes y Precios</a>
       </div>
       <div class="hero-trust">
         <div class="hero-trust-item"><span>✓</span> Sin contratos anuales</div>
@@ -417,10 +417,10 @@
         </div>
         <div class="dash-table">
           <div class="dash-th"><span>Unidad</span><span>Período</span><span>Monto</span><span>Estado</span></div>
-          <div class="dash-tr"><span>Unid. 101</span><span>Jun 2025</span><span>$45.000</span><span><span class="badge-g">Al día</span></span></div>
-          <div class="dash-tr"><span>Unid. 203</span><span>May 2025</span><span>$45.000</span><span><span class="badge-r">Moroso</span></span></div>
-          <div class="dash-tr"><span>Unid. 305</span><span>Jun 2025</span><span>$45.000</span><span><span class="badge-y">Pendiente</span></span></div>
-          <div class="dash-tr"><span>Unid. 108</span><span>Jun 2025</span><span>$45.000</span><span><span class="badge-g">Al día</span></span></div>
+          <div class="dash-tr"><span>Unid. 101</span><span>Jun 2026</span><span>$45.000</span><span><span class="badge-g">Al día</span></span></div>
+          <div class="dash-tr"><span>Unid. 203</span><span>May 2026</span><span>$45.000</span><span><span class="badge-r">Moroso</span></span></div>
+          <div class="dash-tr"><span>Unid. 305</span><span>Jun 2026</span><span>$45.000</span><span><span class="badge-y">Pendiente</span></span></div>
+          <div class="dash-tr"><span>Unid. 108</span><span>Jun 2026</span><span>$45.000</span><span><span class="badge-g">Al día</span></span></div>
         </div>
       </div>
     </div>
@@ -455,6 +455,7 @@
           <div class="mod-feat">Control de morosidad con alertas</div>
           <div class="mod-feat">Rendición de cuentas por período</div>
           <div class="mod-feat">Panel del residente con historial</div>
+          <div class="mod-feat">Pasarela de pago gastos comunes <span style="color:#f59e0b;font-weight:700">(Próximamente)</span></div>
         </div>
       </div>
       <div class="mod-card">
@@ -486,14 +487,14 @@
         <div class="mod-features">
           <div class="mod-feat">Balance 8 columnas exportable</div>
           <div class="mod-feat">Carga de cartola bancaria CSV</div>
-          <div class="mod-feat">Conciliación automática</div>
+          <div class="mod-feat">Conciliación bancaria automatizada <span style="color:#f59e0b;font-weight:700">(Próximamente)</span></div>
           <div class="mod-feat">Declaración IVA F29</div>
         </div>
       </div>
       <div class="mod-card">
         <div class="mod-icon">🧾</div>
         <h3>Facturación Comercial</h3>
-        <p>Emisión de DTE conectado con el SII: facturas, boletas, notas de crédito y libros tributarios.</p>
+        <p>Emisión de DTE conectado con el SII: facturas, boletas, notas de crédito y libros tributarios. <span style="color:#f59e0b;font-size:11px;font-weight:700">(Conexión directa vía API-SII en desarrollo)</span></p>
         <div class="mod-features">
           <div class="mod-feat">Facturas y boletas electrónicas</div>
           <div class="mod-feat">Libro de ventas y compras SII</div>
@@ -553,7 +554,7 @@
             <div class="benef-icon">🏘️</div>
             <div>
               <h4>Único con módulo de condominios integrado</h4>
-              <p>Nubox y Defontana no tienen gestión de copropiedades. Nosotros sí, completamente integrado con el ERP.</p>
+              <p>Los softwares tradicionales no tienen gestión de copropiedades. Nosotros sí, completamente integrado con el ERP.</p>
             </div>
           </div>
           <div class="benef-item">
@@ -571,8 +572,8 @@
           <div class="comp-row comp-header">
             <span class="feat">Funcionalidad</span>
             <span class="mss">MSS ERP</span>
-            <span>Nubox</span>
-            <span>Defontana</span>
+            <span>Softwares Tradicionales</span>
+            <span>Sistemas Legacy / Rígidos</span>
           </div>
           <div class="comp-row">
             <span class="feat">Gestión de Condominios</span>
@@ -626,8 +627,8 @@
     <div class="planes-grid">
       <div class="plan-card">
         <div class="plan-nombre">Básico</div>
-        <div class="plan-precio">Consultar</div>
-        <div class="plan-precio-sub">precio según entidad</div>
+        <div class="plan-precio"><sup style="font-size:16px">Desde </sup>1.5 UF<sup style="font-size:14px"> + IVA</sup></div>
+        <div class="plan-precio-sub">/ mes · Consultar según tamaño de entidad</div>
         <div class="plan-sep"></div>
         <div class="plan-item">Administración de Condominios</div>
         <div class="plan-item">App Residentes</div>
@@ -637,13 +638,13 @@
         <div class="plan-item no">Contabilidad avanzada</div>
         <div class="plan-item no">Facturación SII</div>
         <div class="plan-item no">Logística y Flota</div>
-        <button class="btn-plan btn-plan-s" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth'})">Solicitar cotización</button>
+        <button class="btn-plan btn-plan-s" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">Solicitar cotización</button>
       </div>
       <div class="plan-card featured">
         <div class="plan-badge-top">⭐ MÁS POPULAR</div>
         <div class="plan-nombre">Completo</div>
-        <div class="plan-precio">Consultar</div>
-        <div class="plan-precio-sub">precio según entidad</div>
+        <div class="plan-precio"><sup style="font-size:16px">Desde </sup>2.5 UF<sup style="font-size:14px"> + IVA</sup></div>
+        <div class="plan-precio-sub">/ mes · Precio fijo mensual</div>
         <div class="plan-sep"></div>
         <div class="plan-item">Todo el Plan Básico</div>
         <div class="plan-item">Contabilidad 8 Columnas</div>
@@ -653,12 +654,12 @@
         <div class="plan-item">Hasta 3 entidades</div>
         <div class="plan-item">Soporte prioritario</div>
         <div class="plan-item no">Auditoría multicliente</div>
-        <button class="btn-plan btn-plan-p" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth'})">Solicitar cotización</button>
+        <button class="btn-plan btn-plan-p" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">Solicitar cotización</button>
       </div>
       <div class="plan-card">
         <div class="plan-nombre">Premium</div>
-        <div class="plan-precio">Consultar</div>
-        <div class="plan-precio-sub">precio según entidad</div>
+        <div class="plan-precio" style="font-size:26px">Precio a medida</div>
+        <div class="plan-precio-sub">/ Cotizar según requerimiento</div>
         <div class="plan-sep"></div>
         <div class="plan-item">Todo el Plan Completo</div>
         <div class="plan-item">Logística y Flota</div>
@@ -667,7 +668,7 @@
         <div class="plan-item">KPIs y OKR estratégico</div>
         <div class="plan-item">Capacitación 2 horas</div>
         <div class="plan-item">Soporte directo WhatsApp</div>
-        <button class="btn-plan btn-plan-s" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth'})">Solicitar cotización</button>
+        <button class="btn-plan btn-plan-s" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">Solicitar cotización</button>
       </div>
       <div class="plan-card" style="border-color:#f59e0b;background:linear-gradient(135deg,#fffbeb,#fff)">
         <div class="plan-nombre" style="color:#92400e">Demo Gratis</div>
@@ -679,7 +680,7 @@
         <div class="plan-item">Datos de prueba incluidos</div>
         <div class="plan-item">Capacitación incluida</div>
         <div class="plan-item">Sin compromiso</div>
-        <button class="btn-plan" style="background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;border:none;cursor:pointer;" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth'})">🎯 Quiero mi demo</button>
+        <button class="btn-plan" style="background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;border:none;cursor:pointer;" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">🎯 Quiero mi demo</button>
       </div>
     </div>
   </div>
@@ -739,7 +740,7 @@
       </div>
       <div class="faq-item">
         <div class="faq-q">¿La facturación electrónica está conectada con el SII?<span>+</span></div>
-        <p class="faq-a">El sistema está preparado para la integración con el SII. Actualmente permite gestionar y registrar todos los documentos tributarios (facturas, boletas, notas de crédito/débito). La emisión directa vía API del SII con certificado digital está en desarrollo para el próximo sprint.</p>
+        <p class="faq-a">Sí. El ERP procesa todos los documentos tributarios de forma nativa: facturas electrónicas, boletas, notas de crédito y débito, con cálculo automático de IVA 19% y libro de ventas/compras integrado. La automatización del enlace directo por API-SII con certificado digital es una mejora planificada próximamente como parte de nuestra hoja de ruta de desarrollo.</p>
       </div>
       <div class="faq-item">
         <div class="faq-q">¿Mis datos están seguros?<span>+</span></div>
