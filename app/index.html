@@ -6087,7 +6087,8 @@ Si necesita clave, edita el cliente y agrega una.`;
     };
 
     // ── MOSTRAR BOTÓN SA AL CARGAR ──
-    // showSAButton() se llama desde onAuthStateChanged y desde loadTenantData
+    // Se llama desde el auth observer después de cargar el tenant
+    const _origLoadTenant = loadTenantData;
 
 
     // ═══════════════════════════════════════════════════════════
@@ -7744,7 +7745,7 @@ Correo: ${correoPortal}
     }
 
     // ── ACTUALIZAR loadTenantData para detectar usuarios pendientes ──
-    // loadTenantData consolidada — detecta usuarios pendientes y superadmin
+    const _origLoadTenantConPortal = loadTenantData;
     loadTenantData = async function(uid) {
       try {
         let snap = await db.collection("usuarios").doc(uid).get();
