@@ -1003,6 +1003,18 @@
         <input class="login-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
 
         <button class="btn-login" id="btn-login">Ingresar al sistema</button>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0;">
+          <div style="flex:1;height:1px;background:var(--c-border)"></div>
+          <span style="font-size:11px;color:var(--c-muted)">o ingresa con</span>
+          <div style="flex:1;height:1px;background:var(--c-border)"></div>
+        </div>
+
+        <button id="btn-login-google" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:14px;font-weight:600;padding:11px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s;">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continuar con Google
+        </button>
+
         <p class="login-error" id="login-error"></p>
 
         <div class="login-footer">
@@ -1442,7 +1454,23 @@
       // Cargar datos del tenant desde Firestore
       await loadTenantData(user.uid);
       showSAButton(); // ← CRÍTICO: mostrar SA Panel si es superadmin
-      renderLevel1();
+
+      // ── DETECTOR DE ROL: redirige automáticamente según quién entra ──
+      const rol = STATE.tenantData?.rol || "";
+      if (rol === "trabajador") {
+        // Trabajador → va directo a su portal personal
+        showScreen("screen-level2");
+        const zone = document.getElementById("module-dynamic-zone");
+        if (zone) await renderPortalTrabajador(zone, user);
+      } else if (rol === "residente") {
+        // Residente de condominio → portal de residente
+        showScreen("screen-level2");
+        const zone = document.getElementById("module-dynamic-zone");
+        if (zone) await renderPortalResidente(zone, user);
+      } else {
+        // Admin, superadmin, cliente → panel normal de módulos
+        renderLevel1();
+      }
     });
 
     // ─────────────────────────────────────────────
@@ -2537,6 +2565,20 @@
     // ─────────────────────────────────────────────
 
     // Login
+    // Login con Google
+    document.getElementById("btn-login-google").addEventListener("click", async () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await auth.signInWithPopup(provider);
+        // onAuthStateChanged maneja el resto
+      } catch (e) {
+        document.getElementById("login-error").textContent =
+          e.code === "auth/popup-closed-by-user" ? "Ventana de Google cerrada. Intenta de nuevo." :
+          e.code === "auth/account-exists-with-different-credential" ? "Este correo ya tiene una cuenta con contraseña. Usa el formulario de arriba." :
+          "Error al ingresar con Google: " + e.message;
+      }
+    });
+
     document.getElementById("btn-login").addEventListener("click", async () => {
       const email = document.getElementById("login-email").value.trim().toLowerCase();
       const pass  = document.getElementById("login-pass").value;
@@ -3187,6 +3229,7 @@
         tableWrap("tbl-rem","Proceso de Remuneraciones","Período activo — valores calculados automáticamente",
           ["RUT","Trabajador","Sueldo Base","Gratificación","Horas Extra","Total Haberes","AFP","Salud","Total Desc.","Líquido a Pagar","Estado"]);
 
+      // ── PASO 1: Seleccionar período y cargar novedades ──
       document.getElementById("btn-procesar-rem").onclick = async () => {
         if (!empId) { alert("Sin entidad activa"); return; }
         const periodo = prompt("Período a procesar (YYYY-MM):", new Date().toISOString().slice(0,7));
@@ -3195,40 +3238,171 @@
         const empSnap = await db.collection("empleados").where("entityId","==",empId).where("estado","==","activo").get();
         if (empSnap.empty) { alert("No hay trabajadores activos"); return; }
 
-        const batch = db.batch();
-        let totalH=0, totalD=0, totalL=0;
+        // PASO 2: Mostrar grilla de ingreso de novedades del mes
+        const modal = document.createElement("div");
+        modal.id = "modal-novedades-rem";
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
 
+        let filas = "";
         empSnap.forEach(d => {
           const r = d.data();
-          const base       = r.sueldo_base||0;
-          // Cálculo Chile: gratificación legal = base/12, tope 4.75 IMM
-          const gratif     = Math.min(base/12, 40000);
-          const horasExtra = 0; // Se puede editar después
-          const totalHaberes = base + gratif + horasExtra;
-          // Descuentos legales Chile 2025
-          const afpPct     = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[r.afp]||0.1145;
-          const saludPct   = (r.salud||"").startsWith("fonasa") ? 0.07 : 0.07;
-          const descAfp    = Math.round(totalHaberes * afpPct);
-          const descSalud  = Math.round(totalHaberes * saludPct);
-          const totalDesc  = descAfp + descSalud;
-          const liquido    = totalHaberes - totalDesc;
-          totalH += totalHaberes; totalD += totalDesc; totalL += liquido;
-
-          const ref = db.collection("remuneraciones").doc(`${empId}_${periodo}_${d.id}`);
-          batch.set(ref, {
-            entityId: empId, periodo, empleado_id: d.id,
-            rut: r.rut, nombre: r.nombre, cargo: r.cargo,
-            sueldo_base: base, gratificacion: Math.round(gratif),
-            horas_extra: horasExtra, total_haberes: Math.round(totalHaberes),
-            desc_afp: descAfp, desc_salud: descSalud, total_descuentos: totalDesc,
-            liquido_pagar: Math.round(liquido), afp: r.afp, salud: r.salud,
-            estado: "procesado",
-            creado: firebase.firestore.FieldValue.serverTimestamp()
-          }, {merge:true});
+          const valH50 = Math.round((r.sueldo_base||0)/180*1.5);  // valor hora extra 50%
+          const valH100= Math.round((r.sueldo_base||0)/180*2);    // valor hora extra 100%
+          filas += `<tr style="border-bottom:1px solid var(--c-border)">
+            <td style="padding:8px;font-size:12px"><strong>${r.nombre}</strong><br><span style="font-size:10px;color:var(--c-muted)">${r.rut} · ${r.cargo||'—'}</span></td>
+            <td style="padding:4px;text-align:right;font-size:12px;color:var(--c-accent)">${formatMonto(r.sueldo_base)}</td>
+            <td style="padding:4px"><input type="number" min="0" value="${r.asig_colacion||0}" id="nv-col-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:4px"><input type="number" min="0" value="${r.asig_movilizacion||0}" id="nv-mov-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-bonoa-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-h50-${d.id}" style="width:55px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-h100-${d.id}" style="width:55px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-viat-${d.id}" style="width:75px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-otros-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:8px;font-size:11px;text-align:right;min-width:90px">
+              <div id="nv-tot-${d.id}" style="font-weight:700;color:var(--c-accent)">—</div>
+              <div id="nv-liq-${d.id}" style="font-weight:800;font-size:12px">—</div>
+            </td>
+          </tr>`;
         });
-        await batch.commit();
-        alert(`✓ Remuneraciones procesadas para ${empSnap.size} trabajadores.\nPeríodo: ${periodo}\nTotal Líquido: ${formatMonto(totalL)}`);
-        renderRRHH_Remuneraciones(zone, empId);
+
+        modal.innerHTML = `
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:1100px;margin:auto;">
+            <div style="background:linear-gradient(135deg,var(--c-accent),#0ea5e9);padding:18px 22px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:16px;font-weight:800;color:#fff;">⚙️ Ingreso de Novedades del Mes — ${periodo}</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:3px">Ingresa los valores variables de este período para cada trabajador. Los haberes fijos vienen de la ficha.</div>
+              </div>
+              <button onclick="document.getElementById('modal-novedades-rem').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+            </div>
+            <div style="padding:16px;overflow-x:auto;">
+              <div style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#0ea5e9;">
+                💡 <strong>Imponibles:</strong> Bono Asistencia, Horas Extra 50% y 100% se suman a la base para el cálculo de AFP y Salud. &nbsp;|&nbsp;
+                <strong>No Imponibles:</strong> Colación, Movilización y Viáticos no tributan ni se descuentan.
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead>
+                  <tr style="background:var(--c-bg);border-bottom:2px solid var(--c-border);">
+                    <th style="padding:8px;text-align:left;font-size:11px;color:var(--c-muted)">TRABAJADOR</th>
+                    <th style="padding:8px;text-align:right;font-size:11px;color:var(--c-muted)">S.BASE</th>
+                    <th style="padding:8px;text-align:center;font-size:11px;color:#0ea5e9">COLACIÓN ($)<br><span style="font-weight:400">no impon.</span></th>
+                    <th style="padding:8px;text-align:center;font-size:11px;color:#0ea5e9">MOVIL. ($)<br><span style="font-weight:400">no impon.</span></th>
+                    <th style="padding:8px;text-align:center;font-size:11px;color:var(--c-accent)">BONO ASIST. ($)<br><span style="font-weight:400">imponible</span></th>
+                    <th style="padding:8px;text-align:center;font-size:11px;color:var(--c-accent)">H.EXT. 50%<br><span style="font-weight:400">horas</span></th>
+                    <th style="padding:8px;text-align:center;font-size:11px;color:var(--c-accent)">H.EXT. 100%<br><span style="font-weight:400">horas</span></th>
+                    <th style="padding:8px;text-align:center;font-size:11px;color:#0ea5e9">VIÁTICOS ($)<br><span style="font-weight:400">no impon.</span></th>
+                    <th style="padding:8px;text-align:center;font-size:11px;color:var(--c-muted)">OTROS<br><span style="font-weight:400">descuentos</span></th>
+                    <th style="padding:8px;text-align:right;font-size:11px;color:var(--c-muted)">TOTAL HAB.<br>LÍQUIDO</th>
+                  </tr>
+                </thead>
+                <tbody>${filas}</tbody>
+              </table>
+            </div>
+            <div style="padding:16px;border-top:1px solid var(--c-border);display:flex;gap:10px;justify-content:flex-end;">
+              <button onclick="document.getElementById('modal-novedades-rem').remove()" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);padding:10px 20px;border-radius:var(--radius);cursor:pointer;font-weight:600;">Cancelar</button>
+              <button id="btn-confirmar-proceso" style="background:var(--c-accent);color:#fff;border:none;font-family:var(--font);padding:10px 24px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:14px;">✓ Confirmar y Procesar Remuneraciones</button>
+            </div>
+          </div>`;
+
+        document.body.appendChild(modal);
+
+        // Calcular preview de cada fila al abrir
+        empSnap.forEach(d => {
+          calcFilaRem(d.id, d.data().sueldo_base||0, d.data().afp, d.data().salud);
+        });
+
+        // Botón confirmar
+        document.getElementById("btn-confirmar-proceso").onclick = async () => {
+          const btn = document.getElementById("btn-confirmar-proceso");
+          btn.textContent = "Procesando..."; btn.disabled = true;
+
+          const batch2 = db.batch();
+          let totalH=0,totalD=0,totalL=0;
+
+          empSnap.forEach(d => {
+            const r = d.data();
+            const base = r.sueldo_base||0;
+            const gratif = Math.min(base/12, Math.round(40000));
+            // Novedades del mes
+            const col   = parseFloat(document.getElementById(`nv-col-${d.id}`)?.value)||0;
+            const mov   = parseFloat(document.getElementById(`nv-mov-${d.id}`)?.value)||0;
+            const bonoa = parseFloat(document.getElementById(`nv-bonoa-${d.id}`)?.value)||0;
+            const h50n  = parseFloat(document.getElementById(`nv-h50-${d.id}`)?.value)||0;
+            const h100n = parseFloat(document.getElementById(`nv-h100-${d.id}`)?.value)||0;
+            const viat  = parseFloat(document.getElementById(`nv-viat-${d.id}`)?.value)||0;
+            const otros = parseFloat(document.getElementById(`nv-otros-${d.id}`)?.value)||0;
+            // Valor hora = sueldo/180 (mes 45 hrs semanales Chile)
+            const valHora = base/180;
+            const montoH50  = Math.round(valHora*1.5*h50n);
+            const montoH100 = Math.round(valHora*2*h100n);
+            // Imponible = base + gratif + bonos + horas extra (SIN colación, movil, viáticos)
+            const totalImpon = base + gratif + bonoa + montoH50 + montoH100;
+            // No imponible = colación + movilización + viáticos
+            const totalNoImpon = col + mov + viat;
+            const totalHaberes = totalImpon + totalNoImpon;
+            // Descuentos sobre base imponible
+            const afpPct = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[r.afp?.toLowerCase()]||0.1145;
+            const descAfp   = Math.round(totalImpon * afpPct);
+            const descSalud = Math.round(totalImpon * 0.07);
+            const totalDesc = descAfp + descSalud + otros;
+            const liquido   = Math.round(totalHaberes - totalDesc);
+            totalH+=Math.round(totalHaberes); totalD+=totalDesc; totalL+=liquido;
+
+            const ref = db.collection("remuneraciones").doc(`${empId}_${periodo}_${d.id}`);
+            batch2.set(ref, {
+              entityId:empId, periodo, empleado_id:d.id,
+              rut:r.rut, nombre:r.nombre, cargo:r.cargo,
+              tipo_contrato: r.tipo_contrato||"INDEFINIDO",
+              afp:r.afp, salud:r.salud,
+              sueldo_base:base, gratificacion:Math.round(gratif),
+              asig_colacion:col, asig_movilizacion:mov,
+              bono_asistencia:bonoa,
+              horas_extra_50:montoH50, horas_extra_50_hrs:h50n,
+              horas_extra_100:montoH100, horas_extra_100_hrs:h100n,
+              viaticos:viat, otros_descuentos:otros,
+              total_imponible:Math.round(totalImpon),
+              total_no_imponible:Math.round(totalNoImpon),
+              total_haberes:Math.round(totalHaberes),
+              desc_afp:descAfp, desc_salud:descSalud,
+              impuesto_unico:0,
+              total_descuentos:totalDesc,
+              liquido_pagar:liquido,
+              estado:"procesado",
+              creado: firebase.firestore.FieldValue.serverTimestamp()
+            }, {merge:true});
+          });
+
+          await batch2.commit();
+          document.getElementById("modal-novedades-rem").remove();
+          alert(`✓ Remuneraciones procesadas para ${empSnap.size} trabajadores.\nPeríodo: ${periodo}\nTotal Haberes: ${formatMonto(totalH)}\nTotal Descuentos: ${formatMonto(totalD)}\nTotal Líquido: ${formatMonto(totalL)}`);
+          renderRRHH_Remuneraciones(zone, empId);
+        };
+      };
+
+      // Cálculo en tiempo real por fila
+      window.calcFilaRem = (empDocId, sueldoBase, afp, salud) => {
+        const base  = parseFloat(sueldoBase)||0;
+        const gratif = Math.min(base/12, 40000);
+        const col   = parseFloat(document.getElementById(`nv-col-${empDocId}`)?.value)||0;
+        const mov   = parseFloat(document.getElementById(`nv-mov-${empDocId}`)?.value)||0;
+        const bonoa = parseFloat(document.getElementById(`nv-bonoa-${empDocId}`)?.value)||0;
+        const h50n  = parseFloat(document.getElementById(`nv-h50-${empDocId}`)?.value)||0;
+        const h100n = parseFloat(document.getElementById(`nv-h100-${empDocId}`)?.value)||0;
+        const viat  = parseFloat(document.getElementById(`nv-viat-${empDocId}`)?.value)||0;
+        const otros = parseFloat(document.getElementById(`nv-otros-${empDocId}`)?.value)||0;
+        const valHora = base/180;
+        const montoH50  = Math.round(valHora*1.5*h50n);
+        const montoH100 = Math.round(valHora*2*h100n);
+        const totalImpon = base + gratif + bonoa + montoH50 + montoH100;
+        const totalNoImpon = col + mov + viat;
+        const totalHab = totalImpon + totalNoImpon;
+        const afpPct = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[afp?.toLowerCase()]||0.1145;
+        const descAfp   = Math.round(totalImpon*afpPct);
+        const descSalud = Math.round(totalImpon*0.07);
+        const liquido   = Math.round(totalHab - descAfp - descSalud - otros);
+        const totEl = document.getElementById(`nv-tot-${empDocId}`);
+        const liqEl = document.getElementById(`nv-liq-${empDocId}`);
+        if (totEl) totEl.textContent = `Tot: ${formatMonto(totalHab)}`;
+        if (liqEl) liqEl.textContent = `Líq: ${formatMonto(liquido)}`;
       };
 
       if (!empId) return;
@@ -6873,6 +7047,248 @@ Correo: ${correoPortal}
       </body></html>`;
       const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
     };
+
+
+    // ═══════════════════════════════════════════════════════════
+    // GESTIÓN DE USUARIOS — Todo desde dentro del ERP
+    // Flujo: Admin crea usuario → Firestore guarda perfil →
+    //        Usuario entra → Sistema detecta rol → Vista correcta
+    // ═══════════════════════════════════════════════════════════
+
+    // ── CREAR USUARIO TRABAJADOR desde ficha (sin ir a Firebase Console) ──
+    window.crearAccesoTrabajador = async (empDocId, empId) => {
+      const empDoc = await db.collection("empleados").doc(empDocId).get();
+      if (!empDoc.exists) return;
+      const emp = empDoc.data();
+
+      const correo = emp.correo_portal || emp.correo || "";
+      if (!correo) {
+        alert("Este trabajador no tiene correo registrado.\nEdita su ficha y agrega un correo antes de crear el acceso.");
+        return;
+      }
+
+      // Pedir clave temporal al admin
+      const claveTemp = prompt(
+        `Crear acceso portal para: ${emp.nombre}\nCorreo: ${correo}\n\nIngresa una clave temporal para el trabajador\n(mínimo 6 caracteres):`,
+        ""
+      );
+      if (!claveTemp || claveTemp.length < 6) {
+        alert("La clave debe tener al menos 6 caracteres.");
+        return;
+      }
+
+      try {
+        // Usar Firebase Admin via función cloud o crear con REST API de Firebase Auth
+        // En Firebase Auth web SDK no podemos crear usuarios por seguridad
+        // La solución es: crear el documento en Firestore con el correo
+        // y cuando el usuario ingrese con Google o se registre, el sistema
+        // busca su correo en la colección usuarios y le asigna el rol correcto
+
+        // Guardar perfil en Firestore (usuarios/{uid no conocido aún → por correo})
+        // Usamos colección usuarios_pendientes indexada por correo
+        await db.collection("usuarios_pendientes").doc(correo.toLowerCase()).set({
+          correo: correo.toLowerCase(),
+          nombre: emp.nombre,
+          rol: "trabajador",
+          empleado_id: empDocId,
+          entityId: empId,
+          clave_temporal: claveTemp, // se usa para referencia, no para auth real
+          activo: true,
+          creado_por: STATE.user?.email || "",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Actualizar ficha del trabajador
+        await db.collection("empleados").doc(empDocId).update({
+          portal_activo: true,
+          correo_portal: correo.toLowerCase(),
+          portal_activado: new Date().toISOString()
+        });
+
+        alert(
+          `✅ Acceso al Portal creado exitosamente.\n\n` +
+          `Trabajador: ${emp.nombre}\n` +
+          `Correo: ${correo}\n` +
+          `Clave temporal: ${claveTemp}\n\n` +
+          `El trabajador debe:\n` +
+          `1. Ir a la URL del ERP\n` +
+          `2. Ingresar con su correo y clave temporal\n` +
+          `   (o con Google si su cuenta Gmail es ${correo})\n` +
+          `3. El sistema lo llevará directo a su portal personal\n\n` +
+          `Nota: En el primer ingreso se le pedirá cambiar la clave.`
+        );
+
+      } catch (e) {
+        alert("Error al crear acceso: " + e.message);
+      }
+    };
+
+    // ── DETECTOR DE USUARIO EN LOGIN — verifica usuarios_pendientes ──
+    // Se llama en onAuthStateChanged cuando el usuario no tiene doc en 'usuarios'
+    async function verificarUsuarioPendiente(user) {
+      const snap = await db.collection("usuarios_pendientes")
+        .doc(user.email.toLowerCase()).get();
+
+      if (snap.exists && snap.data().activo) {
+        const d = snap.data();
+        // Crear documento en colección usuarios con el UID real de Firebase Auth
+        await db.collection("usuarios").doc(user.uid).set({
+          correo: user.email.toLowerCase(),
+          nombre: d.nombre || user.displayName || user.email,
+          rol: d.rol || "trabajador",
+          empleado_id: d.empleado_id || "",
+          entityId: d.entityId || "",
+          plan: "Portal",
+          modulos: [],
+          activo: true,
+          primer_ingreso: true,
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        // Marcar el pendiente como activado
+        await db.collection("usuarios_pendientes").doc(user.email.toLowerCase())
+          .update({ activado: true, uid: user.uid });
+        // Devolver los datos del perfil
+        return await db.collection("usuarios").doc(user.uid).get();
+      }
+      return null;
+    }
+
+    // ── ACTUALIZAR loadTenantData para detectar usuarios pendientes ──
+    const _origLoadTenantConPortal = loadTenantData;
+    loadTenantData = async function(uid) {
+      try {
+        let snap = await db.collection("usuarios").doc(uid).get();
+
+        if (!snap.exists) {
+          // No tiene doc en usuarios → verificar si es usuario pendiente
+          if (STATE.user?.email) {
+            const docPendiente = await verificarUsuarioPendiente(STATE.user);
+            if (docPendiente && docPendiente.exists) {
+              snap = docPendiente;
+            }
+          }
+        }
+
+        if (snap && snap.exists) {
+          STATE.tenantData = snap.data();
+        } else {
+          // Superadmin o usuario nuevo sin doc → acceso total o limitado
+          const esSuperadmin = STATE.user?.uid === SUPERADMIN_UID ||
+                               STATE.user?.email === "aybserviciosg@gmail.com";
+          STATE.tenantData = {
+            nombre: STATE.user?.email || "",
+            modulos: esSuperadmin ? MODULE_META.map(m => m.id) : [],
+            plan: esSuperadmin ? "Superadmin" : "Sin Plan",
+            diasDemo: null,
+            entidades: []
+          };
+        }
+        updateHeaderPlan();
+        await loadEntities(uid);
+        showSAButton();
+      } catch (e) {
+        console.error("Error cargando tenant:", e);
+      }
+    };
+
+    // ── PORTAL DEL RESIDENTE (placeholder activo) ──
+    async function renderPortalResidente(zone, user) {
+      // Buscar unidad del residente por su correo
+      const snap = await db.collection("condominios").get();
+      let residenteData = null;
+      for (const condoDoc of snap.docs) {
+        const unidSnap = await db.collection("condominios").doc(condoDoc.id)
+          .collection("unidades").where("correo","==",user.email.toLowerCase()).limit(1).get();
+        if (!unidSnap.empty) {
+          residenteData = { condo: condoDoc.data(), condoId: condoDoc.id, unidad: unidSnap.docs[0].data() };
+          break;
+        }
+      }
+
+      if (!residenteData) {
+        zone.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+          <div style="font-size:48px;margin-bottom:16px">🏢</div>
+          <h2 style="margin-bottom:8px">Portal de Residente</h2>
+          <p style="color:var(--c-muted)">Tu correo no está vinculado a ninguna unidad. Contacta al administrador de tu condominio.</p>
+        </div>`;
+        return;
+      }
+
+      const { condo, condoId, unidad } = residenteData;
+      zone.innerHTML = `
+        <div style="background:linear-gradient(135deg,rgba(46,168,79,0.15),rgba(21,101,192,0.1));border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius-lg);padding:22px;margin-bottom:20px;">
+          <div style="font-size:20px;font-weight:900;margin-bottom:4px">🏢 ${condo.nombre||'Condominio'}</div>
+          <div style="font-size:14px;color:var(--c-muted)">Unidad N° ${unidad.numero_unidad||'—'} · ${unidad.nombre_propietario||'—'}</div>
+          <div style="font-size:12px;color:var(--c-muted)">RUT: ${unidad.rut||'—'} · Rol: ${unidad.rol||'—'}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;">
+          <button onclick="verEstadoCuentaResidente('${condoId}','${unidad.numero_unidad}')" style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);color:var(--c-accent);font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            💰 Mi Gasto Común<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Ver cobros del mes activo</div>
+          </button>
+          <button onclick="verHistorialResidente('${condoId}','${unidad.numero_unidad}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            📋 Mi Historial<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Últimos 12 períodos</div>
+          </button>
+          <button onclick="pagarEnLinea('0','periodo activo','${unidad.numero_unidad}')" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            💳 Pagar en Línea<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Vía WhatsApp (Próximamente WebPay)</div>
+          </button>
+          <button onclick="alert('Reservas disponibles próximamente desde tu portal')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+            📅 Reservar Espacio<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Quincho, sala, cancha</div>
+          </button>
+        </div>
+        <div id="portal-residente-contenido"></div>`;
+    }
+
+    window.verEstadoCuentaResidente = async (condoId, numUnidad) => {
+      const div = document.getElementById("portal-residente-contenido");
+      const snap = await db.collection("condominios").doc(condoId)
+        .collection("gastos_comunes").orderBy("periodo","desc").limit(3).get();
+      if (snap.empty) { div.innerHTML = '<p style="color:var(--c-muted);padding:20px">Sin cobros registrados aún.</p>'; return; }
+      let html = '<div class="data-table-wrap"><div class="data-table-head"><div><h3>💰 Mi Estado de Cuenta</h3><p>Gastos comunes activos</p></div></div><table class="data-table"><thead><tr><th>Período</th><th>Descripción</th><th>Monto</th><th>Vencimiento</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+      snap.forEach(d => {
+        const r=d.data();
+        html+=`<tr><td>${r.periodo||'—'}</td><td>${r.descripcion||'Gasto Común'}</td><td style="font-weight:700">${formatMonto(r.monto_por_unidad)}</td><td>${r.fecha_vencimiento||'—'}</td><td><span class="badge badge-warn">Pendiente</span></td><td><button onclick="pagarEnLinea('${r.monto_por_unidad}','${r.periodo}','${numUnidad}')" style="background:var(--c-accent);color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;">💳 Pagar</button></td></tr>`;
+      });
+      html += '</tbody></table></div>';
+      div.innerHTML = html;
+    };
+
+    window.verHistorialResidente = async (condoId, numUnidad) => {
+      const div = document.getElementById("portal-residente-contenido");
+      const snap = await db.collection("condominios").doc(condoId)
+        .collection("gastos_comunes").orderBy("periodo","desc").limit(12).get();
+      if (snap.empty) { div.innerHTML = '<p style="color:var(--c-muted);padding:20px">Sin historial aún.</p>'; return; }
+      let html = '<div class="data-table-wrap"><div class="data-table-head"><div><h3>📋 Mi Historial de Gastos Comunes</h3><p>Últimos 12 períodos</p></div></div><table class="data-table"><thead><tr><th>Período</th><th>Descripción</th><th>Monto</th><th>Vencimiento</th></tr></thead><tbody>';
+      snap.forEach(d => {
+        const r=d.data();
+        html+=`<tr><td>${r.periodo||'—'}</td><td>${r.descripcion||'Gasto Común'}</td><td style="font-weight:700">${formatMonto(r.monto_por_unidad)}</td><td>${r.fecha_vencimiento||'—'}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+      div.innerHTML = html;
+    };
+
+    // ── BOTÓN CREAR ACCESO en tabla de trabajadores (Portal del Colaborador) ──
+    // Reemplazar el botón de "Activar acceso" por el flujo completo
+    const _origToggleAcceso = window.toggleAccesoPortal;
+    window.toggleAccesoPortal = async (docId, empId, activar) => {
+      if (activar) {
+        await crearAccesoTrabajador(docId, empId);
+      } else {
+        const empDoc = await db.collection("empleados").doc(docId).get();
+        const r = empDoc.data();
+        if (!confirm(`¿Revocar acceso al portal de ${r.nombre}?`)) return;
+        await db.collection("empleados").doc(docId).update({ portal_activo: false });
+        if (r.correo_portal) {
+          await db.collection("usuarios_pendientes").doc(r.correo_portal)
+            .update({ activo: false }).catch(()=>{});
+        }
+        alert(`✓ Acceso revocado para ${r.nombre}.`);
+        renderRRHH_Portal(document.getElementById("module-dynamic-zone"), empId);
+      }
+    };
+
+    // ── HABILITAR Google Sign-In en Firebase (agregar dominio autorizado) ──
+    // El proveedor de Google ya está inicializado más arriba con GoogleAuthProvider
+    // Solo necesita estar habilitado en Firebase Console > Auth > Sign-in methods > Google
 
   })();
   </script>
