@@ -976,7 +976,7 @@
     </div>
 
     <div class="header-right">
-      <button class="btn-sa-header hidden" id="btn-sa-panel" title="Panel de Administración Superadmin">⚙️ SA Panel</button>
+      <button class="btn-sa-header hidden" id="btn-sa-panel">⚙️ SA Panel</button>
       <button class="btn-salir" id="btn-salir">Cerrar sesión</button>
     </div>
   </header>
@@ -1317,9 +1317,12 @@
           { id: "fichas",        icon: "🪪", label: "Fichas del Personal" },
           { id: "remuneraciones",icon: "💰", label: "Proceso de Remuneraciones" },
           { id: "liquidaciones", icon: "📑", label: "Liquidación de Sueldos" },
+          { id: "libros",        icon: "📚", label: "Libros de Remuneraciones" },
           { id: "asistencia",    icon: "🕐", label: "Reloj Control / Asistencia" },
           { id: "contratos",     icon: "📝", label: "Contratos y Anexos" },
+          { id: "finiquitos",    icon: "📋", label: "Finiquitos" },
           { id: "vacaciones",    icon: "🏖️", label: "Vacaciones / Permisos" },
+          { id: "portal",        icon: "👤", label: "Portal del Colaborador" },
         ],
         firestoreCol: "empleados"
       },
@@ -1438,7 +1441,6 @@
 
       // Cargar datos del tenant desde Firestore
       await loadTenantData(user.uid);
-      showSAButton(); // ← Mostrar SA Panel si es superadmin
       renderLevel1();
     });
 
@@ -1462,7 +1464,6 @@
         }
         updateHeaderPlan();
         await loadEntities(uid);
-        showSAButton(); // asegurar visibilidad SA Panel
       } catch (e) {
         console.error("Error cargando tenant:", e);
       }
@@ -3035,7 +3036,14 @@
     // ── 1. FICHAS DEL PERSONAL ──
     async function renderRRHH_Fichas(zone, empId) {
       zone.innerHTML =
-        btnPrimary("btn-add-emp","Agregar Trabajador","＋") +
+        `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <button id="btn-add-emp" class="btn-entrar">＋ Agregar Trabajador</button>
+          <label style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;gap:6px;">
+            📂 Importar Excel
+            <input type="file" id="import-empleados-file" accept=".xlsx,.xls,.csv" style="display:none">
+          </label>
+          <button id="btn-export-empleados" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar CSV</button>
+        </div>` +
         `<div class="kpi-row">
           <div class="kpi-card"><div class="kpi-label">Total Trabajadores</div><div class="kpi-value" id="kpi-emp-total">—</div></div>
           <div class="kpi-card"><div class="kpi-label">Activos</div><div class="kpi-value green" id="kpi-emp-activos">—</div></div>
@@ -3163,7 +3171,11 @@
     // ── 2. PROCESO DE REMUNERACIONES ──
     async function renderRRHH_Remuneraciones(zone, empId) {
       zone.innerHTML =
-        btnPrimary("btn-procesar-rem","Procesar Remuneraciones del Mes","⚙️") +
+        `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <button id="btn-procesar-rem" class="btn-entrar">⚙️ Procesar Remuneraciones del Mes</button>
+          <button id="btn-export-previred" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📤 Exportar Previred (CSV)</button>
+          <button id="btn-export-liq-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ Liquidaciones PDF</button>
+        </div>` +
         `<div class="kpi-row">
           <div class="kpi-card"><div class="kpi-label">Período Activo</div><div class="kpi-value" id="kpi-rem-periodo">—</div></div>
           <div class="kpi-card"><div class="kpi-label">Total Haberes</div><div class="kpi-value green" id="kpi-rem-haberes">—</div></div>
@@ -4999,28 +5011,21 @@
     // ═══════════════════════════════════════════════
     // SUPERADMIN PANEL — MOTOR COMPLETO
     // ═══════════════════════════════════════════════
-    const SUPERADMIN_UID = "R4yUrD8lPuhYCSjha1QLZDoRwBx2"; // UID de Gaudy
+    const SUPERADMIN_UID = "R4yUrD8lPuhYCSjha1QLZDoR"; // UID de Gaudy
     const TODOS_MODULOS  = ["condominios","residentes","rrhh","contabilidad","facturacion","logistica","auditoria"];
 
     function isSuperadmin() {
-      if (!STATE.user) return false;
-      // Verificar por UID exacto
-      if (STATE.user.uid === SUPERADMIN_UID) return true;
-      // Verificar por correo
-      if (STATE.user.email === "aybserviciosg@gmail.com") return true;
-      // Verificar por Firestore
-      if (STATE.tenantData?.es_superadmin === true) return true;
-      if (STATE.tenantData?.rol === "superadmin") return true;
-      return false;
+      return STATE.user && (
+        STATE.tenantData?.es_superadmin === true ||
+        STATE.tenantData?.rol === "superadmin" ||
+        STATE.user.uid.startsWith("R4yUrD8") ||
+        STATE.user.email === "aybserviciosg@gmail.com"
+      );
     }
 
     function showSAButton() {
       const btn = document.getElementById("btn-sa-panel");
-      if (!btn) return;
-      if (isSuperadmin()) {
-        btn.classList.remove("hidden");
-        btn.style.display = ""; // por si acaso tiene display:none inline
-      }
+      if (btn && isSuperadmin()) btn.classList.remove("hidden");
     }
 
     // Navegación al SA Panel
@@ -5322,6 +5327,737 @@
     // ── MOSTRAR BOTÓN SA AL CARGAR ──
     // Se llama desde el auth observer después de cargar el tenant
     const _origLoadTenant = loadTenantData;
+
+
+    // ═══════════════════════════════════════════════════════════
+    // RRHH — MÓDULOS NUEVOS COMPLETOS
+    // ═══════════════════════════════════════════════════════════
+
+    // ── EXPORT PREVIRED ──
+    window.exportarPrevired = async (empId) => {
+      if (!empId) { alert("Sin entidad activa"); return; }
+      const periodo = prompt("Periodo a exportar (AAAA-MM):", new Date().toISOString().slice(0,7));
+      if (!periodo) return;
+      const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
+      if (snap.empty) { alert("Sin remuneraciones para ese periodo. Procésalas primero."); return; }
+      // Formato Previred: RUT;Nombre;AFP;Monto AFP;Salud;Monto Salud;Liquido
+      let csv = "RUT;NOMBRE;AFP;MONTO_AFP;SALUD;MONTO_SALUD;LIQUIDO_PAGAR;PERIODO\n";
+      snap.forEach(d => {
+        const r = d.data();
+        csv += `${r.rut};${r.nombre};${r.afp};${r.desc_afp};${r.salud};${r.desc_salud};${r.liquido_pagar};${r.periodo}\n`;
+      });
+      const a = document.createElement("a");
+      a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+      a.download = `previred_${periodo}_${empId}.csv`;
+      a.click();
+      alert(`✓ Archivo Previred exportado para ${snap.size} trabajadores.`);
+    };
+
+    // ── EXPORT LIQUIDACIONES PDF (impresión navegador) ──
+    window.exportarLiquidacionesPDF = async (empId) => {
+      const periodo = prompt("Periodo (AAAA-MM):", new Date().toISOString().slice(0,7));
+      if (!periodo || !empId) return;
+      const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
+      if (snap.empty) { alert("Sin liquidaciones para ese periodo."); return; }
+      const empDoc = await db.collection("empresas").doc(empId).get();
+      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA", rut:"76.782.954-K"};
+      let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Liquidaciones ${periodo}</title>
+      <style>
+        body{font-family:Arial,sans-serif;font-size:12px;margin:0}
+        .liq{border:1px solid #ccc;padding:20px;margin:20px;page-break-after:always}
+        .hdr{display:flex;justify-content:space-between;border-bottom:2px solid #1A7A3C;padding-bottom:10px;margin-bottom:14px}
+        .hdr h2{color:#1A7A3C;font-size:16px;margin:0}
+        .emp-info{font-size:11px;color:#555}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+        .box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:12px}
+        .box h4{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;margin-bottom:8px}
+        .row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}
+        .total{background:#1A7A3C;color:#fff;padding:12px;border-radius:6px;text-align:center;font-size:16px;font-weight:bold}
+        .firma{display:flex;justify-content:space-between;margin-top:30px;padding-top:16px;border-top:1px solid #ccc}
+        .firma-box{text-align:center;width:40%}
+        .firma-line{border-bottom:1px solid #333;height:40px}
+        .firma-label{font-size:10px;color:#555;margin-top:4px}
+        @media print{.liq{margin:0;border:none;padding:16px}}
+      </style></head><body>`;
+      snap.forEach(d => {
+        const r = d.data();
+        const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+        html += `<div class="liq">
+          <div class="hdr">
+            <div><h2>${empresa.nombre||'Martinez Services SPA'}</h2>
+            <div class="emp-info">RUT: ${empresa.rut||'76.782.954-K'} | Liquidación de Sueldo | Período: ${r.periodo}</div></div>
+            <div style="text-align:right"><div style="font-size:11px;color:#555">N° ${r.numero_asiento||d.id.slice(-4)}</div></div>
+          </div>
+          <div class="grid">
+            <div class="box">
+              <h4>Datos del Trabajador</h4>
+              <div class="row"><span>RUT</span><strong>${r.rut}</strong></div>
+              <div class="row"><span>Nombre</span><strong>${r.nombre}</strong></div>
+              <div class="row"><span>Cargo</span><span>${r.cargo||'—'}</span></div>
+              <div class="row"><span>AFP</span><span>${r.afp||'—'}</span></div>
+              <div class="row"><span>Salud</span><span>${r.salud||'—'}</span></div>
+            </div>
+            <div class="box">
+              <h4>Haberes</h4>
+              <div class="row"><span>Sueldo Base</span><span>${fmt(r.sueldo_base)}</span></div>
+              <div class="row"><span>Gratificación Legal</span><span>${fmt(r.gratificacion)}</span></div>
+              <div class="row"><span>Horas Extra</span><span>${fmt(r.horas_extra)}</span></div>
+              <div class="row" style="border-top:1px solid #ddd;font-weight:700"><span>Total Haberes</span><span>${fmt(r.total_haberes)}</span></div>
+            </div>
+            <div class="box">
+              <h4>Descuentos Legales</h4>
+              <div class="row"><span>AFP (${r.afp})</span><span>-${fmt(r.desc_afp)}</span></div>
+              <div class="row"><span>Salud (7%)</span><span>-${fmt(r.desc_salud)}</span></div>
+              <div class="row" style="border-top:1px solid #ddd;font-weight:700"><span>Total Descuentos</span><span>-${fmt(r.total_descuentos)}</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;justify-content:center">
+              <div class="total">Líquido a Pagar<br><span style="font-size:24px">${fmt(r.liquido_pagar)}</span></div>
+            </div>
+          </div>
+          <div class="firma">
+            <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Firma Trabajador — ${r.nombre}</div></div>
+            <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Representante Legal — ${empresa.nombre||'Empresa'}</div></div>
+          </div>
+        </div>`;
+      });
+      html += '</body></html>';
+      const w = window.open('', '_blank');
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => w.print(), 800);
+    };
+
+    // ── IMPRIMIR FICHA EMPLEADO PDF ──
+    window.imprimirFichaEmpleado = async (docId) => {
+      const d = await db.collection("empleados").doc(docId).get();
+      if (!d.exists) return;
+      const r = d.data();
+      const empDoc = await db.collection("empresas").doc(r.entityId||'').get();
+      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA"};
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha ${r.nombre}</title>
+      <style>body{font-family:Arial,sans-serif;font-size:12px;padding:30px;max-width:700px;margin:0 auto}
+      .hdr{display:flex;justify-content:space-between;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:20px}
+      h2{color:#1A7A3C;margin:0;font-size:18px}.sub{font-size:11px;color:#555;margin-top:3px}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+      .box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:14px}
+      .box h4{font-size:11px;font-weight:700;color:#1A7A3C;text-transform:uppercase;margin-bottom:10px;border-left:3px solid #1A7A3C;padding-left:7px}
+      .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+      .badge{background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+      .firma{margin-top:40px;display:flex;justify-content:space-between}
+      .fl{border-top:1px solid #333;width:40%;padding-top:5px;font-size:10px;color:#555;text-align:center}
+      @media print{body{padding:16px}}</style></head><body>
+      <div class="hdr">
+        <div><h2>FICHA DEL COLABORADOR</h2><div class="sub">${empresa.nombre||'Martinez Services SPA'}</div></div>
+        <div style="text-align:right"><span class="badge">${r.estado?.toUpperCase()||'ACTIVO'}</span><div class="sub" style="margin-top:4px">Fecha emisión: ${new Date().toLocaleDateString('es-CL')}</div></div>
+      </div>
+      <div class="grid">
+        <div class="box"><h4>Datos Personales</h4>
+          <div class="row"><span>RUT</span><strong>${r.rut||'—'}</strong></div>
+          <div class="row"><span>Nombre</span><strong>${r.nombre||'—'}</strong></div>
+          <div class="row"><span>Correo</span><span>${r.correo||'—'}</span></div>
+          <div class="row"><span>Teléfono</span><span>${r.telefono||'—'}</span></div>
+          <div class="row"><span>Dirección</span><span>${r.direccion||'—'}</span></div>
+        </div>
+        <div class="box"><h4>Datos Laborales</h4>
+          <div class="row"><span>Cargo</span><strong>${r.cargo||'—'}</strong></div>
+          <div class="row"><span>Fecha Ingreso</span><span>${r.fecha_ingreso||'—'}</span></div>
+          <div class="row"><span>Tipo Contrato</span><span>${r.tipo_contrato||'—'}</span></div>
+          <div class="row"><span>Sueldo Base</span><strong>$${Math.round(r.sueldo_base||0).toLocaleString('es-CL')}</strong></div>
+          <div class="row"><span>AFP</span><span>${r.afp||'—'}</span></div>
+          <div class="row"><span>Salud</span><span>${r.salud||'—'}</span></div>
+        </div>
+      </div>
+      <div class="firma">
+        <div class="fl">Firma del Colaborador<br>${r.nombre||'—'}</div>
+        <div class="fl">Representante Legal<br>${empresa.nombre||'Empresa'}</div>
+      </div></body></html>`;
+      const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+      setTimeout(() => w.print(), 600);
+    };
+
+    // ── LIBROS DE REMUNERACIONES ──
+    async function renderRRHH_Libros(zone, empId) {
+      zone.innerHTML = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-end;">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Periodo</label>
+            <input type="month" id="libro-periodo" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+          </div>
+          <button id="btn-ver-libro" class="btn-entrar">Ver Libro</button>
+          <button id="btn-libro-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ PDF para Archivar</button>
+          <button id="btn-libro-sii" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📋 Formato SII</button>
+          <button id="btn-libro-dt" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📤 Archivo DT Chile</button>
+        </div>` +
+        tableWrap("tbl-libro","Libro de Remuneraciones","Nómina mensual con todos los haberes y descuentos legales",
+          ["RUT","Nombre","Cargo","Sueldo Base","Gratificación","Total Haberes","AFP","Monto AFP","Salud","Monto Salud","Total Desc.","Líquido"]);
+
+      const cargarLibro = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) return;
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
+        const tb = document.getElementById("tbl-libro-tbody");
+        if (snap.empty) { tb.innerHTML = emptyRow(12, `Sin remuneraciones para ${periodo}. Procésalas primero.`); return; }
+        tb.innerHTML = "";
+        let tH=0, tD=0, tL=0;
+        snap.forEach(d => {
+          const r = d.data(); tH+=r.total_haberes||0; tD+=r.total_descuentos||0; tL+=r.liquido_pagar||0;
+          tb.innerHTML += `<tr>
+            <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+            <td><strong>${r.nombre||"—"}</strong></td>
+            <td style="font-size:11px">${r.cargo||"—"}</td>
+            <td>${formatMonto(r.sueldo_base)}</td>
+            <td>${formatMonto(r.gratificacion)}</td>
+            <td style="color:var(--c-accent);font-weight:700">${formatMonto(r.total_haberes)}</td>
+            <td style="font-size:11px">${r.afp||"—"}</td>
+            <td style="color:var(--c-danger)">${formatMonto(r.desc_afp)}</td>
+            <td style="font-size:11px">${r.salud||"—"}</td>
+            <td style="color:var(--c-danger)">${formatMonto(r.desc_salud)}</td>
+            <td style="color:var(--c-danger);font-weight:700">${formatMonto(r.total_descuentos)}</td>
+            <td style="font-weight:800">${formatMonto(r.liquido_pagar)}</td>
+          </tr>`;
+        });
+        tb.innerHTML += `<tr style="background:var(--c-bg);font-weight:800">
+          <td colspan="5" style="text-align:right">TOTALES:</td>
+          <td style="color:var(--c-accent)">${formatMonto(tH)}</td>
+          <td colspan="3"></td>
+          <td style="color:var(--c-danger)">${formatMonto(tD)}</td>
+          <td></td>
+          <td style="font-weight:800">${formatMonto(tL)}</td>
+        </tr>`;
+      };
+
+      document.getElementById("btn-ver-libro").onclick = cargarLibro;
+
+      document.getElementById("btn-libro-pdf").onclick = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) { alert("Selecciona el periodo primero"); return; }
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
+        if (snap.empty) { alert("Sin datos para ese periodo"); return; }
+        const empDoc = await db.collection("empresas").doc(empId).get();
+        const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA", rut:"76.782.954-K"};
+        const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+        let filas = "";
+        let tH=0,tD=0,tL=0;
+        snap.forEach(d => {
+          const r=d.data(); tH+=r.total_haberes||0; tD+=r.total_descuentos||0; tL+=r.liquido_pagar||0;
+          filas += `<tr><td>${r.rut}</td><td>${r.nombre}</td><td>${r.cargo||'—'}</td><td>${fmt(r.sueldo_base)}</td><td>${fmt(r.gratificacion)}</td><td>${fmt(r.total_haberes)}</td><td>${r.afp}</td><td>${fmt(r.desc_afp)}</td><td>${r.salud}</td><td>${fmt(r.desc_salud)}</td><td>${fmt(r.total_descuentos)}</td><td><strong>${fmt(r.liquido_pagar)}</strong></td></tr>`;
+        });
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Libro Remuneraciones ${periodo}</title>
+        <style>body{font-family:Arial;font-size:10px;padding:20px}
+        h2{color:#1A7A3C;font-size:14px}h3{font-size:11px;color:#555;font-weight:normal;margin:2px 0 12px}
+        table{width:100%;border-collapse:collapse;font-size:9px}
+        th{background:#1A7A3C;color:#fff;padding:5px 4px;text-align:left;font-size:9px}
+        td{padding:4px;border-bottom:1px solid #eee}
+        tr:nth-child(even){background:#f9f9f9}
+        .total-row{background:#f0f9f0;font-weight:700}
+        @media print{body{padding:8px}}</style></head><body>
+        <h2>LIBRO DE REMUNERACIONES — ${empresa.nombre||'Martinez Services SPA'}</h2>
+        <h3>RUT: ${empresa.rut||'—'} | Período: ${periodo} | Emitido: ${new Date().toLocaleDateString('es-CL')}</h3>
+        <table><thead><tr>
+          <th>RUT</th><th>Nombre</th><th>Cargo</th><th>Sueldo Base</th><th>Gratif.</th><th>Total Haberes</th>
+          <th>AFP</th><th>Monto AFP</th><th>Salud</th><th>Monto Salud</th><th>Total Desc.</th><th>Líquido</th>
+        </tr></thead><tbody>${filas}
+        <tr class="total-row"><td colspan="5">TOTALES</td><td>${fmt(tH)}</td><td colspan="4"></td><td>${fmt(tD)}</td><td>${fmt(tL)}</td></tr>
+        </tbody></table></body></html>`;
+        const w = window.open('','_blank'); w.document.write(html); w.document.close();
+        setTimeout(() => w.print(), 600);
+      };
+
+      document.getElementById("btn-libro-sii").onclick = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) { alert("Selecciona el periodo primero"); return; }
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
+        if (snap.empty) { alert("Sin datos para ese periodo"); return; }
+        // Formato SII: columnas requeridas por el SII para el libro de remuneraciones
+        let csv = "RUT_EMPLEADO;NOMBRE;PERIODO;SUELDO_BASE;GRATIFICACION;TOTAL_IMPONIBLE;DESCUENTO_AFP;DESCUENTO_SALUD;TOTAL_DESCUENTOS;LIQUIDO_PAGAR;AFP;SALUD\n";
+        snap.forEach(d => {
+          const r = d.data();
+          csv += `${r.rut};${r.nombre};${r.periodo};${r.sueldo_base||0};${r.gratificacion||0};${r.total_haberes||0};${r.desc_afp||0};${r.desc_salud||0};${r.total_descuentos||0};${r.liquido_pagar||0};${r.afp};${r.salud}\n`;
+        });
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+        a.download = `libro_rem_SII_${periodo}.csv`;
+        a.click();
+        alert("✓ Archivo formato SII exportado.");
+      };
+
+      document.getElementById("btn-libro-dt").onclick = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) { alert("Selecciona el periodo primero"); return; }
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
+        if (snap.empty) { alert("Sin datos para ese periodo"); return; }
+        const empDoc = await db.collection("empresas").doc(empId).get();
+        const empresa = empDoc.exists ? empDoc.data() : {rut:"76.782.954-K"};
+        // Formato Dirección del Trabajo (DT Chile) — carga masiva
+        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE_TRABAJADOR;PERIODO;SUELDO_BASE;TOTAL_IMPONIBLE;TOTAL_DESCUENTOS;LIQUIDO;TIPO_CONTRATO;AFP;SALUD\n";
+        snap.forEach(d => {
+          const r = d.data();
+          csv += `${empresa.rut||''};${r.rut};${r.nombre};${r.periodo};${r.sueldo_base||0};${r.total_haberes||0};${r.total_descuentos||0};${r.liquido_pagar||0};${r.tipo_contrato||'INDEFINIDO'};${r.afp};${r.salud}\n`;
+        });
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+        a.download = `DT_Chile_${periodo}_${(empresa.rut||'').replace(/\./g,'').replace('-','')}.csv`;
+        a.click();
+        alert("✓ Archivo para la Dirección del Trabajo exportado. Formato compatible con carga masiva DT Chile.");
+      };
+    }
+
+    // ── FINIQUITOS ──
+    async function renderRRHH_Finiquitos(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-finiquito","Generar Finiquito","📋") +
+        tableWrap("tbl-fin","Finiquitos Emitidos","Registro de finiquitos y desvinculaciones",
+          ["Fecha","RUT","Trabajador","Cargo","Causal","Monto Total","Estado","Acciones"]) +
+        modalHtml("modal-fin","Generar Finiquito", `
+          <div style="background:rgba(248,81,73,0.1);border:1px solid var(--c-danger);border-radius:var(--radius);padding:12px;margin-bottom:14px;">
+            <div style="font-size:12px;color:var(--c-danger);font-weight:600">⚠️ Este documento tiene valor legal. Revisar antes de emitir.</div>
+          </div>
+          ${formField("Trabajador", `<select id="fin-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
+          ${formField("Fecha de Término", inp("fin-fecha","date",""))}
+          ${formField("Causal de Despido", sel("fin-causal",[
+            {v:"art_159_1",l:"Art. 159 N°1 — Mutuo Acuerdo"},
+            {v:"art_159_2",l:"Art. 159 N°2 — Renuncia Voluntaria"},
+            {v:"art_159_3",l:"Art. 159 N°3 — Muerte del Trabajador"},
+            {v:"art_159_4",l:"Art. 159 N°4 — Vencimiento Plazo"},
+            {v:"art_159_5",l:"Art. 159 N°5 — Conclusión del Trabajo"},
+            {v:"art_160",  l:"Art. 160 — Causal Disciplinaria"},
+            {v:"art_161",  l:"Art. 161 — Necesidades de la Empresa"},
+          ]))}
+          ${formField("Días de Vacaciones Pendientes", inp("fin-vac-dias","number","0"))}
+          ${formField("Meses Indemnización (si aplica)", inp("fin-indem-meses","number","0"))}
+          ${formField("Observaciones / Acuerdos", `<textarea id="fin-obs" rows="3" placeholder="Acuerdos o condiciones especiales del finiquito..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>`)}
+          <input type="hidden" id="fin-docid">
+          <button id="btn-save-fin" class="btn-entrar" style="width:100%;margin-top:8px">💾 Generar y Guardar Finiquito</button>
+        `);
+
+      // Cargar trabajadores
+      if (empId) {
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+        const selEmp = document.getElementById("fin-emp");
+        empSnap.forEach(d => {
+          const o = document.createElement("option"); o.value=d.id;
+          o.textContent = `${d.data().rut} — ${d.data().nombre}`; selEmp.appendChild(o);
+        });
+      }
+
+      document.getElementById("btn-add-finiquito").onclick = () => {
+        ["fin-fecha","fin-obs","fin-docid"].forEach(id=>document.getElementById(id).value="");
+        ["fin-vac-dias","fin-indem-meses"].forEach(id=>document.getElementById(id).value=0);
+        document.getElementById("modal-fin").style.display="flex";
+      };
+
+      document.getElementById("btn-save-fin").onclick = async () => {
+        if (!empId) return;
+        const empDocId = document.getElementById("fin-emp").value;
+        if (!empDocId) { alert("Selecciona un trabajador"); return; }
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const r = empDoc.data();
+        const vacDias = parseInt(document.getElementById("fin-vac-dias").value)||0;
+        const indemMeses = parseInt(document.getElementById("fin-indem-meses").value)||0;
+        const sueldoBase = r.sueldo_base||0;
+        const montoVac = Math.round((sueldoBase/30)*vacDias);
+        const montoIndem = sueldoBase * indemMeses;
+        const montoTotal = montoVac + montoIndem;
+        const data = {
+          entityId:empId, empleado_id:empDocId,
+          rut:r.rut||"", nombre:r.nombre||"", cargo:r.cargo||"",
+          fecha_termino: document.getElementById("fin-fecha").value,
+          causal: document.getElementById("fin-causal").value,
+          vac_dias_pendientes: vacDias, monto_vacaciones: montoVac,
+          meses_indemnizacion: indemMeses, monto_indemnizacion: montoIndem,
+          monto_total: montoTotal,
+          observaciones: document.getElementById("fin-obs").value.trim(),
+          estado: "emitido",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const docId = document.getElementById("fin-docid").value;
+        const ref = db.collection("finiquitos");
+        if (docId) await ref.doc(docId).update(data);
+        else await ref.add(data);
+        // Actualizar estado del empleado a inactivo
+        await db.collection("empleados").doc(empDocId).update({estado:"inactivo"});
+        document.getElementById("modal-fin").style.display="none";
+        await renderRRHH_Finiquitos(zone, empId);
+        // Abrir PDF automáticamente
+        setTimeout(() => imprimirFiniquito(data), 500);
+      };
+
+      if (!empId) return;
+      const snap = await db.collection("finiquitos").where("entityId","==",empId).orderBy("creado","desc").get();
+      const tb = document.getElementById("tbl-fin-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r=d.data();
+        const causales = {art_159_1:"Mutuo Acuerdo",art_159_2:"Renuncia",art_159_3:"Fallecimiento",art_159_4:"Vencimiento Plazo",art_159_5:"Término Obra",art_160:"Causal Discipl.",art_161:"Nec. Empresa"};
+        tb.innerHTML += `<tr>
+          <td>${r.fecha_termino||"—"}</td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td>${r.cargo||"—"}</td>
+          <td style="font-size:11px">${causales[r.causal]||r.causal||"—"}</td>
+          <td style="font-weight:700;color:var(--c-danger)">${formatMonto(r.monto_total)}</td>
+          <td><span class="badge badge-green">${r.estado||"—"}</span></td>
+          <td>
+            <button onclick="imprimirFiniquitoById('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
+            <button onclick="deleteFiniquito('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+
+    window.imprimirFiniquito = (r) => {
+      const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+      const causales = {art_159_1:"Artículo 159 N°1 — Mutuo Acuerdo de las Partes",art_159_2:"Artículo 159 N°2 — Renuncia Voluntaria del Trabajador",art_159_3:"Artículo 159 N°3 — Muerte del Trabajador",art_159_4:"Artículo 159 N°4 — Vencimiento del Plazo Convenido",art_159_5:"Artículo 159 N°5 — Conclusión del Trabajo",art_160:"Artículo 160 — Causal Disciplinaria",art_161:"Artículo 161 — Necesidades de la Empresa"};
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Finiquito ${r.nombre}</title>
+      <style>body{font-family:Arial;font-size:12px;padding:30px;max-width:700px;margin:0 auto}
+      h2{color:#1A7A3C;font-size:16px;text-align:center;margin-bottom:4px}
+      .sub{text-align:center;color:#555;font-size:11px;margin-bottom:20px}
+      .section{margin:16px 0;padding:14px;background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px}
+      .section h4{color:#1A7A3C;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:10px}
+      .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0}
+      .total{background:#1A7A3C;color:#fff;padding:14px;border-radius:6px;text-align:center;margin:16px 0}
+      .total h3{margin:0;font-size:14px;font-weight:normal}
+      .total .monto{font-size:26px;font-weight:900;margin-top:4px}
+      .legal{font-size:10px;color:#777;line-height:1.6;margin:16px 0;padding:12px;border:1px solid #ddd;border-radius:4px}
+      .firmas{display:flex;justify-content:space-between;margin-top:40px}
+      .firma-box{text-align:center;width:44%}
+      .firma-line{border-bottom:2px solid #333;height:50px;margin-bottom:6px}
+      .firma-label{font-size:10px;color:#555}
+      @media print{body{padding:16px}}</style></head><body>
+      <h2>FINIQUITO LABORAL</h2>
+      <div class="sub">Documento de Término de Contrato de Trabajo — ${new Date().toLocaleDateString('es-CL')}</div>
+      <div class="section"><h4>Partes</h4>
+        <div class="row"><span>Empleador</span><strong>Martinez Services SPA — RUT 76.782.954-K</strong></div>
+        <div class="row"><span>Trabajador</span><strong>${r.nombre||'—'}</strong></div>
+        <div class="row"><span>RUT Trabajador</span><span>${r.rut||'—'}</span></div>
+        <div class="row"><span>Cargo</span><span>${r.cargo||'—'}</span></div>
+        <div class="row"><span>Fecha de Término</span><span>${r.fecha_termino||'—'}</span></div>
+        <div class="row"><span>Causal Legal</span><span>${causales[r.causal]||r.causal||'—'}</span></div>
+      </div>
+      <div class="section"><h4>Detalle de Haberes a Pagar</h4>
+        <div class="row"><span>Vacaciones pendientes (${r.vac_dias_pendientes||0} días)</span><span>${fmt(r.monto_vacaciones)}</span></div>
+        <div class="row"><span>Indemnización por años de servicio (${r.meses_indemnizacion||0} meses)</span><span>${fmt(r.monto_indemnizacion)}</span></div>
+      </div>
+      ${r.observaciones?`<div class="section"><h4>Acuerdos y Observaciones</h4><p>${r.observaciones}</p></div>`:''}
+      <div class="total"><h3>TOTAL A PAGAR POR FINIQUITO</h3><div class="monto">${fmt(r.monto_total)}</div></div>
+      <div class="legal">El presente finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo. La firma del presente instrumento implica la aceptación de todas las estipulaciones contenidas en él, declarando el trabajador estar en pleno conocimiento de sus derechos. Este documento tiene mérito ejecutivo una vez firmado ante Notario Público o ante el Inspector del Trabajo.</div>
+      <div class="firmas">
+        <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Firma Trabajador<br>${r.nombre||'—'}<br>RUT: ${r.rut||'—'}</div></div>
+        <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Representante Legal<br>Martinez Services SPA<br>RUT: 76.782.954-K</div></div>
+      </div></body></html>`;
+      const w = window.open('','_blank'); w.document.write(html); w.document.close();
+      setTimeout(() => w.print(), 600);
+    };
+
+    window.imprimirFiniquitoById = async (docId) => {
+      const d = await db.collection("finiquitos").doc(docId).get();
+      if (d.exists) imprimirFiniquito(d.data());
+    };
+    window.deleteFiniquito = async (docId, empId) => {
+      if (!confirm("¿Eliminar este finiquito?")) return;
+      await db.collection("finiquitos").doc(docId).delete();
+      renderRRHH_Finiquitos(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── IMPORTAR PERSONAL EXCEL ──
+    window.importarPersonalExcel = async (empId) => {
+      const fileInput = document.getElementById("import-empleados-file");
+      if (!fileInput?.files[0]) return;
+      const file = fileInput.files[0];
+      const text = await file.text();
+      const lines = text.split("\n").filter(l=>l.trim());
+      if (lines.length < 2) { alert("Archivo vacío o sin datos"); return; }
+      let importados = 0;
+      for (let i=1; i<lines.length; i++) {
+        const cols = lines[i].split(",");
+        if (cols.length < 4) continue;
+        const data = {
+          entityId:empId,
+          rut: (cols[0]||"").trim(), nombre: (cols[1]||"").trim(),
+          cargo: (cols[2]||"").trim(), sueldo_base: parseFloat(cols[3])||0,
+          afp: (cols[4]||"capital").trim(), salud: (cols[5]||"fonasa_b").trim(),
+          estado: "activo", creado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (!data.rut || !data.nombre) continue;
+        await db.collection("empleados").add(data);
+        importados++;
+      }
+      alert(`✓ ${importados} trabajadores importados correctamente.\n\nFormato esperado del CSV:\nRUT,Nombre,Cargo,Sueldo Base,AFP,Salud`);
+      renderRRHH_Fichas(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    window.exportarPersonalCSV = async (empId) => {
+      if (!empId) return;
+      const snap = await db.collection("empleados").where("entityId","==",empId).get();
+      let csv = "RUT,Nombre,Cargo,Sueldo Base,AFP,Salud,Tipo Contrato,Estado,Fecha Ingreso\n";
+      snap.forEach(d => {
+        const r=d.data();
+        csv += `${r.rut},${r.nombre},${r.cargo||''},${r.sueldo_base||0},${r.afp||''},${r.salud||''},${r.tipo_contrato||''},${r.estado||''},${r.fecha_ingreso||''}\n`;
+      });
+      const a = document.createElement("a");
+      a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+      a.download = `personal_${empId}_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    };
+
+    // ── PORTAL DEL COLABORADOR ──
+    async function renderRRHH_Portal(zone, empId) {
+      zone.innerHTML = `
+        <div style="margin-bottom:20px;">
+          <div style="background:var(--c-surface);border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:6px;">👤 Portal del Colaborador</div>
+            <p style="font-size:12px;color:var(--c-muted)">Busca al trabajador para ver su portal completo: ficha, liquidaciones, contratos, vacaciones, permisos y anticipos.</p>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <select id="portal-emp-select" style="flex:1;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              <option value="">— Selecciona trabajador —</option>
+            </select>
+            <button id="btn-cargar-portal" class="btn-entrar">Ver Portal</button>
+          </div>
+        </div>
+        <div id="portal-contenido"></div>`;
+
+      // Cargar empleados en el select
+      if (empId) {
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+        const sel2 = document.getElementById("portal-emp-select");
+        empSnap.forEach(d => {
+          const o=document.createElement("option"); o.value=d.id;
+          o.textContent=`${d.data().rut} — ${d.data().nombre}`; sel2.appendChild(o);
+        });
+      }
+
+      document.getElementById("btn-cargar-portal").onclick = async () => {
+        const empDocId = document.getElementById("portal-emp-select").value;
+        if (!empDocId) { alert("Selecciona un trabajador"); return; }
+        const cont = document.getElementById("portal-contenido");
+        cont.innerHTML = '<div style="color:var(--c-muted);font-size:13px;padding:20px">Cargando...</div>';
+
+        const [empDoc, remSnap, contSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
+          db.collection("empleados").doc(empDocId).get(),
+          db.collection("remuneraciones").where("empleado_id","==",empDocId).orderBy("periodo","desc").limit(12).get(),
+          db.collection("contratos").where("empleado_id","==",empDocId).get(),
+          db.collection("vacaciones").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+          db.collection("permisos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+          db.collection("anticipos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+        ]);
+
+        const emp = empDoc.data();
+        const eCls = {activo:"green",inactivo:"gray",licencia:"warn",vacaciones:"warn"}[emp.estado]||"gray";
+
+        let liqs = "";
+        remSnap.forEach(d=>{const r=d.data(); liqs+=`<tr><td>${r.periodo}</td><td>${formatMonto(r.total_haberes)}</td><td style="color:var(--c-danger)">${formatMonto(r.total_descuentos)}</td><td style="font-weight:700">${formatMonto(r.liquido_pagar)}</td><td><button onclick="exportarLiquidacionesPDF('${empId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">🖨️</button></td></tr>`;});
+        if (!liqs) liqs = `<tr class="empty-row"><td colspan="5">Sin liquidaciones registradas aún</td></tr>`;
+
+        let conts = "";
+        contSnap.forEach(d=>{const r=d.data(); conts+=`<tr><td>${r.tipo||'—'}</td><td>${r.fecha_inicio||'—'}</td><td>${r.fecha_fin||'Indefinido'}</td><td>${formatMonto(r.sueldo_pactado)}</td><td><span class="badge badge-${r.estado==='vigente'?'green':'gray'}">${r.estado||'—'}</span></td></tr>`;});
+        if (!conts) conts = `<tr class="empty-row"><td colspan="5">Sin contratos registrados</td></tr>`;
+
+        let vacs = "";
+        vacSnap.forEach(d=>{const r=d.data(); vacs+=`<tr><td>${r.tipo||'—'}</td><td>${r.desde||'—'}</td><td>${r.hasta||'—'}</td><td>${r.dias_solicitados||0}</td><td><span class="badge badge-${r.estado==='aprobada'?'green':r.estado==='rechazada'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
+        if (!vacs) vacs = `<tr class="empty-row"><td colspan="5">Sin solicitudes registradas</td></tr>`;
+
+        let perms = "";
+        permSnap.forEach(d=>{const r=d.data(); perms+=`<tr><td>${r.tipo||'—'}</td><td>${r.fecha||'—'}</td><td>${r.motivo||'—'}</td><td><span class="badge badge-${r.estado==='aprobado'?'green':r.estado==='rechazado'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
+        if (!perms) perms = `<tr class="empty-row"><td colspan="4">Sin permisos registrados</td></tr>`;
+
+        let ants = "";
+        anticSnap.forEach(d=>{const r=d.data(); ants+=`<tr><td>${formatFecha(r.creado)}</td><td>${formatMonto(r.monto)}</td><td>${r.motivo||'—'}</td><td><span class="badge badge-${r.estado==='aprobado'?'green':r.estado==='rechazado'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
+        if (!ants) ants = `<tr class="empty-row"><td colspan="4">Sin solicitudes de anticipo</td></tr>`;
+
+        cont.innerHTML = `
+          <!-- FICHA RESUMEN -->
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div style="font-size:20px;font-weight:800">${emp.nombre||'—'}</div>
+              <div style="font-size:13px;color:var(--c-muted);margin-top:3px">${emp.cargo||'—'} · RUT: ${emp.rut||'—'}</div>
+              <div style="font-size:12px;color:var(--c-muted)">${emp.correo||''} · ${emp.telefono||''}</div>
+              <div style="font-size:12px;color:var(--c-muted)">Ingreso: ${emp.fecha_ingreso||'—'} · Contrato: ${emp.tipo_contrato||'—'}</div>
+              <div style="font-size:12px;color:var(--c-muted)">AFP: ${emp.afp||'—'} · Salud: ${emp.salud||'—'} · Sueldo: ${formatMonto(emp.sueldo_base)}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+              <span class="badge badge-${eCls}">${emp.estado?.toUpperCase()||'—'}</span>
+              <button onclick="imprimirFichaEmpleado('${empDocId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">🖨️ Imprimir Ficha</button>
+            </div>
+          </div>
+
+          <!-- SOLICITUDES RÁPIDAS -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px;">
+            <button onclick="abrirSolicitudPortal('vacaciones','${empDocId}','${empId}')" style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);color:var(--c-accent);font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              🏖️ Solicitar Vacaciones<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Registrar solicitud de vacaciones</div>
+            </button>
+            <button onclick="abrirSolicitudPortal('permiso','${empDocId}','${empId}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              📋 Solicitar Permiso<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Permiso con o sin goce de sueldo</div>
+            </button>
+            <button onclick="abrirSolicitudPortal('anticipo','${empDocId}','${empId}')" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              💵 Solicitar Anticipo<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Anticipo de sueldo</div>
+            </button>
+            <button onclick="registrarAsistenciaPortal('${empDocId}','${empId}')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
+              📍 Registrar Asistencia<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Firma digital con timestamp</div>
+            </button>
+          </div>
+
+          <!-- LIQUIDACIONES -->
+          <div class="data-table-wrap" style="margin-bottom:14px;">
+            <div class="data-table-head"><div><h3>📑 Mis Liquidaciones</h3><p>Últimos 12 períodos</p></div></div>
+            <table class="data-table"><thead><tr><th>Período</th><th>Haberes</th><th>Descuentos</th><th>Líquido</th><th>PDF</th></tr></thead>
+            <tbody>${liqs}</tbody></table>
+          </div>
+
+          <!-- CONTRATOS -->
+          <div class="data-table-wrap" style="margin-bottom:14px;">
+            <div class="data-table-head"><div><h3>📝 Mis Contratos y Anexos</h3><p>Historial contractual</p></div></div>
+            <table class="data-table"><thead><tr><th>Tipo</th><th>Inicio</th><th>Término</th><th>Sueldo Pactado</th><th>Estado</th></tr></thead>
+            <tbody>${conts}</tbody></table>
+          </div>
+
+          <!-- VACACIONES -->
+          <div class="data-table-wrap" style="margin-bottom:14px;">
+            <div class="data-table-head"><div><h3>🏖️ Mis Vacaciones y Permisos</h3><p>Historial de solicitudes</p></div></div>
+            <table class="data-table"><thead><tr><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días</th><th>Estado</th></tr></thead>
+            <tbody>${vacs}</tbody></table>
+          </div>
+
+          <!-- PERMISOS -->
+          <div class="data-table-wrap" style="margin-bottom:14px;">
+            <div class="data-table-head"><div><h3>📋 Mis Permisos</h3><p>Permisos solicitados</p></div></div>
+            <table class="data-table"><thead><tr><th>Tipo</th><th>Fecha</th><th>Motivo</th><th>Estado</th></tr></thead>
+            <tbody>${perms}</tbody></table>
+          </div>
+
+          <!-- ANTICIPOS -->
+          <div class="data-table-wrap" style="margin-bottom:14px;">
+            <div class="data-table-head"><div><h3>💵 Mis Anticipos</h3><p>Solicitudes de anticipo de sueldo</p></div></div>
+            <table class="data-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Motivo</th><th>Estado</th></tr></thead>
+            <tbody>${ants}</tbody></table>
+          </div>
+
+          <div id="portal-modal-solicitud"></div>`;
+      };
+    }
+
+    window.abrirSolicitudPortal = (tipo, empDocId, empId) => {
+      const cont = document.getElementById("portal-modal-solicitud");
+      if (!cont) return;
+      const titulos = {vacaciones:"🏖️ Solicitar Vacaciones", permiso:"📋 Solicitar Permiso", anticipo:"💵 Solicitar Anticipo"};
+      const campos = {
+        vacaciones: `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>${formField("Desde", inp("ps-desde","date",""))}</div>
+            <div>${formField("Hasta", inp("ps-hasta","date",""))}</div>
+          </div>
+          ${formField("Observaciones", inp("ps-obs","text","Motivo o detalle opcional"))}`,
+        permiso: `
+          ${formField("Tipo de Permiso", sel("ps-tipo-perm",[{v:"con_goce",l:"Con Goce de Sueldo"},{v:"sin_goce",l:"Sin Goce de Sueldo"},{v:"medico",l:"Médico"}]))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>${formField("Desde", inp("ps-desde","date",""))}</div>
+            <div>${formField("Hasta", inp("ps-hasta","date",""))}</div>
+          </div>
+          ${formField("Motivo", inp("ps-obs","text","Motivo del permiso"))}`,
+        anticipo: `
+          ${formField("Monto Solicitado ($)", inp("ps-monto","number","0"))}
+          ${formField("Motivo", inp("ps-obs","text","Motivo del anticipo"))}`
+      };
+      cont.innerHTML = modalHtml("modal-portal-sol", titulos[tipo], `
+        ${campos[tipo]}
+        <button id="btn-enviar-sol" class="btn-entrar" style="width:100%;margin-top:8px">Enviar Solicitud</button>
+      `);
+      document.getElementById("modal-portal-sol").style.display = "flex";
+      document.getElementById("btn-enviar-sol").onclick = async () => {
+        const desde = document.getElementById("ps-desde")?.value||"";
+        const hasta = document.getElementById("ps-hasta")?.value||"";
+        const obs   = document.getElementById("ps-obs")?.value.trim()||"";
+        const monto = parseFloat(document.getElementById("ps-monto")?.value)||0;
+        const tipoPerm = document.getElementById("ps-tipo-perm")?.value||"";
+        const dias = desde && hasta ? Math.ceil((new Date(hasta)-new Date(desde))/(1000*60*60*24))+1 : 0;
+        const coleccion = tipo==="anticipo" ? "anticipos" : tipo==="permiso" ? "permisos" : "vacaciones";
+        const data = {
+          entityId:empId, empleado_id:empDocId,
+          tipo: tipo==="permiso" ? tipoPerm : tipo,
+          desde, hasta, dias_solicitados:dias,
+          monto: tipo==="anticipo" ? monto : 0,
+          motivo:obs, observacion:obs,
+          estado:"pendiente",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection(coleccion).add(data);
+        document.getElementById("modal-portal-sol").style.display="none";
+        alert(`✓ Solicitud de ${tipo} enviada. Queda pendiente de aprobación.`);
+        document.getElementById("btn-cargar-portal").click();
+      };
+    };
+
+    window.registrarAsistenciaPortal = async (empDocId, empId) => {
+      const ahora = new Date();
+      const fecha = ahora.toISOString().slice(0,10);
+      const hora  = ahora.toTimeString().slice(0,5);
+      // Intentar obtener geolocalización
+      let coordenadas = "No disponible";
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            coordenadas = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+            await guardarFirmaAsistencia(empDocId, empId, fecha, hora, coordenadas);
+          },
+          async () => {
+            await guardarFirmaAsistencia(empDocId, empId, fecha, hora, "Sin GPS");
+          }
+        );
+      } else {
+        await guardarFirmaAsistencia(empDocId, empId, fecha, hora, "Sin GPS");
+      }
+    };
+
+    async function guardarFirmaAsistencia(empDocId, empId, fecha, hora, coordenadas) {
+      const empDoc = await db.collection("empleados").doc(empDocId).get();
+      const r = empDoc.data();
+      // Verificar si ya hay registro de hoy
+      const existente = await db.collection("asistencia").doc(`${empId}_${fecha}_${empDocId}`).get();
+      if (existente.exists && existente.data().entrada) {
+        // Si ya tiene entrada, registrar salida
+        await db.collection("asistencia").doc(`${empId}_${fecha}_${empDocId}`).update({
+          salida: hora, coordenadas_salida: coordenadas,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert(`✅ Salida registrada\nHora: ${hora}\nCoordenadas: ${coordenadas}`);
+      } else {
+        // Registrar entrada
+        await db.collection("asistencia").doc(`${empId}_${fecha}_${empDocId}`).set({
+          entityId:empId, fecha, empleado_id:empDocId,
+          rut:r?.rut||"", nombre:r?.nombre||"",
+          entrada:hora, coordenadas_entrada:coordenadas,
+          estado:"presente",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge:true});
+        alert(`✅ Entrada registrada\nTrabajador: ${r?.nombre||'—'}\nHora: ${hora}\nCoordenadas: ${coordenadas}`);
+      }
+      document.getElementById("btn-cargar-portal")?.click();
+    }
+
+    // ── EVENTOS DE BOTONES EN FICHAS (import/export) ──
+    // Se conectan cuando se renderiza la vista de fichas
+    const _origFichas = renderRRHH_Fichas;
+    renderRRHH_Fichas = async function(zone, empId) {
+      await _origFichas(zone, empId);
+      // Conectar importar
+      const importFile = document.getElementById("import-empleados-file");
+      if (importFile) importFile.onchange = () => importarPersonalExcel(empId);
+      // Conectar exportar
+      const exportBtn = document.getElementById("btn-export-empleados");
+      if (exportBtn) exportBtn.onclick = () => exportarPersonalCSV(empId);
+    };
+
+    // Conectar botones Previred y PDF en Remuneraciones
+    const _origRem = renderRRHH_Remuneraciones;
+    renderRRHH_Remuneraciones = async function(zone, empId) {
+      await _origRem(zone, empId);
+      const prevBtn = document.getElementById("btn-export-previred");
+      if (prevBtn) prevBtn.onclick = () => exportarPrevired(empId);
+      const pdfBtn = document.getElementById("btn-export-liq-pdf");
+      if (pdfBtn) pdfBtn.onclick = () => exportarLiquidacionesPDF(empId);
+    };
 
   })();
   </script>
