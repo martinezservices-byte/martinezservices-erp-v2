@@ -1004,16 +1004,20 @@
 
         <button class="btn-login" id="btn-login">Ingresar al sistema</button>
 
-        <div style="display:flex;align-items:center;gap:10px;margin:14px 0;">
+        <div style="display:flex;align-items:center;gap:10px;margin:16px 0;">
           <div style="flex:1;height:1px;background:var(--c-border)"></div>
           <span style="font-size:11px;color:var(--c-muted)">o ingresa con</span>
           <div style="flex:1;height:1px;background:var(--c-border)"></div>
         </div>
 
-        <button id="btn-login-google" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:14px;font-weight:600;padding:11px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s;">
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        <button id="btn-login-google" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;font-weight:600;padding:10px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;">
+          <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Continuar con Google
         </button>
+
+        <div style="text-align:center;font-size:11px;color:var(--c-muted);margin-bottom:10px;">
+          ¿Olvidaste tu contraseña? <a id="btn-forgot" href="#" style="color:var(--c-accent);font-weight:600">Recuperar acceso</a>
+        </div>
 
         <p class="login-error" id="login-error"></p>
 
@@ -1120,6 +1124,12 @@
                 style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
             </div>
             <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">RUT del Cliente / Empresa</label>
+              <input id="nc-rut" type="text" placeholder="76.XXX.XXX-X"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              <div id="nc-rut-feedback" style="font-size:11px;margin-top:2px;min-height:14px;"></div>
+            </div>
+            <div style="margin-bottom:14px;">
               <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Correo Electrónico</label>
               <input id="nc-correo" type="email" placeholder="correo@cliente.cl"
                 style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
@@ -1163,12 +1173,23 @@
                 <button id="btn-nc-ninguno" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);font-family:var(--font);font-size:11px;padding:5px 10px;border-radius:5px;cursor:pointer;">✗ Desmarcar todos</button>
               </div>
             </div>
-            <div style="margin-bottom:20px;">
+            <div style="margin-bottom:14px;">
               <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Días de Demo</label>
               <input id="nc-dias-demo" type="number" value="7" min="1" max="90"
                 style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
             </div>
-            <button id="btn-crear-cliente" class="btn-entrar" style="width:100%">Crear Cliente</button>
+            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.25);border-radius:var(--radius);padding:14px;margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">🔑 Acceso del Cliente al Sistema</div>
+              <div style="margin-bottom:10px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Clave temporal (mín. 6 caracteres)</label>
+                <input id="nc-clave" type="text" placeholder="Ej: Cliente2026"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div style="font-size:11px;color:var(--c-muted);line-height:1.6;">
+                ℹ️ El cliente podrá ingresar con su correo y esta clave, O con Google si su Gmail coincide con el correo registrado. Puede cambiar la clave después desde el sistema.
+              </div>
+            </div>
+            <button id="btn-crear-cliente" class="btn-entrar" style="width:100%">✓ Crear Cliente y Activar Acceso</button>
             <p id="nc-msg" style="margin-top:10px;font-size:12px;text-align:center;min-height:16px;"></p>
           </div>
         </div>
@@ -1224,6 +1245,27 @@
                 style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
             </div>
             <button id="btn-crear-entidad" class="btn-entrar" style="width:100%">Registrar Entidad</button>
+            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.25);border-radius:var(--radius);padding:12px;margin-bottom:10px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:8px;">⚙️ Configuración de Remuneraciones</div>
+              <div style="margin-bottom:8px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" id="ne-paga-gratif" checked style="accent-color:var(--c-accent);width:16px;height:16px;">
+                  Paga gratificación legal (mensual, base/12, tope legal)
+                </label>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" id="ne-paga-colacion" style="accent-color:var(--c-accent);width:16px;height:16px;">
+                  Paga asignación de colación
+                </label>
+              </div>
+              <div style="margin-bottom:8px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" id="ne-paga-movil" style="accent-color:var(--c-accent);width:16px;height:16px;">
+                  Paga asignación de movilización
+                </label>
+              </div>
+            </div>
             <p id="ne-msg" style="margin-top:10px;font-size:12px;text-align:center;min-height:16px;"></p>
           </div>
         </div>
@@ -2565,6 +2607,30 @@
     // ─────────────────────────────────────────────
 
     // Login
+    // Validador RUT en nuevo cliente
+    setTimeout(() => {
+      aplicarValidadorRUT('nc-rut', 'nc-rut-feedback');
+      aplicarValidadorRUT('emp-rut', 'emp-rut-feedback');
+    }, 500);
+
+    // Recuperar contraseña
+    document.getElementById("btn-forgot").addEventListener("click", async (e) => {
+      e.preventDefault();
+      const correo = document.getElementById("login-email").value.trim();
+      if (!correo) {
+        document.getElementById("login-error").textContent = "Ingresa tu correo arriba para recuperar tu contraseña.";
+        return;
+      }
+      try {
+        await auth.sendPasswordResetEmail(correo);
+        document.getElementById("login-error").style.color = "var(--c-accent)";
+        document.getElementById("login-error").textContent = `✓ Enviamos un correo de recuperación a ${correo}. Revisa tu bandeja de entrada.`;
+      } catch(e) {
+        document.getElementById("login-error").style.color = "var(--c-danger)";
+        document.getElementById("login-error").textContent = "Error: " + (e.code === "auth/user-not-found" ? "No existe una cuenta con ese correo." : e.message);
+      }
+    });
+
     // Login con Google
     document.getElementById("btn-login-google").addEventListener("click", async () => {
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -3134,23 +3200,58 @@
         const nombre = document.getElementById("emp-nombre").value.trim();
         if (!rut || !nombre) { alert("RUT y nombre son obligatorios"); return; }
         const docId = document.getElementById("emp-docid").value;
+        const correoPortal = (document.getElementById("emp-correo-portal")?.value||"").trim().toLowerCase();
+        const clavePortal  = (document.getElementById("emp-clave-portal")?.value||"").trim();
         const data = {
           rut, nombre, cargo: document.getElementById("emp-cargo").value.trim(),
-          fecha_ingreso: document.getElementById("emp-ingreso").value,
-          sueldo_base: parseFloat(document.getElementById("emp-sueldo").value)||0,
-          tipo_contrato: document.getElementById("emp-contrato").value,
-          afp: document.getElementById("emp-afp").value,
+          fecha_ingreso:  document.getElementById("emp-ingreso").value,
+          fecha_termino:  document.getElementById("emp-termino")?.value||"",
+          sueldo_base:    parseFloat(document.getElementById("emp-sueldo").value)||0,
+          sueldo_pactado: parseFloat(document.getElementById("emp-sueldo").value)||0,
+          tipo_contrato:  document.getElementById("emp-contrato").value,
+          cargas_familiares: parseInt(document.getElementById("emp-cargas")?.value)||0,
+          afp:   document.getElementById("emp-afp").value,
           salud: document.getElementById("emp-salud").value,
           correo: document.getElementById("emp-correo").value.trim().toLowerCase(),
-          telefono: document.getElementById("emp-tel").value.trim(),
-          direccion: document.getElementById("emp-dir").value.trim(),
-          estado: document.getElementById("emp-estado").value,
+          correo_portal: correoPortal || document.getElementById("emp-correo").value.trim().toLowerCase(),
+          telefono:   document.getElementById("emp-tel").value.trim(),
+          direccion:  document.getElementById("emp-dir").value.trim(),
+          estado:     document.getElementById("emp-estado").value,
+          // Datos bancarios
+          banco:       document.getElementById("emp-banco")?.value||"",
+          tipo_cuenta: document.getElementById("emp-tipo-cuenta")?.value||"",
+          num_cuenta:  document.getElementById("emp-num-cuenta")?.value.trim()||"",
+          // Tallas
+          talla_polera:   document.getElementById("emp-talla-polera")?.value||"",
+          talla_pantalon: document.getElementById("emp-talla-pantalon")?.value.trim()||"",
+          talla_calzado:  document.getElementById("emp-talla-calzado")?.value||"",
+          talla_chaleco:  document.getElementById("emp-talla-chaleco")?.value||"",
+          // Acceso portal
+          portal_activo: correoPortal.length > 0,
           entityId: empId,
           actualizado: firebase.firestore.FieldValue.serverTimestamp()
         };
         const ref = db.collection("empleados");
         if (docId) await ref.doc(docId).update(data);
         else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+
+        // Si tiene clave portal → registrar en usuarios_pendientes
+        if (correoPortal && clavePortal.length >= 6) {
+          await db.collection("usuarios_pendientes").doc(correoPortal).set({
+            correo: correoPortal, nombre, rol: "trabajador",
+            clave_temp: clavePortal, entityId: empId,
+            empleado_id: docId || "",
+            activo: true,
+            creado_por: STATE.user?.email||"",
+            creado: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          alert(`✅ Ficha guardada y acceso portal creado.
+
+El trabajador puede ingresar con:
+Correo: ${correoPortal}
+Clave: ${clavePortal}`);
+        }
+
         document.getElementById("modal-emp").style.display = "none";
         renderRRHH_Fichas(zone, empId);
       };
@@ -3172,13 +3273,14 @@
             <td style="font-family:var(--mono);font-size:12px">${r.rut||"—"}</td>
             <td><strong>${r.nombre||"—"}</strong></td>
             <td>${r.cargo||"—"}</td>
-            <td>${formatMonto(r.sueldo_base)}</td>
-            <td><span class="badge badge-gray">${r.afp||"—"}</span></td>
-            <td><span class="badge badge-gray">${r.salud||"—"}</span></td>
+            <td style="font-weight:700">${formatMonto(r.sueldo_pactado||r.sueldo_base)}</td>
+            <td><span class="badge badge-gray" style="font-size:10px">${r.afp||"—"}</span></td>
+            <td><span class="badge badge-gray" style="font-size:10px">${r.salud||"—"}</span></td>
             <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
-            <td>
-              <button onclick="editEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
-              <button onclick="deleteEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+            <td style="white-space:nowrap">
+              <button onclick="editEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;" title="Editar ficha">✏️</button>
+              <button onclick="imprimirFichaEmpleado('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Ver ficha PDF">🖨️</button>
+              <button onclick="deleteEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Eliminar">🗑</button>
             </td>
           </tr>`;
         });
@@ -3191,19 +3293,32 @@
     window.editEmpleado = async (docId, empId) => {
       const d = await db.collection("empleados").doc(docId).get();
       const r = d.data();
-      document.getElementById("emp-docid").value   = docId;
-      document.getElementById("emp-rut").value     = r.rut||"";
-      document.getElementById("emp-nombre").value  = r.nombre||"";
-      document.getElementById("emp-cargo").value   = r.cargo||"";
-      document.getElementById("emp-ingreso").value = r.fecha_ingreso||"";
-      document.getElementById("emp-sueldo").value  = r.sueldo_base||0;
-      document.getElementById("emp-contrato").value= r.tipo_contrato||"indefinido";
-      document.getElementById("emp-afp").value     = r.afp||"capital";
-      document.getElementById("emp-salud").value   = r.salud||"fonasa_b";
-      document.getElementById("emp-correo").value  = r.correo||"";
-      document.getElementById("emp-tel").value     = r.telefono||"";
-      document.getElementById("emp-dir").value     = r.direccion||"";
-      document.getElementById("emp-estado").value  = r.estado||"activo";
+      const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val||""; };
+      set("emp-docid", docId);
+      set("emp-rut", r.rut);
+      set("emp-nombre", r.nombre);
+      set("emp-cargo", r.cargo);
+      set("emp-ingreso", r.fecha_ingreso);
+      set("emp-termino", r.fecha_termino);
+      set("emp-sueldo", r.sueldo_pactado||r.sueldo_base||0);
+      set("emp-cargas", r.cargas_familiares||0);
+      set("emp-correo", r.correo);
+      set("emp-tel", r.telefono);
+      set("emp-dir", r.direccion);
+      set("emp-correo-portal", r.correo_portal||r.correo);
+      set("emp-clave-portal", "");
+      set("emp-banco", r.banco);
+      set("emp-tipo-cuenta", r.tipo_cuenta||"vista");
+      set("emp-num-cuenta", r.num_cuenta);
+      set("emp-talla-polera", r.talla_polera);
+      set("emp-talla-pantalon", r.talla_pantalon);
+      set("emp-talla-calzado", r.talla_calzado);
+      set("emp-talla-chaleco", r.talla_chaleco);
+      const selSet = (id, val) => { const el=document.getElementById(id); if(el && val) el.value=val; };
+      selSet("emp-contrato", r.tipo_contrato||"indefinido");
+      selSet("emp-afp", r.afp||"capital");
+      selSet("emp-salud", r.salud||"fonasa_b");
+      selSet("emp-estado", r.estado||"activo");
       document.getElementById("modal-emp").style.display = "flex";
     };
     window.deleteEmpleado = async (docId, empId) => {
@@ -3227,7 +3342,7 @@
           <div class="kpi-card"><div class="kpi-label">Total Líquido</div><div class="kpi-value" id="kpi-rem-liquido">—</div></div>
         </div>` +
         tableWrap("tbl-rem","Proceso de Remuneraciones","Período activo — valores calculados automáticamente",
-          ["RUT","Trabajador","Sueldo Base","Gratificación","Horas Extra","Total Haberes","AFP","Salud","Total Desc.","Líquido a Pagar","Estado"]);
+          ["RUT","Trabajador","Sueldo Pactado","Gratificación","Total Haberes","AFP","Salud","Total Desc.","Líquido","Estado","Acciones"]);
 
       // ── PASO 1: Seleccionar período y cargar novedades ──
       document.getElementById("btn-procesar-rem").onclick = async () => {
@@ -3583,7 +3698,7 @@
       zone.innerHTML =
         btnPrimary("btn-add-cont","Nuevo Contrato / Anexo","📝") +
         tableWrap("tbl-cont","Contratos y Anexos","Documentos contractuales vigentes e históricos",
-          ["RUT","Trabajador","Tipo","Fecha Inicio","Fecha Término","Estado","Acciones"]) +
+          ["RUT","Trabajador","Tipo","Inicio","Término","Sueldo","Estado","Acciones"]) +
         modalHtml("modal-cont","Registrar Contrato", `
           ${formField("Trabajador", `<select id="cont-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
           ${formField("Tipo de Contrato", sel("cont-tipo",[{v:"indefinido",l:"Contrato Indefinido"},{v:"plazo_fijo",l:"Plazo Fijo"},{v:"obra_faena",l:"Obra o Faena"},{v:"honorarios",l:"Honorarios"},{v:"anexo",l:"Anexo de Contrato"}]))}
@@ -3646,11 +3761,15 @@
         tb.innerHTML += `<tr>
           <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
           <td><strong>${r.nombre||"—"}</strong></td>
-          <td><span class="badge badge-gray">${r.tipo||"—"}</span></td>
+          <td><span class="badge badge-gray" style="font-size:10px">${r.tipo||"—"}</span></td>
           <td>${r.fecha_inicio||"—"}</td>
-          <td>${r.fecha_fin||"Sin fecha término"}</td>
+          <td>${r.fecha_fin||"Indefinido"}</td>
+          <td style="font-weight:700">${formatMonto(r.sueldo_pactado)}</td>
           <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
-          <td><button onclick="deleteCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+          <td style="white-space:nowrap">
+              <button onclick="imprimirContratoPDF('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;" title="Ver PDF">🖨️</button>
+              <button onclick="deleteCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Eliminar">🗑</button>
+            </td>
         </tr>`;
       });
     }
@@ -5191,11 +5310,11 @@
     const TODOS_MODULOS  = ["condominios","residentes","rrhh","contabilidad","facturacion","logistica","auditoria"];
 
     function isSuperadmin() {
+      // BLINDADO: solo el UID exacto o correo exacto de la dueña
+      // NUNCA por Firestore — evita que clientes puedan manipular su doc
       if (!STATE.user) return false;
       if (STATE.user.uid === SUPERADMIN_UID) return true;
       if (STATE.user.email === "aybserviciosg@gmail.com") return true;
-      if (STATE.tenantData?.es_superadmin === true) return true;
-      if (STATE.tenantData?.rol === "superadmin") return true;
       return false;
     }
 
@@ -5368,7 +5487,10 @@
       const msg    = document.getElementById("nc-msg");
       const nombre = document.getElementById("nc-nombre").value.trim();
       const correo = document.getElementById("nc-correo").value.trim().toLowerCase();
+      const clave  = document.getElementById("nc-clave").value.trim();
+
       if (!nombre || !correo) { msg.style.color="var(--c-danger)"; msg.textContent="Nombre y correo son obligatorios."; return; }
+      if (clave && clave.length < 6) { msg.style.color="var(--c-danger)"; msg.textContent="La clave debe tener al menos 6 caracteres."; return; }
 
       const modulos = [];
       document.querySelectorAll("#nc-modulos-checks input[type=checkbox]:checked").forEach(c=>modulos.push(c.value));
@@ -5377,10 +5499,12 @@
       const dias   = parseInt(document.getElementById("nc-dias-demo").value)||7;
       const vence  = new Date(); vence.setDate(vence.getDate()+dias);
 
-      msg.style.color="var(--c-muted)"; msg.textContent="Creando cliente…";
+      msg.style.color="var(--c-muted)"; msg.textContent="Creando cliente y activando acceso…";
       try {
+        // 1. Guardar en sa_clientes (para el SA Panel)
+        const rutCliente = document.getElementById("nc-rut")?.value.trim()||"";
         await db.collection("sa_clientes").add({
-          nombre, correo,
+          nombre, correo, rut: rutCliente,
           telefono:    document.getElementById("nc-tel").value.trim(),
           tipo:        document.getElementById("nc-tipo").value,
           plan, modulos,
@@ -5390,9 +5514,46 @@
           creado_por:  STATE.user?.email||"",
           creado:      firebase.firestore.FieldValue.serverTimestamp()
         });
+
+        // 2. Registrar en usuarios_pendientes para que cuando el cliente entre
+        //    el sistema lo reconozca y le asigne su plan y módulos
+        await db.collection("usuarios_pendientes").doc(correo).set({
+          correo, nombre,
+          rol:          "cliente",
+          plan,         modulos,
+          clave_temp:   clave || "",
+          dias_demo:    dias,
+          fecha_vencimiento: vence.toISOString().slice(0,10),
+          activo:       true,
+          creado_por:   STATE.user?.email||"",
+          creado:       firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 3. Mensaje de éxito con instrucciones
         msg.style.color="var(--c-accent)";
-        msg.textContent=`✓ Cliente "${nombre}" creado exitosamente.`;
-        ["nc-nombre","nc-correo","nc-tel"].forEach(id=>document.getElementById(id).value="");
+        msg.textContent=`✓ Cliente "${nombre}" creado y acceso activado.`;
+
+        // Mostrar resumen de acceso
+        const resumen = clave
+          ? `✅ Acceso creado para ${nombre}
+
+Correo: ${correo}
+Clave temporal: ${clave}
+
+El cliente puede:
+• Ingresar con correo y clave en el ERP
+• O con Google si su Gmail es ${correo}
+
+URL del ERP: (comparte la URL del sistema)`
+          : `✅ Cliente "${nombre}" registrado.
+
+El cliente puede ingresar con Google usando ${correo}
+
+Si necesita clave, edita el cliente y agrega una.`;
+        alert(resumen);
+
+        // Limpiar formulario
+        ["nc-nombre","nc-correo","nc-tel","nc-clave"].forEach(id=>document.getElementById(id).value="");
         document.querySelectorAll("#nc-modulos-checks input[type=checkbox]").forEach(c=>c.checked=false);
         loadSAStats();
       } catch(e) {
@@ -6135,7 +6296,7 @@ Correo: ${correoPortal}
             💵 Solicitar Anticipo<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Anticipo de sueldo</div>
           </button>
           <button onclick="registrarAsistenciaPortal('${empDocId}','${empId}')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            📍 Marcar Asistencia GPS<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Firma digital con ubicación</div>
+            📍 Marcar Asistencia GPS<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Captura coordenadas reales del celular</div>
           </button>
         </div>
 
@@ -6246,7 +6407,10 @@ Correo: ${correoPortal}
           salida: hora, coordenadas_salida: coordenadas,
           actualizado: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert(`✅ Salida registrada\nHora: ${hora}\nCoordenadas: ${coordenadas}`);
+        const mapaLinkS = coordenadas !== "Sin GPS" && coordenadas !== "No disponible"
+          ? `\n🗺️ Ver ubicación: https://maps.google.com/?q=${coordenadas}`
+          : '';
+        alert(`✅ Salida registrada\nHora: ${hora}\nCoordenadas: ${coordenadas}${mapaLinkS}`);
       } else {
         // Registrar entrada
         await db.collection("asistencia").doc(`${empId}_${fecha}_${empDocId}`).set({
@@ -6256,7 +6420,10 @@ Correo: ${correoPortal}
           estado:"presente",
           creado: firebase.firestore.FieldValue.serverTimestamp()
         }, {merge:true});
-        alert(`✅ Entrada registrada\nTrabajador: ${r?.nombre||'—'}\nHora: ${hora}\nCoordenadas: ${coordenadas}`);
+        const mapaLink = coordenadas !== "Sin GPS" && coordenadas !== "No disponible"
+          ? `\n🗺️ Ver ubicación: https://maps.google.com/?q=${coordenadas}`
+          : '';
+        alert(`✅ Entrada registrada\nTrabajador: ${r?.nombre||'—'}\nHora: ${hora}\nFecha: ${fecha}\nCoordenadas: ${coordenadas}${mapaLink}`);
       }
       document.getElementById("btn-cargar-portal")?.click();
     }
@@ -6274,15 +6441,19 @@ Correo: ${correoPortal}
       if (exportBtn) exportBtn.onclick = () => exportarPersonalCSV(empId);
     };
 
-    // Conectar botones Previred y PDF en Remuneraciones
-    const _origRem = renderRRHH_Remuneraciones;
-    renderRRHH_Remuneraciones = async function(zone, empId) {
-      await _origRem(zone, empId);
-      const prevBtn = document.getElementById("btn-export-previred");
-      if (prevBtn) prevBtn.onclick = () => exportarPrevired(empId);
-      const pdfBtn = document.getElementById("btn-export-liq-pdf");
-      if (pdfBtn) pdfBtn.onclick = () => exportarLiquidacionesPDF(empId);
-    };
+    // BOTONES EXPORTAR — se conectan via event delegation para sobrevivir re-renders
+    document.addEventListener("click", function(e) {
+      const empId = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value;
+      if (e.target.id === "btn-export-previred" || e.target.closest("#btn-export-previred")) {
+        exportarPrevired(empId);
+      }
+      if (e.target.id === "btn-export-liq-pdf" || e.target.closest("#btn-export-liq-pdf")) {
+        exportarLiquidacionesPDF(empId);
+      }
+      if (e.target.id === "btn-ver-libro" || e.target.closest("#btn-ver-libro")) {
+        // se maneja internamente
+      }
+    });
 
 
     // ═══════════════════════════════════════════════════════════
@@ -7289,6 +7460,369 @@ Correo: ${correoPortal}
     // ── HABILITAR Google Sign-In en Firebase (agregar dominio autorizado) ──
     // El proveedor de Google ya está inicializado más arriba con GoogleAuthProvider
     // Solo necesita estar habilitado en Firebase Console > Auth > Sign-in methods > Google
+
+
+    // ─────────────────────────────────────────────────────────
+    // FUNCIONES ADICIONALES RRHH — Liquidación PDF individual,
+    // eliminar liquidación, historial asistencia, empresas cliente
+    // ─────────────────────────────────────────────────────────
+
+    // ── PDF LIQUIDACIÓN INDIVIDUAL ──
+    window.imprimirLiquidacionIndividual = async (docId) => {
+      const d = await db.collection("remuneraciones").doc(docId).get();
+      if (!d.exists) { alert("No se encontró la liquidación"); return; }
+      await exportarLiquidacionesPDF(d.data().entityId, docId);
+    };
+
+    // ── ELIMINAR LIQUIDACIÓN ──
+    window.eliminarLiquidacion = async (docId, empId) => {
+      if (!confirm("¿Eliminar esta liquidación? Esta acción no se puede deshacer.")) return;
+      await db.collection("remuneraciones").doc(docId).delete();
+      renderRRHH_Remuneraciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── EXPORTAR PREVIRED — mejorado con periodo selector ──
+    const _origExportarPrevired = window.exportarPrevired;
+    window.exportarPrevired = async (empId) => {
+      if (!empId) { alert("Sin entidad activa"); return; }
+      const periodo = document.getElementById("rem-periodo-sel")?.value ||
+                      prompt("Periodo a exportar (AAAA-MM):", new Date().toISOString().slice(0,7));
+      if (!periodo) return;
+      const snap = await db.collection("remuneraciones")
+        .where("entityId","==",empId).where("periodo","==",periodo).get();
+      if (snap.empty) { alert(`Sin remuneraciones procesadas para ${periodo}`); return; }
+      const empDoc = await db.collection("empresas").doc(empId).get();
+      const empresa = empDoc.exists ? empDoc.data() : {rut:"76.782.954-K"};
+      // Formato Previred oficial
+      let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE;AFP;MONTO_AFP;SALUD;MONTO_SALUD;SUELDO_IMPONIBLE;LIQUIDO;PERIODO\n";
+      snap.forEach(d => {
+        const r=d.data();
+        csv += [empresa.rut||"",r.rut,r.nombre,r.afp,r.desc_afp||0,
+                r.salud,r.desc_salud||0,r.total_imponible||r.sueldo_base||0,
+                r.liquido_pagar||0,r.periodo].join(";")+"\n";
+      });
+      const a=document.createElement("a");
+      a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+      a.download=`previred_${periodo}.csv`; a.click();
+      alert(`✓ Archivo Previred exportado para ${snap.size} trabajadores — período ${periodo}`);
+    };
+
+    // ── HISTORIAL DE ASISTENCIA — persiste y se puede exportar ──
+    window.exportarAsistenciaMes = async (empId) => {
+      const empSel = prompt("RUT o nombre del trabajador (dejar vacío para todos):", "");
+      const mes = prompt("Mes a exportar (AAAA-MM):", new Date().toISOString().slice(0,7));
+      if (!mes || !empId) return;
+      let query = db.collection("asistencia").where("entityId","==",empId);
+      // Filtrar por mes (fechas que empiecen con el mes seleccionado)
+      const snap = await query.orderBy("fecha","desc").get();
+      const registros = [];
+      snap.forEach(d => {
+        const r = d.data();
+        if (r.fecha && r.fecha.startsWith(mes)) {
+          if (!empSel || r.nombre?.toLowerCase().includes(empSel.toLowerCase()) || r.rut?.includes(empSel)) {
+            registros.push(r);
+          }
+        }
+      });
+      if (registros.length === 0) { alert("Sin registros para ese período."); return; }
+      let csv = "Fecha,RUT,Nombre,Entrada,Salida,Estado,Horas Trabajadas\n";
+      registros.forEach(r => {
+        const horas = r.entrada && r.salida ?
+          ((new Date(`2000-01-01T${r.salida}`) - new Date(`2000-01-01T${r.entrada}`)) / 3600000).toFixed(1) : "—";
+        csv += `${r.fecha},${r.rut||""},${r.nombre||""},${r.entrada||""},${r.salida||""},${r.estado||""},${horas}\n`;
+      });
+      const a=document.createElement("a");
+      a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+      a.download=`asistencia_${mes}.csv`; a.click();
+      alert(`✓ ${registros.length} registros exportados`);
+    };
+
+    // ── GESTIÓN DE ENTIDADES POR CLIENTE ──
+    // Los clientes que arriendan el software pueden crear y editar sus propias empresas
+    // El formulario es idéntico al de la dueña pero guardado bajo su UID
+    window.abrirGestionEmpresasCliente = async () => {
+      const uid = STATE.user?.uid;
+      if (!uid) return;
+      const zone = document.getElementById("module-dynamic-zone");
+      if (!zone) return;
+
+      const [empSnap, condoSnap] = await Promise.all([
+        db.collection("empresas").where("uid_owner","==",uid).get(),
+        db.collection("condominios").where("uid_owner","==",uid).get()
+      ]);
+
+      let listaHtml = "";
+      empSnap.forEach(d => {
+        const r=d.data();
+        listaHtml += `<tr>
+          <td><span class="badge badge-gray">Empresa</span></td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+          <td>${r.ciudad||"—"}</td>
+          <td><span class="badge badge-green">Activa</span></td>
+          <td>
+            <button onclick="editarEntidadCliente('${d.id}','empresa')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️ Editar</button>
+          </td>
+        </tr>`;
+      });
+      condoSnap.forEach(d => {
+        const r=d.data();
+        listaHtml += `<tr>
+          <td><span class="badge badge-warn">Condominio</span></td>
+          <td><strong>${r.nombre||"—"}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+          <td>${r.ciudad||"—"}</td>
+          <td><span class="badge badge-green">Activo</span></td>
+          <td>
+            <button onclick="editarEntidadCliente('${d.id}','condominio')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️ Editar</button>
+          </td>
+        </tr>`;
+      });
+
+      const modal = document.createElement("div");
+      modal.id = "modal-mis-empresas";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:800px;margin:auto;">
+          <div style="background:linear-gradient(135deg,var(--c-accent),#0ea5e9);padding:18px 22px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:16px;font-weight:800;color:#fff;">🏢 Mis Empresas y Entidades</div>
+            <button onclick="document.getElementById('modal-mis-empresas').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+          </div>
+          <div style="padding:20px;">
+            <div style="display:flex;gap:10px;margin-bottom:16px;">
+              <button onclick="abrirFormularioNuevaEntidad('empresa')" class="btn-entrar">+ Nueva Empresa</button>
+              <button onclick="abrirFormularioNuevaEntidad('condominio')" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">+ Nuevo Condominio</button>
+            </div>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr style="background:var(--c-bg)">
+                <th style="padding:8px;font-size:11px;color:var(--c-muted);text-align:left">Tipo</th>
+                <th style="padding:8px;font-size:11px;color:var(--c-muted);text-align:left">Nombre</th>
+                <th style="padding:8px;font-size:11px;color:var(--c-muted);text-align:left">RUT</th>
+                <th style="padding:8px;font-size:11px;color:var(--c-muted);text-align:left">Ciudad</th>
+                <th style="padding:8px;font-size:11px;color:var(--c-muted);text-align:left">Estado</th>
+                <th style="padding:8px;font-size:11px;color:var(--c-muted);text-align:left">Acción</th>
+              </tr></thead>
+              <tbody>${listaHtml || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--c-muted)">Sin entidades registradas aún. Agrega tu primera empresa.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    };
+
+    window.abrirFormularioNuevaEntidad = (tipo) => {
+      // Reusar el formulario de Nueva Entidad del SA Panel pero para el cliente
+      const uid = STATE.user?.uid;
+      const modal2 = document.createElement("div");
+      modal2.id = "modal-nueva-entidad-cliente";
+      modal2.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:4000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      modal2.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:580px;margin:auto;">
+          <div style="background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:15px;font-weight:800;color:#fff;">🏢 Registrar ${tipo==="empresa"?"Empresa":"Condominio"}</div>
+            <button onclick="document.getElementById('modal-nueva-entidad-cliente').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
+          </div>
+          <div style="padding:20px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Nombre / Razón Social *", inp("nec-nombre","text",""))}</div>
+              <div>${formField("RUT *", inp("nec-rut","text","76.XXX.XXX-X"))}</div>
+            </div>
+            ${formField("Giro / Actividad", inp("nec-giro","text",""))}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Dirección", inp("nec-dir","text",""))}</div>
+              <div>${formField("Ciudad", inp("nec-ciudad","text",""))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Teléfono", inp("nec-tel","tel",""))}</div>
+              <div>${formField("Correo de contacto", inp("nec-correo","email",""))}</div>
+            </div>
+            <div style="background:rgba(21,101,192,0.08);border:1px solid rgba(21,101,192,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:8px;">🏦 Datos Bancarios</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+                <div>${formField("Banco", inp("nec-banco","text","Ej: Santander"))}</div>
+                <div>${formField("N° Cuenta Corriente", inp("nec-cuenta","text",""))}</div>
+              </div>
+            </div>
+            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:8px;">⚙️ Configuración de Remuneraciones</div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:6px;">
+                <input type="checkbox" id="nec-gratif" checked style="accent-color:var(--c-accent)">
+                Paga gratificación legal mensual
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:6px;">
+                <input type="checkbox" id="nec-colacion" style="accent-color:var(--c-accent)">
+                Paga asignación de colación
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="nec-movil" style="accent-color:var(--c-accent)">
+                Paga asignación de movilización
+              </label>
+            </div>
+            <button id="btn-save-nec" class="btn-entrar" style="width:100%">💾 Registrar ${tipo==="empresa"?"Empresa":"Condominio"}</button>
+            <p id="nec-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:14px;"></p>
+          </div>
+        </div>`;
+      document.body.appendChild(modal2);
+      document.getElementById("btn-save-nec").onclick = async () => {
+        const nombre = document.getElementById("nec-nombre").value.trim();
+        const rut    = document.getElementById("nec-rut").value.trim();
+        if (!nombre) { document.getElementById("nec-msg").textContent="El nombre es obligatorio"; return; }
+        const coleccion = tipo==="empresa" ? "empresas" : "condominios";
+        const data = {
+          nombre, rut,
+          giro:      document.getElementById("nec-giro").value.trim(),
+          direccion: document.getElementById("nec-dir").value.trim(),
+          ciudad:    document.getElementById("nec-ciudad").value.trim(),
+          telefono:  document.getElementById("nec-tel").value.trim(),
+          correo:    document.getElementById("nec-correo").value.trim().toLowerCase(),
+          banco:     document.getElementById("nec-banco").value.trim(),
+          num_cuenta:document.getElementById("nec-cuenta").value.trim(),
+          config_rem:{
+            paga_gratificacion: document.getElementById("nec-gratif")?.checked ?? true,
+            paga_colacion:      document.getElementById("nec-colacion")?.checked ?? false,
+            paga_movilizacion:  document.getElementById("nec-movil")?.checked ?? false,
+          },
+          uid_owner: uid, activa: true, tipo,
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        try {
+          await db.collection(coleccion).add(data);
+          document.getElementById("nec-msg").style.color="var(--c-accent)";
+          document.getElementById("nec-msg").textContent=`✓ ${nombre} registrado correctamente.`;
+          setTimeout(()=>{
+            document.getElementById("modal-nueva-entidad-cliente")?.remove();
+            document.getElementById("modal-mis-empresas")?.remove();
+            abrirGestionEmpresasCliente();
+          }, 1000);
+        } catch(e) {
+          document.getElementById("nec-msg").style.color="var(--c-danger)";
+          document.getElementById("nec-msg").textContent="Error: "+e.message;
+        }
+      };
+    };
+
+    // ── AGREGAR BOTÓN "MIS EMPRESAS" EN EL HEADER PARA CLIENTES (no superadmin) ──
+    const _origUpdateHeaderPlan = updateHeaderPlan;
+    updateHeaderPlan = function() {
+      _origUpdateHeaderPlan();
+      // Agregar botón Mis Empresas para usuarios no superadmin
+      const existeBtn = document.getElementById("btn-mis-empresas");
+      if (!existeBtn && !isSuperadmin() && STATE.user) {
+        const headerRight = document.querySelector(".header-right");
+        if (headerRight) {
+          const btn = document.createElement("button");
+          btn.id = "btn-mis-empresas";
+          btn.textContent = "🏢 Mis Empresas";
+          btn.style.cssText = "background:rgba(46,168,79,0.15);border:1px solid rgba(46,168,79,0.4);color:var(--c-accent);font-family:var(--font);font-size:12px;font-weight:700;padding:7px 14px;border-radius:var(--radius);cursor:pointer;";
+          btn.onclick = abrirGestionEmpresasCliente;
+          headerRight.insertBefore(btn, headerRight.firstChild);
+        }
+      }
+    };
+
+
+    // ─────────────────────────────────────────────────────
+    // VALIDADOR RUT CHILENO — formato XX.XXX.XXX-Y
+    // ─────────────────────────────────────────────────────
+    function validarRUT(rut) {
+      if (!rut || typeof rut !== 'string') return false;
+      const limpio = rut.replace(/[\.\-]/g,'').toUpperCase().trim();
+      if (limpio.length < 2) return false;
+      const cuerpo = limpio.slice(0,-1);
+      const dv = limpio.slice(-1);
+      if (!/^[0-9]+$/.test(cuerpo)) return false;
+      // Calcular dígito verificador
+      let suma=0, multiplo=2;
+      for (let i=cuerpo.length-1; i>=0; i--) {
+        suma += parseInt(cuerpo[i]) * multiplo;
+        multiplo = multiplo === 7 ? 2 : multiplo+1;
+      }
+      const dvEsperado = 11 - (suma % 11);
+      const dvCalc = dvEsperado===11 ? '0' : dvEsperado===10 ? 'K' : String(dvEsperado);
+      return dv === dvCalc;
+    }
+
+    function formatearRUT(valor) {
+      // Limpiar y formatear: 12345678-9 → 12.345.678-9
+      const limpio = valor.replace(/[\.\-\s]/g,'').toUpperCase();
+      if (limpio.length < 2) return limpio;
+      const cuerpo = limpio.slice(0,-1);
+      const dv = limpio.slice(-1);
+      const cuerpoFormateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+      return `${cuerpoFormateado}-${dv}`;
+    }
+
+    function aplicarValidadorRUT(inputId, feedbackId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.addEventListener('blur', function() {
+        const val = this.value.trim();
+        if (!val) return;
+        const formateado = formatearRUT(val.replace(/[\.\-\s]/g,''));
+        this.value = formateado;
+        const valido = validarRUT(formateado);
+        this.style.borderColor = valido ? 'var(--c-accent)' : 'var(--c-danger)';
+        if (feedbackId) {
+          const fb = document.getElementById(feedbackId);
+          if (fb) {
+            fb.textContent = valido ? '✓ RUT válido' : '✗ RUT inválido — verifica el dígito verificador';
+            fb.style.color = valido ? 'var(--c-accent)' : 'var(--c-danger)';
+            fb.style.fontSize = '11px';
+            fb.style.marginTop = '3px';
+          }
+        }
+      });
+      input.addEventListener('input', function() {
+        this.style.borderColor = '';
+        if (feedbackId) {
+          const fb = document.getElementById(feedbackId);
+          if (fb) fb.textContent = '';
+        }
+      });
+    }
+
+    // Conectar validador a campos RUT al renderizar
+    const _origRenderFichas = window.renderRRHH_Fichas || null;
+    const _conectarValidadores = () => {
+      // Se llama desde renderRRHH_Fichas y desde modal-emp al abrirse
+      aplicarValidadorRUT('emp-rut', 'emp-rut-feedback');
+      aplicarValidadorRUT('nc-correo', null); // No es RUT pero valida formato
+    };
+
+    // Validar RUT en guardar ficha trabajador
+    const _origBtnSaveEmp = null; // se conecta via MutationObserver
+    document.addEventListener('click', function(e) {
+      if (e.target.id === 'btn-save-emp') {
+        const rutEl = document.getElementById('emp-rut');
+        if (rutEl && rutEl.value.trim()) {
+          const rut = rutEl.value.trim();
+          if (!validarRUT(rut)) {
+            rutEl.style.borderColor = 'var(--c-danger)';
+            alert(`⚠️ El RUT "${rut}" no es válido.\nVerifica el dígito verificador antes de guardar.`);
+            rutEl.focus();
+            e.stopImmediatePropagation();
+            return;
+          }
+          // Formatear automáticamente
+          rutEl.value = formatearRUT(rut.replace(/[\.\-\s]/g,''));
+        }
+      }
+    }, true); // captura en fase de captura para interceptar antes del onclick
+
+    // Validar RUT en nuevo cliente SA Panel
+    document.addEventListener('click', function(e) {
+      if (e.target.id === 'btn-crear-cliente') {
+        const rutEl = document.getElementById('nc-rut');
+        if (rutEl && rutEl.value.trim()) {
+          if (!validarRUT(rutEl.value.trim())) {
+            rutEl.style.borderColor = 'var(--c-danger)';
+            alert(`⚠️ RUT del cliente inválido. Verifica el dígito verificador.`);
+            rutEl.focus();
+            e.stopImmediatePropagation();
+            return;
+          }
+        }
+      }
+    }, true);
 
   })();
   </script>
