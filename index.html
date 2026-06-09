@@ -1352,6 +1352,18 @@
     function renderDynamicZone(zone, modId, navId) {
       if (modId === "condominios") {
         renderCondominiosZone(zone, navId);
+      } else if (modId === "residentes") {
+        renderResidentesZone(zone, navId);
+      } else if (modId === "rrhh") {
+        renderRRHHZone(zone, navId);
+      } else if (modId === "contabilidad") {
+        renderContabilidadZone(zone, navId);
+      } else if (modId === "facturacion") {
+        renderFacturacionZone(zone, navId);
+      } else if (modId === "logistica") {
+        renderLogisticaZone(zone, navId);
+      } else if (modId === "auditoria") {
+        renderAuditoriaZone(zone, navId);
       } else {
         renderGenericZone(zone, modId, navId);
       }
@@ -2290,6 +2302,418 @@
         encodeURIComponent("Hola, me interesa activar un módulo premium en Martinez Services ERP.");
       window.open(wa, "_blank");
     });
+
+
+    // ═══════════════════════════════════════════════
+    // MÓDULO 2: APP RESIDENTES — MOTOR COMPLETO
+    // ═══════════════════════════════════════════════
+    function renderResidentesZone(zone, navId) {
+      const condoId = STATE.activeEntityId
+        || document.getElementById("entity-dropdown")?.value;
+      switch(navId) {
+        case "comunicados":  renderRes_Comunicados(zone, condoId);  break;
+        case "qr":           renderRes_QR(zone, condoId);           break;
+        case "reservas":     renderRes_Reservas(zone, condoId);     break;
+        case "votaciones":   renderRes_Votaciones(zone, condoId);   break;
+        case "alerta":       renderRes_Alerta(zone, condoId);       break;
+        default:             renderRes_Comunicados(zone, condoId);
+      }
+    }
+
+    // ── COMUNICADOS ──
+    async function renderRes_Comunicados(zone, condoId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-com","Nuevo Comunicado","📣") +
+        tableWrap("tbl-com","Bandeja de Comunicados","Publicaciones visibles en la App de Residentes",
+          ["Fecha","Título","Dirigido A","Lecturas","Estado","Acciones"]) +
+        modalHtml("modal-com","Publicar Comunicado", `
+          ${formField("Título", inp("com-titulo","text","Ej: Reunión de copropietarios"))}
+          ${formField("Cuerpo del comunicado", '<textarea id="com-cuerpo" rows="5" placeholder="Contenido del comunicado..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>')}
+          ${formField("Dirigido a", sel("com-dir",[{v:"todos",l:"Todos los residentes"},{v:"propietarios",l:"Solo propietarios"},{v:"arrendatarios",l:"Solo arrendatarios"}]))}
+          ${formField("Estado", sel("com-estado",[{v:"publicado",l:"Publicado"},{v:"borrador",l:"Borrador"}]))}
+          <input type="hidden" id="com-docid">
+          <button id="btn-save-com" class="btn-entrar" style="width:100%;margin-top:8px">Publicar</button>
+        `);
+
+      document.getElementById("btn-add-com").onclick = () => {
+        ["com-titulo","com-cuerpo","com-docid"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("modal-com").style.display = "flex";
+      };
+      document.getElementById("btn-save-com").onclick = async () => {
+        if (!condoId) { alert("Sin condominio activo"); return; }
+        const titulo = document.getElementById("com-titulo").value.trim();
+        if (!titulo) { alert("El título es obligatorio"); return; }
+        const docId = document.getElementById("com-docid").value;
+        const data = {
+          titulo, cuerpo: document.getElementById("com-cuerpo").value.trim(),
+          dirigido_a: document.getElementById("com-dir").value,
+          estado:     document.getElementById("com-estado").value,
+          lecturas: 0, actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("condominios").doc(condoId).collection("comunicados");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, fecha: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-com").style.display = "none";
+        renderRes_Comunicados(zone, condoId);
+      };
+
+      if (!condoId) return;
+      const snap = await db.collection("condominios").doc(condoId).collection("comunicados").orderBy("fecha","desc").get();
+      const tb = document.getElementById("tbl-com-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(6); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        tb.innerHTML += `<tr>
+          <td>${formatFecha(r.fecha)}</td>
+          <td><strong>${r.titulo||"—"}</strong></td>
+          <td><span class="badge badge-gray">${r.dirigido_a||"—"}</span></td>
+          <td style="text-align:center">${r.lecturas||0}</td>
+          <td>${badgeHtml(r.estado,{publicado:{cls:"green",lbl:"Publicado"},borrador:{cls:"warn",lbl:"Borrador"},_:{cls:"gray",lbl:"—"}})}</td>
+          <td>
+            <button onclick="editComunicado('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
+            <button onclick="deleteComunicado('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+    window.editComunicado = async (docId, condoId) => {
+      const d = await db.collection("condominios").doc(condoId).collection("comunicados").doc(docId).get();
+      const r = d.data();
+      document.getElementById("com-docid").value  = docId;
+      document.getElementById("com-titulo").value = r.titulo||"";
+      document.getElementById("com-cuerpo").value = r.cuerpo||"";
+      document.getElementById("com-dir").value    = r.dirigido_a||"todos";
+      document.getElementById("com-estado").value = r.estado||"publicado";
+      document.getElementById("modal-com").style.display = "flex";
+    };
+    window.deleteComunicado = async (docId, condoId) => {
+      if (!confirm("¿Eliminar este comunicado?")) return;
+      await db.collection("condominios").doc(condoId).collection("comunicados").doc(docId).delete();
+      renderRes_Comunicados(document.getElementById("module-dynamic-zone"), condoId);
+    };
+
+    // ── CONTROL DE ACCESOS QR ──
+    async function renderRes_QR(zone, condoId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-qr","Registrar Acceso Manual","🔑") +
+        `<div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Accesos Hoy</div><div class="kpi-value" id="kpi-qr-hoy">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Esta Semana</div><div class="kpi-value green" id="kpi-qr-sem">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">No Autorizados</div><div class="kpi-value danger" id="kpi-qr-na">—</div></div>
+        </div>` +
+        tableWrap("tbl-qr","Registro de Accesos","Entradas y salidas del condominio",
+          ["Fecha/Hora","Unidad","Residente / Visitante","Tipo","Autorizado","Observación"]) +
+        modalHtml("modal-qr","Registrar Acceso Manual", `
+          ${formField("Fecha y Hora", inp("qr-fecha","datetime-local",""))}
+          ${formField("N° Unidad", inp("qr-unidad","text","Ej: 101"))}
+          ${formField("Nombre", inp("qr-nombre","text","Residente o visitante"))}
+          ${formField("Tipo de Acceso", sel("qr-tipo",[{v:"entrada",l:"Entrada"},{v:"salida",l:"Salida"},{v:"visita",l:"Visita"},{v:"proveedor",l:"Proveedor"}]))}
+          ${formField("Autorizado", sel("qr-auth",[{v:"si",l:"Sí"},{v:"no",l:"No — Denegado"}]))}
+          ${formField("Observación", inp("qr-obs","text","Opcional"))}
+          <button id="btn-save-qr" class="btn-entrar" style="width:100%;margin-top:8px">Registrar</button>
+        `);
+
+      document.getElementById("btn-add-qr").onclick = () => {
+        ["qr-unidad","qr-nombre","qr-obs"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("modal-qr").style.display = "flex";
+      };
+      document.getElementById("btn-save-qr").onclick = async () => {
+        if (!condoId) return;
+        await db.collection("condominios").doc(condoId).collection("accesos_qr").add({
+          fecha_hora: document.getElementById("qr-fecha").value,
+          numero_unidad: document.getElementById("qr-unidad").value.trim(),
+          nombre: document.getElementById("qr-nombre").value.trim(),
+          tipo_acceso: document.getElementById("qr-tipo").value,
+          autorizado: document.getElementById("qr-auth").value,
+          observacion: document.getElementById("qr-obs").value.trim(),
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("modal-qr").style.display = "none";
+        renderRes_QR(zone, condoId);
+      };
+
+      if (!condoId) return;
+      const hoy = new Date().toISOString().slice(0,10);
+      const snap = await db.collection("condominios").doc(condoId).collection("accesos_qr").orderBy("creado","desc").limit(100).get();
+      let cHoy=0, cSem=0, cNA=0;
+      const tb = document.getElementById("tbl-qr-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(6); }
+      else {
+        tb.innerHTML = "";
+        snap.forEach(d => {
+          const r = d.data();
+          if ((r.fecha_hora||"").slice(0,10) === hoy) cHoy++;
+          cSem++;
+          if (r.autorizado === "no") cNA++;
+          const tc = {entrada:"green",salida:"gray",visita:"warn",proveedor:"warn"}[r.tipo_acceso]||"gray";
+          tb.innerHTML += `<tr>
+            <td style="font-family:var(--mono);font-size:11px">${r.fecha_hora||formatFecha(r.creado)}</td>
+            <td>${r.numero_unidad||"—"}</td>
+            <td>${r.nombre||"—"}</td>
+            <td><span class="badge badge-${tc}">${r.tipo_acceso||"—"}</span></td>
+            <td>${r.autorizado==="si"?'<span class="badge badge-green">✓ Sí</span>':'<span class="badge badge-red">✗ No</span>'}</td>
+            <td>${r.observacion||"—"}</td>
+          </tr>`;
+        });
+      }
+      document.getElementById("kpi-qr-hoy").textContent = cHoy;
+      document.getElementById("kpi-qr-sem").textContent = cSem;
+      document.getElementById("kpi-qr-na").textContent  = cNA;
+    }
+
+    // ── RESERVA DE ESPACIOS ──
+    async function renderRes_Reservas(zone, condoId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-resv","Nueva Reserva","📅") +
+        tableWrap("tbl-resv","Reservas de Espacios Comunes","Quinchos, salas y áreas del condominio",
+          ["Fecha","Espacio","Unidad","Residente","Hora Inicio","Hora Fin","Estado","Acciones"]) +
+        modalHtml("modal-resv","Registrar Reserva", `
+          ${formField("Espacio", sel("resv-esp",[{v:"quincho",l:"Quincho"},{v:"sala_eventos",l:"Sala de Eventos"},{v:"piscina",l:"Piscina"},{v:"cancha",l:"Cancha"},{v:"otro",l:"Otro"}]))}
+          ${formField("Fecha", inp("resv-fecha","date",""))}
+          ${formField("Hora Inicio", inp("resv-inicio","time",""))}
+          ${formField("Hora Fin", inp("resv-fin","time",""))}
+          ${formField("N° Unidad", inp("resv-unidad","text","Ej: 101"))}
+          ${formField("Nombre Residente", inp("resv-nombre","text",""))}
+          ${formField("Estado", sel("resv-estado",[{v:"confirmada",l:"Confirmada"},{v:"pendiente",l:"Pendiente"},{v:"cancelada",l:"Cancelada"}]))}
+          <input type="hidden" id="resv-docid">
+          <button id="btn-save-resv" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Reserva</button>
+        `);
+
+      document.getElementById("btn-add-resv").onclick = () => {
+        ["resv-unidad","resv-nombre","resv-docid"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("modal-resv").style.display = "flex";
+      };
+      document.getElementById("btn-save-resv").onclick = async () => {
+        if (!condoId) return;
+        const docId = document.getElementById("resv-docid").value;
+        const data = {
+          espacio: document.getElementById("resv-esp").value,
+          fecha: document.getElementById("resv-fecha").value,
+          hora_inicio: document.getElementById("resv-inicio").value,
+          hora_fin: document.getElementById("resv-fin").value,
+          numero_unidad: document.getElementById("resv-unidad").value.trim(),
+          nombre_residente: document.getElementById("resv-nombre").value.trim(),
+          estado: document.getElementById("resv-estado").value,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (!data.fecha || !data.nombre_residente) { alert("Fecha y residente son obligatorios"); return; }
+        const ref = db.collection("condominios").doc(condoId).collection("reservas");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-resv").style.display = "none";
+        renderRes_Reservas(zone, condoId);
+      };
+
+      if (!condoId) return;
+      const snap = await db.collection("condominios").doc(condoId).collection("reservas").orderBy("fecha","desc").get();
+      const tb = document.getElementById("tbl-resv-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const cls = {confirmada:"green",pendiente:"warn",cancelada:"red"}[r.estado]||"gray";
+        tb.innerHTML += `<tr>
+          <td>${r.fecha||"—"}</td>
+          <td><strong>${r.espacio||"—"}</strong></td>
+          <td>${r.numero_unidad||"—"}</td>
+          <td>${r.nombre_residente||"—"}</td>
+          <td>${r.hora_inicio||"—"}</td>
+          <td>${r.hora_fin||"—"}</td>
+          <td><span class="badge badge-${cls}">${r.estado||"—"}</span></td>
+          <td>
+            <button onclick="editReserva('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✏️</button>
+            <button onclick="deleteReserva('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+    window.editReserva = async (docId, condoId) => {
+      const d = await db.collection("condominios").doc(condoId).collection("reservas").doc(docId).get();
+      const r = d.data();
+      document.getElementById("resv-docid").value  = docId;
+      document.getElementById("resv-esp").value    = r.espacio||"quincho";
+      document.getElementById("resv-fecha").value  = r.fecha||"";
+      document.getElementById("resv-inicio").value = r.hora_inicio||"";
+      document.getElementById("resv-fin").value    = r.hora_fin||"";
+      document.getElementById("resv-unidad").value = r.numero_unidad||"";
+      document.getElementById("resv-nombre").value = r.nombre_residente||"";
+      document.getElementById("resv-estado").value = r.estado||"confirmada";
+      document.getElementById("modal-resv").style.display = "flex";
+    };
+    window.deleteReserva = async (docId, condoId) => {
+      if (!confirm("¿Eliminar esta reserva?")) return;
+      await db.collection("condominios").doc(condoId).collection("reservas").doc(docId).delete();
+      renderRes_Reservas(document.getElementById("module-dynamic-zone"), condoId);
+    };
+
+    // ── VOTACIONES Y ASAMBLEAS ──
+    async function renderRes_Votaciones(zone, condoId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-vot","Nueva Votación / Asamblea","🗳️") +
+        tableWrap("tbl-vot","Votaciones y Asambleas","Decisiones comunitarias registradas",
+          ["Fecha","Asunto","A Favor","En Contra","Abstenciones","Quórum","Resultado","Acciones"]) +
+        modalHtml("modal-vot","Registrar Votación", `
+          ${formField("Fecha de la Asamblea", inp("vot-fecha","date",""))}
+          ${formField("Asunto votado", inp("vot-asunto","text","Ej: Aprobación de presupuesto 2026"))}
+          ${formField("Descripción / Acta", '<textarea id="vot-desc" rows="3" placeholder="Detalle del asunto..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>')}
+          ${formField("Votos a Favor", inp("vot-favor","number","0"))}
+          ${formField("Votos en Contra", inp("vot-contra","number","0"))}
+          ${formField("Abstenciones", inp("vot-abst","number","0"))}
+          ${formField("Total Unidades con Derecho a Voto", inp("vot-total","number","0"))}
+          ${formField("Resultado", sel("vot-resultado",[{v:"aprobado",l:"Aprobado"},{v:"rechazado",l:"Rechazado"},{v:"sin_quorum",l:"Sin Quórum"},{v:"pendiente",l:"Pendiente"}]))}
+          <input type="hidden" id="vot-docid">
+          <button id="btn-save-vot" class="btn-entrar" style="width:100%;margin-top:8px">Registrar Votación</button>
+        `);
+
+      document.getElementById("btn-add-vot").onclick = () => {
+        ["vot-asunto","vot-desc","vot-docid"].forEach(id => document.getElementById(id).value = "");
+        ["vot-favor","vot-contra","vot-abst","vot-total"].forEach(id => document.getElementById(id).value = "0");
+        document.getElementById("modal-vot").style.display = "flex";
+      };
+      document.getElementById("btn-save-vot").onclick = async () => {
+        if (!condoId) return;
+        const docId  = document.getElementById("vot-docid").value;
+        const favor  = parseInt(document.getElementById("vot-favor").value)||0;
+        const contra = parseInt(document.getElementById("vot-contra").value)||0;
+        const abst   = parseInt(document.getElementById("vot-abst").value)||0;
+        const total  = parseInt(document.getElementById("vot-total").value)||0;
+        const quorum = total > 0 ? Math.round(((favor+contra+abst)/total)*100)+"%" : "—";
+        const data = {
+          fecha: document.getElementById("vot-fecha").value,
+          asunto: document.getElementById("vot-asunto").value.trim(),
+          descripcion: document.getElementById("vot-desc").value.trim(),
+          votos_favor: favor, votos_contra: contra, abstenciones: abst,
+          total_votantes: total, quorum,
+          resultado: document.getElementById("vot-resultado").value,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (!data.asunto) { alert("El asunto es obligatorio"); return; }
+        const ref = db.collection("condominios").doc(condoId).collection("votaciones");
+        if (docId) await ref.doc(docId).update(data);
+        else       await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-vot").style.display = "none";
+        renderRes_Votaciones(zone, condoId);
+      };
+
+      if (!condoId) return;
+      const snap = await db.collection("condominios").doc(condoId).collection("votaciones").orderBy("fecha","desc").get();
+      const tb = document.getElementById("tbl-vot-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const rc = {aprobado:"green",rechazado:"red",sin_quorum:"warn",pendiente:"gray"}[r.resultado]||"gray";
+        tb.innerHTML += `<tr>
+          <td>${r.fecha||"—"}</td>
+          <td><strong>${r.asunto||"—"}</strong></td>
+          <td style="color:var(--c-accent);font-weight:700">${r.votos_favor||0}</td>
+          <td style="color:var(--c-danger);font-weight:700">${r.votos_contra||0}</td>
+          <td>${r.abstenciones||0}</td>
+          <td style="font-family:var(--mono)">${r.quorum||"—"}</td>
+          <td><span class="badge badge-${rc}">${r.resultado||"—"}</span></td>
+          <td><button onclick="deleteVotacion('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button></td>
+        </tr>`;
+      });
+    }
+    window.deleteVotacion = async (docId, condoId) => {
+      if (!confirm("¿Eliminar esta votación?")) return;
+      await db.collection("condominios").doc(condoId).collection("votaciones").doc(docId).delete();
+      renderRes_Votaciones(document.getElementById("module-dynamic-zone"), condoId);
+    };
+
+    // ── ALERTA VECINAL ──
+    async function renderRes_Alerta(zone, condoId) {
+      zone.innerHTML = `
+        <div style="background:rgba(248,81,73,0.1);border:2px solid var(--c-danger);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+          <div>
+            <div style="font-size:16px;font-weight:800;color:var(--c-danger)">🚨 ALERTA VECINAL EN TIEMPO REAL</div>
+            <div style="font-size:12px;color:var(--c-muted);margin-top:4px">Emite una alerta de emergencia visible para todos los residentes en la app móvil</div>
+          </div>
+          <button id="btn-emitir-alerta" style="background:var(--c-danger);color:#fff;border:none;font-family:var(--font);font-size:14px;font-weight:800;padding:12px 24px;border-radius:var(--radius);cursor:pointer;white-space:nowrap;">¡EMITIR ALERTA!</button>
+        </div>` +
+        btnPrimary("btn-add-alerta","Registrar Incidencia","⚠️") +
+        tableWrap("tbl-alerta","Registro de Alertas e Incidencias","Historial de eventos del condominio",
+          ["Fecha/Hora","Tipo","Reportado Por","Unidad","Descripción","Estado","Acciones"]) +
+        modalHtml("modal-alerta","Registrar Incidencia", `
+          ${formField("Tipo de Alerta", sel("al-tipo",[
+            {v:"emergencia",l:"🚨 Emergencia"},{v:"ruidos",l:"🔊 Ruidos Molestos"},
+            {v:"vandalism",l:"🔨 Vandalismo"},{v:"corte_servicio",l:"⚡ Corte de Servicio"},
+            {v:"visita_sospechosa",l:"👤 Visita Sospechosa"},{v:"otro",l:"📋 Otro"}
+          ]))}
+          ${formField("Reportado Por", inp("al-reporta","text","Nombre o unidad"))}
+          ${formField("N° Unidad", inp("al-unidad","text","Opcional"))}
+          ${formField("Descripción", '<textarea id="al-desc" rows="3" placeholder="Describe la situación..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>')}
+          ${formField("Estado", sel("al-estado",[{v:"activa",l:"Activa"},{v:"en_atencion",l:"En Atención"},{v:"resuelta",l:"Resuelta"}]))}
+          <button id="btn-save-alerta" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Incidencia</button>
+        `);
+
+      document.getElementById("btn-emitir-alerta").onclick = async () => {
+        if (!condoId) return;
+        const desc = prompt("Describe la emergencia (visible para todos los residentes):");
+        if (!desc) return;
+        await db.collection("condominios").doc(condoId).collection("alertas").add({
+          tipo: "emergencia", descripcion: desc,
+          reportado_por: STATE.user?.email||"Administración",
+          numero_unidad: "TODOS", estado: "activa", es_masiva: true,
+          fecha_hora: new Date().toISOString(),
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("✓ Alerta enviada a todos los residentes.");
+        renderRes_Alerta(zone, condoId);
+      };
+      document.getElementById("btn-add-alerta").onclick = () => {
+        ["al-reporta","al-unidad","al-desc"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("modal-alerta").style.display = "flex";
+      };
+      document.getElementById("btn-save-alerta").onclick = async () => {
+        if (!condoId) return;
+        const desc = document.getElementById("al-desc").value.trim();
+        if (!desc) { alert("La descripción es obligatoria"); return; }
+        await db.collection("condominios").doc(condoId).collection("alertas").add({
+          tipo: document.getElementById("al-tipo").value,
+          reportado_por: document.getElementById("al-reporta").value.trim(),
+          numero_unidad: document.getElementById("al-unidad").value.trim(),
+          descripcion: desc, estado: document.getElementById("al-estado").value,
+          es_masiva: false, fecha_hora: new Date().toISOString(),
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("modal-alerta").style.display = "none";
+        renderRes_Alerta(zone, condoId);
+      };
+
+      if (!condoId) return;
+      const snap = await db.collection("condominios").doc(condoId).collection("alertas").orderBy("creado","desc").limit(50).get();
+      const tb = document.getElementById("tbl-alerta-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(7); return; }
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const tc = {emergencia:"red",ruidos:"warn",vandalism:"red",corte_servicio:"warn",visita_sospechosa:"warn",otro:"gray"}[r.tipo]||"gray";
+        const ec = {activa:"red",en_atencion:"warn",resuelta:"green"}[r.estado]||"gray";
+        tb.innerHTML += `<tr${r.es_masiva?' style="background:rgba(248,81,73,0.05)"':""}>
+          <td style="font-family:var(--mono);font-size:11px">${(r.fecha_hora||"—").replace("T"," ").slice(0,16)}</td>
+          <td><span class="badge badge-${tc}">${r.tipo||"—"}${r.es_masiva?" 📢":""}</span></td>
+          <td>${r.reportado_por||"—"}</td>
+          <td>${r.numero_unidad||"—"}</td>
+          <td>${r.descripcion||"—"}</td>
+          <td><span class="badge badge-${ec}">${r.estado||"—"}</span></td>
+          <td>
+            <button onclick="resolverAlerta('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✓ Resolver</button>
+            <button onclick="deleteAlerta('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          </td>
+        </tr>`;
+      });
+    }
+    window.resolverAlerta = async (docId, condoId) => {
+      await db.collection("condominios").doc(condoId).collection("alertas").doc(docId).update({estado:"resuelta"});
+      renderRes_Alerta(document.getElementById("module-dynamic-zone"), condoId);
+    };
+    window.deleteAlerta = async (docId, condoId) => {
+      if (!confirm("¿Eliminar esta alerta?")) return;
+      await db.collection("condominios").doc(condoId).collection("alertas").doc(docId).delete();
+      renderRes_Alerta(document.getElementById("module-dynamic-zone"), condoId);
+    };
 
   })();
   </script>
