@@ -4162,10 +4162,14 @@ Clave: ${clavePortal}`);
           </div>
           <button id="btn-cargar-asist" class="btn-entrar">Ver Asistencia</button>
           <button id="btn-marcar-todos" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">✓ Marcar todos Presentes</button>
-          <div style="display:flex;align-items:center;gap:8px;margin-left:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-left:8px;flex-wrap:wrap;">
+            <select id="asist-filtro-trab" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
+              <option value="">Todos los trabajadores</option>
+            </select>
             <input type="month" id="asist-mes-hist" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
-            <button id="btn-hist-mes" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📋 Ver Historial Mes</button>
-            <button id="btn-export-asist-csv" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar CSV</button>
+            <button id="btn-hist-mes" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📋 Ver Historial</button>
+            <button id="btn-export-asist-csv" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 CSV</button>
+            <button id="btn-export-asist-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ PDF</button>
           </div>
         </div>` +
         `<div class="kpi-row">
@@ -4180,8 +4184,9 @@ Clave: ${clavePortal}`);
         const fecha = document.getElementById("asist-fecha").value;
         if (!fecha || !empId) return;
         const tb = document.getElementById("tbl-asist-tbody");
-        // Cargar empleados activos
-        const empSnap = await db.collection("empleados").where("entityId","==",empId).where("estado","==","activo").get();
+        // Cargar SOLO empleados activos (estado=="activo")
+        const empSnap = await db.collection("empleados")
+          .where("entityId","==",empId).where("estado","==","activo").get();
         const asistSnap = await db.collection("asistencia").where("entityId","==",empId).where("fecha","==",fecha).get();
         const asistMap = {};
         asistSnap.forEach(d => asistMap[d.data().empleado_id] = {...d.data(), docId: d.id});
@@ -4228,6 +4233,12 @@ Clave: ${clavePortal}`);
       };
 
       document.getElementById("btn-cargar-asist").onclick = cargarAsist;
+      document.getElementById("btn-export-asist-pdf").onclick = () => {
+        const mes = document.getElementById("asist-mes-hist").value;
+        const filtroRut = document.getElementById("asist-filtro-trab")?.value||"";
+        imprimirAsistenciaPDF(empId, mes, filtroRut);
+      };
+
       document.getElementById("btn-hist-mes").onclick = async () => {
         const mes = document.getElementById("asist-mes-hist").value;
         const tb = document.getElementById("tbl-asist-tbody");
@@ -4346,6 +4357,20 @@ Clave: ${clavePortal}`);
         document.getElementById("cont-sueldo").value = 0;
         document.getElementById("modal-cont").style.display = "flex";
       };
+
+      // Al seleccionar trabajador, cargar sus datos automáticamente
+      document.getElementById("cont-emp").onchange = async function() {
+        const empDocId = this.value;
+        if (!empDocId) return;
+        const d = await db.collection("empleados").doc(empDocId).get();
+        if (!d.exists) return;
+        const r = d.data();
+        // Rellenar sueldo y fecha ingreso automáticamente
+        if (r.sueldo_base) document.getElementById("cont-sueldo").value = r.sueldo_base;
+        if (r.fecha_ingreso) document.getElementById("cont-inicio").value = r.fecha_ingreso;
+        if (r.tipo_contrato) document.getElementById("cont-tipo").value = r.tipo_contrato;
+        if (r.fecha_termino) document.getElementById("cont-fin").value = r.fecha_termino;
+      };
       document.getElementById("btn-save-cont").onclick = async () => {
         if (!empId) return;
         const empDocId = document.getElementById("cont-emp").value;
@@ -4404,7 +4429,11 @@ Clave: ${clavePortal}`);
     // ── 6. VACACIONES Y PERMISOS ──
     async function renderRRHH_Vacaciones(zone, empId) {
       zone.innerHTML =
-        btnPrimary("btn-add-vac","Nueva Solicitud","＋") +
+        `<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button id="vac-tab-solicitudes" class="btn-entrar" style="font-size:12px;padding:8px 16px;">📋 Solicitudes</button>
+          <button id="vac-tab-historial" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--radius);cursor:pointer;">📅 Historial de Días Acumulados</button>
+        </div>` +
+        btnPrimary("btn-add-vac","+ Nueva Solicitud","📝") +
         `<div class="kpi-row">
           <div class="kpi-card"><div class="kpi-label">Solicitudes Pendientes</div><div class="kpi-value warn" id="kpi-vac-pend">—</div></div>
           <div class="kpi-card"><div class="kpi-label">Aprobadas este mes</div><div class="kpi-value green" id="kpi-vac-apro">—</div></div>
@@ -4430,6 +4459,101 @@ Clave: ${clavePortal}`);
         const selEmp = document.getElementById("vac-emp");
         empSnap.forEach(d => { const o=document.createElement("option"); o.value=d.id; o.textContent=`${d.data().rut} — ${d.data().nombre}`; selEmp.appendChild(o); });
       }
+
+      // Tab historial días acumulados
+      document.getElementById("vac-tab-historial").onclick = async () => {
+        if (!empId) { alert("Sin entidad activa"); return; }
+        // Obtener todos los trabajadores activos
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).get();
+        // Obtener vacaciones aprobadas
+        const vacSnap = await db.collection("vacaciones").where("entityId","==",empId).get();
+        const diasUsadosPorEmp = {};
+        vacSnap.forEach(d => {
+          const r = d.data();
+          if (r.tipo === "vacaciones" && r.estado === "aprobada") {
+            diasUsadosPorEmp[r.empleado_id] = (diasUsadosPorEmp[r.empleado_id]||0) + (r.dias_solicitados||0);
+          }
+        });
+        const hoy = new Date();
+        const empresa = await getEmpresaActiva(empId);
+        let filas = "";
+        let datos = [];
+        empSnap.forEach(d => {
+          const r = d.data();
+          if (!r.fecha_ingreso) return;
+          const ing = new Date(r.fecha_ingreso);
+          const meses = (hoy.getFullYear()-ing.getFullYear())*12 + (hoy.getMonth()-ing.getMonth());
+          const acumulados = Math.floor(meses * 1.25);
+          const usados = diasUsadosPorEmp[d.id]||0;
+          const pendientes = Math.max(0, acumulados - usados);
+          datos.push({rut:r.rut, nombre:r.nombre, cargo:r.cargo, ingreso:r.fecha_ingreso, meses, acumulados, usados, pendientes});
+          const clsPend = pendientes > 10 ? "color:#dc2626;font-weight:700" : pendientes > 5 ? "color:#d97706;font-weight:700" : "color:#1A7A3C;font-weight:700";
+          filas += "<tr>" +
+            "<td style='font-family:monospace;font-size:11px'>" + (r.rut||"—") + "</td>" +
+            "<td><strong>" + (r.nombre||"—") + "</strong></td>" +
+            "<td style='font-size:11px'>" + (r.cargo||"—") + "</td>" +
+            "<td>" + (r.fecha_ingreso||"—") + "</td>" +
+            "<td style='text-align:center'>" + meses + " meses</td>" +
+            "<td style='text-align:center;color:var(--c-accent);font-weight:700'>" + acumulados + " días</td>" +
+            "<td style='text-align:center'>" + usados + " días</td>" +
+            "<td style='text-align:center;"+clsPend+"'>" + pendientes + " días</td>" +
+            "<td>" +
+              "<button onclick=\"imprimirInformeVacTrabajador('" + d.id + "','" + r.nombre.replace(/'/g,"") + "','" + r.rut + "','" + r.fecha_ingreso + "'," + acumulados + "," + usados + "," + pendientes + ")\" style=\"background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px;\">🖨️</button>" +
+            "</td>" +
+          "</tr>";
+        });
+        // Mostrar tabla historial
+        const zona = document.getElementById("tbl-vac-tbody");
+        // Reemplazar la tabla existente
+        const tablaExistente = document.getElementById("tbl-vac");
+        if (tablaExistente) {
+          tablaExistente.querySelector("thead tr").innerHTML =
+            "<th>RUT</th><th>Trabajador</th><th>Cargo</th><th>Ingreso</th><th>Meses</th><th>Acumulados</th><th>Usados</th><th>Pendientes</th><th>Informe</th>";
+        }
+        if (zona) zona.innerHTML = filas || emptyRow(9, "Sin trabajadores con fecha de ingreso registrada.");
+
+        // Botones exportar
+        document.getElementById("btn-add-vac").style.display = "none";
+        // Agregar exportar si no existe
+        if (!document.getElementById("btn-export-vac-excel")) {
+          const bDiv = document.createElement("div");
+          bDiv.style.cssText = "display:flex;gap:8px;margin-bottom:12px;";
+          bDiv.innerHTML =
+            "<button id='btn-export-vac-excel' class='btn-entrar' style='font-size:12px;'>📊 Exportar Excel/CSV</button>" +
+            "<button id='btn-export-vac-pdf' style='background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius);cursor:pointer;'>🖨️ PDF Resumen</button>" +
+            "<button onclick='location.reload()' style='background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius);cursor:pointer;'>← Volver a solicitudes</button>";
+          document.getElementById("tbl-vac")?.parentNode.insertBefore(bDiv, document.getElementById("tbl-vac"));
+          document.getElementById("btn-export-vac-excel").onclick = () => {
+            let csv = "RUT,Nombre,Cargo,Fecha Ingreso,Meses Trabajados,Dias Acumulados,Dias Usados,Dias Pendientes\n";
+            datos.forEach(r => {
+              csv += r.rut+","+r.nombre+","+r.cargo+","+r.ingreso+","+r.meses+","+r.acumulados+","+r.usados+","+r.pendientes+"\n";
+            });
+            const a = document.createElement("a");
+            a.href = "data:text/csv;charset=utf-8,﻿" + encodeURIComponent(csv);
+            a.download = "vacaciones_pendientes_" + new Date().toISOString().slice(0,10) + ".csv";
+            a.click();
+          };
+          document.getElementById("btn-export-vac-pdf").onclick = () => {
+            const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
+            const logoH = empresa.logo_url ? "<img src='"+empresa.logo_url+"' style='height:40px;object-fit:contain;' onerror='this.remove()'>" : "";
+            let html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Informe Vacaciones</title>" +
+              "<style>body{font-family:Arial;font-size:11px;padding:30px}h1{color:#1A7A3C;font-size:14px}" +
+              "table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:6px;font-size:10px;text-align:left}" +
+              "td{padding:5px;border-bottom:1px solid #eee}.pend{color:#dc2626;font-weight:700}" +
+              "@media print{@page{size:A4 landscape;margin:8mm}}</style></head><body>" +
+              "<div style='display:flex;justify-content:space-between;border-bottom:2px solid #1A7A3C;padding-bottom:10px;margin-bottom:14px'>" +
+              logoH + "<div><h1>INFORME DE VACACIONES PENDIENTES<br>" + (empresa.nombre||"Empresa") + "</h1>" +
+              "<p style='font-size:10px;color:#555'>RUT: " + (empresa.rut||"—") + " | Emitido: " + new Date().toLocaleDateString("es-CL") + "</p></div></div>" +
+              "<table><thead><tr><th>RUT</th><th>Nombre</th><th>Cargo</th><th>Ingreso</th><th>Meses</th><th>Días Acumulados</th><th>Días Usados</th><th>Días Pendientes</th></tr></thead><tbody>";
+            datos.forEach(r => {
+              html += "<tr><td>" + r.rut + "</td><td><strong>" + r.nombre + "</strong></td><td>" + r.cargo + "</td><td>" + r.ingreso + "</td><td style='text-align:center'>" + r.meses + "</td><td style='text-align:center;color:#1A7A3C;font-weight:700'>" + r.acumulados + "</td><td style='text-align:center'>" + r.usados + "</td><td style='text-align:center' class='pend'>" + r.pendientes + "</td></tr>";
+            });
+            html += "</tbody></table><p style='margin-top:12px;font-size:10px;color:#666'>Cálculo: 1.25 días por mes trabajado (15 días/año) según Art. 67 Código del Trabajo de Chile.</p></body></html>";
+            const w = window.open("","_blank"); w.document.write(html); w.document.close();
+            setTimeout(function(){ w.print(); }, 600);
+          };
+        }
+      };
 
       document.getElementById("btn-add-vac").onclick = () => {
         ["vac-desde","vac-hasta","vac-obs","vac-docid"].forEach(id => document.getElementById(id).value = "");
@@ -6937,102 +7061,664 @@ Si necesita clave, edita el cliente y agrega una.`;
 
     
 
-    // VISTA TRABAJADOR — se activa cuando el usuario logueado tiene rol "trabajador"
+    // ═══════════════════════════════════════════════════════════════
+    // PORTAL DEL COLABORADOR — Estilo App Residentes (mobile-first)
+    // Se activa cuando el usuario logueado tiene rol "trabajador"
+    // ═══════════════════════════════════════════════════════════════
     async function renderPortalTrabajador(zone, user) {
-      // Buscar la ficha del trabajador por su correo
-      const snap = await db.collection("empleados").where("correo_portal","==",user.email).limit(1).get();
-      const snap2 = snap.empty ? await db.collection("empleados").where("correo","==",user.email).limit(1).get() : snap;
+
+      // Ocultar sidebar del ERP — el portal tiene su propia navegación
+      const sidebar = document.getElementById("module-sidebar");
+      if (sidebar) sidebar.style.display = "none";
+      const moduleContent = document.getElementById("module-content");
+      if (moduleContent) { moduleContent.style.padding = "0"; moduleContent.style.background = "#f1f5f4"; }
+
+      // Buscar ficha del trabajador por correo
+      const snap  = await db.collection("empleados").where("correo_portal","==",user.email.toLowerCase()).limit(1).get();
+      const snap2 = snap.empty ? await db.collection("empleados").where("correo","==",user.email.toLowerCase()).limit(1).get() : snap;
+
+      // Sin ficha
       if (snap2.empty) {
-        zone.innerHTML = `<div style="text-align:center;padding:60px 20px;">
-          <div style="font-size:48px;margin-bottom:16px">🔒</div>
-          <h2 style="color:var(--c-text);margin-bottom:8px">Sin ficha asignada</h2>
-          <p style="color:var(--c-muted)">Tu correo no está vinculado a ninguna ficha de trabajador. Contacta a tu administrador.</p>
-        </div>`;
+        zone.innerHTML = `
+          <div style="min-height:100vh;background:#1b4332;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;">
+            <div style="font-size:56px;margin-bottom:16px">🔒</div>
+            <h2 style="color:#fff;font-size:20px;margin-bottom:8px">Correo no vinculado</h2>
+            <p style="color:rgba(255,255,255,0.7);font-size:14px;max-width:300px">Tu correo <strong style="color:#fff">${user.email}</strong> no está asignado a ninguna ficha. Contacta al área de RRHH.</p>
+            <button onclick="auth.signOut()" style="margin-top:28px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;font-family:var(--font);font-size:14px;font-weight:700;padding:12px 28px;border-radius:24px;cursor:pointer;">Cerrar Sesión</button>
+          </div>`;
         return;
       }
-      const empDoc = snap2.docs[0];
-      const empId = empDoc.data().entityId;
+
+      const empDoc  = snap2.docs[0];
       const empDocId = empDoc.id;
+      const emp      = empDoc.data();
+      const empId    = emp.entityId || "";
+      const fmt      = n => "$" + Math.round(n||0).toLocaleString("es-CL");
 
       // Actualizar último acceso
-      await db.collection("empleados").doc(empDocId).update({
-        ultimo_acceso_portal: new Date().toLocaleString('es-CL')
-      });
+      db.collection("empleados").doc(empDocId).update({ ultimo_acceso_portal: new Date().toLocaleString("es-CL") }).catch(()=>{});
 
-      // Cargar todos los datos del trabajador en paralelo
-      const [remSnap, contSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
+      // Cargar empresa para nombre en header
+      let empresaNombre = empId;
+      try {
+        const eDoc = await db.collection("empresas").doc(empId).get();
+        if (eDoc.exists) empresaNombre = eDoc.data().nombre || empId;
+        else {
+          const cDoc = await db.collection("condominios").doc(empId).get();
+          if (cDoc.exists) empresaNombre = cDoc.data().nombre || empId;
+        }
+      } catch(e) {}
+
+      // Calcular días de vacaciones acumulados
+      let diasAcum = 0, diasUsados = 0;
+      if (emp.fecha_ingreso) {
+        const hoy = new Date();
+        const ing = new Date(emp.fecha_ingreso);
+        const meses = (hoy.getFullYear()-ing.getFullYear())*12 + (hoy.getMonth()-ing.getMonth());
+        diasAcum = Math.floor(meses * 1.25); // 15 días/año
+      }
+
+      // Cargar datos en paralelo
+      const [remSnap, vacSnap, permSnap, anticSnap, contSnap] = await Promise.all([
         db.collection("remuneraciones").where("empleado_id","==",empDocId).orderBy("periodo","desc").limit(12).get(),
-        db.collection("contratos").where("empleado_id","==",empDocId).orderBy("creado","desc").get(),
-        db.collection("vacaciones").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+        db.collection("vacaciones").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(20).get(),
         db.collection("permisos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
         db.collection("anticipos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(10).get(),
+        db.collection("contratos").where("empleado_id","==",empDocId).orderBy("creado","desc").limit(5).get(),
       ]);
 
-      const emp = empDoc.data();
-      const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+      // Calcular días usados de vacaciones (aprobadas)
+      vacSnap.forEach(d => {
+        const r = d.data();
+        if (r.tipo === "vacaciones" && r.estado === "aprobada") diasUsados += (r.dias_solicitados||0);
+      });
+      const diasDisp = Math.max(0, diasAcum - diasUsados);
 
-      let liqs=""; remSnap.forEach(d=>{const r=d.data();liqs+=`<tr><td>${r.periodo}</td><td>${fmt(r.total_haberes)}</td><td style="color:var(--c-danger)">${fmt(r.total_descuentos)}</td><td style="font-weight:700">${fmt(r.liquido_pagar)}</td><td><span class="badge badge-green">Pagada</span></td></tr>`;});
-      if(!liqs) liqs=`<tr class="empty-row"><td colspan="5">Sin liquidaciones aún</td></tr>`;
+      // Última liquidación
+      const ultimaLiq = remSnap.empty ? null : remSnap.docs[0].data();
+      const mesActual = new Date().toLocaleDateString("es-CL",{month:"long",year:"numeric"});
 
-      let conts=""; contSnap.forEach(d=>{const r=d.data();conts+=`<tr><td>${r.tipo||'—'}</td><td>${r.fecha_inicio||'—'}</td><td>${r.fecha_fin||'Indefinido'}</td><td>${fmt(r.sueldo_pactado)}</td><td><span class="badge badge-${r.estado==='vigente'?'green':'gray'}">${r.estado||'—'}</span></td></tr>`;});
-      if(!conts) conts=`<tr class="empty-row"><td colspan="5">Sin contratos registrados</td></tr>`;
+      // Inicial del nombre
+      const inicial = (emp.nombre||"?").charAt(0).toUpperCase();
 
-      let vacs=""; vacSnap.forEach(d=>{const r=d.data();vacs+=`<tr><td>${r.tipo||'—'}</td><td>${r.desde||'—'}</td><td>${r.hasta||'—'}</td><td>${r.dias_solicitados||0}</td><td><span class="badge badge-${r.estado==='aprobada'?'green':r.estado==='rechazada'?'red':'warn'}">${r.estado||'—'}</span></td></tr>`;});
-      if(!vacs) vacs=`<tr class="empty-row"><td colspan="5">Sin solicitudes</td></tr>`;
+      // ── Inyectar CSS del portal si no existe ──
+      if (!document.getElementById("css-portal-colab")) {
+        const st = document.createElement("style");
+        st.id = "css-portal-colab";
+        st.textContent = `
+          .pc-app { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:#f1f5f4; min-height:100vh; display:flex; flex-direction:column; max-width:480px; margin:0 auto; position:relative; padding-bottom:72px; }
+          .pc-header { background:linear-gradient(160deg,#1b4332 0%,#2d6a4f 100%); padding:20px 20px 24px; color:#fff; }
+          .pc-header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+          .pc-empresa { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,0.65); }
+          .pc-nombre { font-size:22px; font-weight:800; color:#fff; margin:2px 0; }
+          .pc-cargo  { font-size:13px; color:rgba(255,255,255,0.75); }
+          .pc-avatar { width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.2); border:2px solid rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff; flex-shrink:0; }
+          .pc-salir  { background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:12px; font-weight:700; padding:6px 14px; border-radius:20px; cursor:pointer; }
+          .pc-body   { flex:1; overflow-y:auto; padding:16px; }
+          .pc-card   { background:#fff; border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.07); }
+          .pc-card-title { font-size:14px; font-weight:800; color:#1b4332; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+          .pc-sueldo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+          .pc-sueldo-item { background:#f1f5f4; border-radius:10px; padding:12px; text-align:center; }
+          .pc-sueldo-val  { font-size:20px; font-weight:900; color:#1b4332; }
+          .pc-sueldo-lbl  { font-size:10px; font-weight:700; text-transform:uppercase; color:#6b7280; margin-top:2px; letter-spacing:.5px; }
+          .pc-sueldo-mes  { font-size:11px; color:#6b7280; margin-top:8px; }
+          .pc-ver-todo    { font-size:12px; font-weight:700; color:#2d6a4f; background:none; border:none; cursor:pointer; padding:0; float:right; }
+          .pc-nav-grid    { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:4px 0; }
+          .pc-nav-btn     { background:#f1f5f4; border:none; border-radius:12px; padding:12px 6px; cursor:pointer; text-align:center; transition:background .15s; }
+          .pc-nav-btn:active { background:#d1fae5; }
+          .pc-nav-ico     { font-size:22px; display:block; margin-bottom:4px; }
+          .pc-nav-lbl     { font-size:10px; font-weight:700; color:#374151; }
+          .pc-liq-row     { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f3f4f6; }
+          .pc-liq-row:last-child { border-bottom:none; }
+          .pc-liq-per     { font-size:12px; font-weight:700; color:#374151; }
+          .pc-liq-liq     { font-size:14px; font-weight:900; color:#1b4332; }
+          .pc-liq-badge   { font-size:10px; font-weight:700; background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:20px; }
+          .pc-vac-big     { background:linear-gradient(135deg,#2d6a4f,#1b4332); border-radius:14px; padding:20px; text-align:center; margin-bottom:12px; }
+          .pc-vac-num     { font-size:52px; font-weight:900; color:#fff; line-height:1; }
+          .pc-vac-sub     { font-size:13px; color:rgba(255,255,255,0.8); margin-top:4px; }
+          .pc-vac-detail  { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f3f4f6; font-size:13px; }
+          .pc-vac-detail:last-child { border-bottom:none; }
+          .pc-vac-det-lbl { color:#6b7280; }
+          .pc-vac-det-val { font-weight:700; color:#374151; }
+          .pc-vac-det-val.usado { color:#d97706; }
+          .pc-btn-ppal    { display:block; width:100%; background:#1b4332; color:#fff; border:none; border-radius:12px; padding:14px; font-size:14px; font-weight:800; cursor:pointer; text-align:center; margin-top:10px; }
+          .pc-btn-ppal:active { background:#2d6a4f; }
+          .pc-btn-sec     { display:block; width:100%; background:#f1f5f4; color:#1b4332; border:none; border-radius:12px; padding:12px; font-size:13px; font-weight:700; cursor:pointer; text-align:center; margin-top:8px; }
+          .pc-perm-card   { background:#f9fafb; border-radius:12px; padding:14px; margin-bottom:10px; }
+          .pc-perm-tipo   { font-size:12px; font-weight:800; color:#1b4332; }
+          .pc-perm-fecha  { font-size:11px; color:#6b7280; margin-top:2px; }
+          .pc-perm-badge  { display:inline-block; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; margin-top:6px; }
+          .pc-perm-pend   { background:#fef3c7; color:#d97706; }
+          .pc-perm-apro   { background:#d1fae5; color:#065f46; }
+          .pc-perm-rech   { background:#fee2e2; color:#dc2626; }
+          .pc-perfil-row  { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f3f4f6; font-size:13px; }
+          .pc-perfil-row:last-child { border-bottom:none; }
+          .pc-perfil-lbl  { color:#6b7280; }
+          .pc-perfil-val  { font-weight:700; color:#374151; text-align:right; max-width:55%; word-break:break-word; }
+          .pc-cert-btn    { display:flex; align-items:center; gap:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px; cursor:pointer; width:100%; margin-top:10px; }
+          .pc-cert-ico    { font-size:28px; }
+          .pc-cert-txt    { text-align:left; }
+          .pc-cert-titulo { font-size:13px; font-weight:800; color:#1b4332; }
+          .pc-cert-sub    { font-size:11px; color:#6b7280; margin-top:1px; }
+          .pc-bottom-nav  { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; background:#fff; border-top:1px solid #e5e7eb; display:flex; z-index:999; box-shadow:0 -2px 12px rgba(0,0,0,0.08); }
+          .pc-bnav-item   { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 4px 8px; cursor:pointer; border:none; background:none; transition:background .15s; }
+          .pc-bnav-item:active { background:#f0fdf4; }
+          .pc-bnav-ico    { font-size:20px; margin-bottom:2px; }
+          .pc-bnav-lbl    { font-size:9px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:.3px; }
+          .pc-bnav-item.activo .pc-bnav-lbl { color:#1b4332; }
+          .pc-bnav-item.activo .pc-bnav-ico  { filter:none; }
+          .pc-seccion     { display:none; }
+          .pc-seccion.activa { display:block; }
+          .pc-empty       { text-align:center; padding:28px 16px; color:#9ca3af; font-size:13px; }
+          .pc-form-group  { margin-bottom:12px; }
+          .pc-form-lbl    { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; margin-bottom:4px; display:block; }
+          .pc-input       { width:100%; box-sizing:border-box; background:#f9fafb; border:1px solid #e5e7eb; color:#111; font-size:14px; padding:11px 13px; border-radius:10px; outline:none; }
+          .pc-input:focus { border-color:#2d6a4f; }
+          .pc-select      { width:100%; box-sizing:border-box; background:#f9fafb; border:1px solid #e5e7eb; color:#111; font-size:14px; padding:11px 13px; border-radius:10px; outline:none; }
+          .pc-msg         { font-size:12px; text-align:center; min-height:16px; margin-top:6px; }
+          @media (max-width:480px) { .pc-app { max-width:100%; } .pc-bottom-nav { max-width:100%; } }
+        `;
+        document.head.appendChild(st);
+      }
 
+      // ── Construir HTML del Portal ──
       zone.innerHTML = `
-        <!-- HEADER PORTAL TRABAJADOR -->
-        <div style="background:linear-gradient(135deg,rgba(46,168,79,0.15),rgba(21,101,192,0.1));border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius-lg);padding:22px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
-          <div>
-            <div style="font-size:22px;font-weight:900;margin-bottom:4px">${emp.nombre||'—'}</div>
-            <div style="font-size:13px;color:var(--c-muted)">${emp.cargo||'—'} · RUT: ${emp.rut||'—'}</div>
-            <div style="font-size:12px;color:var(--c-muted)">Empresa: ${emp.entityId||'—'} · Ingreso: ${emp.fecha_ingreso||'—'}</div>
-            <div style="font-size:12px;color:var(--c-muted)">AFP: ${emp.afp||'—'} · Salud: ${emp.salud||'—'} · Sueldo Base: ${fmt(emp.sueldo_base)}</div>
+      <div class="pc-app" id="pc-app">
+
+        <!-- HEADER -->
+        <div class="pc-header">
+          <div class="pc-header-top">
+            <div>
+              <div class="pc-empresa">${empresaNombre}</div>
+              <div class="pc-nombre">${emp.nombre||"—"}</div>
+              <div class="pc-cargo">${emp.cargo||"Colaborador"}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+              <div class="pc-avatar">${inicial}</div>
+              <button class="pc-salir" onclick="auth.signOut()">Salir</button>
+            </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-            <span class="badge badge-green">TRABAJADOR ACTIVO</span>
-            <button onclick="imprimirFichaEmpleado('${empDocId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">🖨️ Mi Ficha PDF</button>
+        </div>
+
+        <!-- SECCIÓN: INICIO -->
+        <div class="pc-body">
+          <div id="pc-sec-inicio" class="pc-seccion activa">
+
+            <!-- Mi Sueldo -->
+            <div class="pc-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <span class="pc-card-title" style="margin:0">💰 Mi Sueldo</span>
+                <button class="pc-ver-todo" onclick="pcNavegar('liquidaciones')">Ver historial ›</button>
+              </div>
+              <div class="pc-sueldo-grid">
+                <div class="pc-sueldo-item">
+                  <div class="pc-sueldo-val">${ultimaLiq ? fmt(ultimaLiq.liquido_pagar) : "$0"}</div>
+                  <div class="pc-sueldo-lbl">Sueldo Líquido</div>
+                </div>
+                <div class="pc-sueldo-item">
+                  <div class="pc-sueldo-val">${ultimaLiq ? fmt(ultimaLiq.total_haberes) : "$0"}</div>
+                  <div class="pc-sueldo-lbl">Sueldo Bruto</div>
+                </div>
+              </div>
+              <div class="pc-sueldo-mes">${ultimaLiq ? "Período: " + ultimaLiq.periodo : mesActual}</div>
+            </div>
+
+            <!-- Accesos rápidos -->
+            <div class="pc-card">
+              <div class="pc-nav-grid">
+                <button class="pc-nav-btn" onclick="pcNavegar('liquidaciones')">
+                  <span class="pc-nav-ico">📑</span><span class="pc-nav-lbl">Liquidaciones</span>
+                </button>
+                <button class="pc-nav-btn" onclick="pcNavegar('vacaciones')">
+                  <span class="pc-nav-ico">🏖️</span><span class="pc-nav-lbl">Vacaciones</span>
+                </button>
+                <button class="pc-nav-btn" onclick="pcNavegar('permisos')">
+                  <span class="pc-nav-ico">📅</span><span class="pc-nav-lbl">Permisos</span>
+                </button>
+                <button class="pc-nav-btn" onclick="pcNavegar('perfil')">
+                  <span class="pc-nav-ico">👤</span><span class="pc-nav-lbl">Mi Perfil</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Últimas liquidaciones -->
+            <div class="pc-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span class="pc-card-title" style="margin:0">📋 Últimas Liquidaciones</span>
+                <button class="pc-ver-todo" onclick="pcNavegar('liquidaciones')">Ver todo ›</button>
+              </div>
+              <div id="pc-inicio-liqs">
+                <div class="pc-empty">Sin liquidaciones registradas</div>
+              </div>
+            </div>
+
+            <!-- Mis Vacaciones resumen -->
+            <div class="pc-card">
+              <div class="pc-card-title">🏖️ Mis Vacaciones</div>
+              <div id="pc-inicio-vac">
+                ${emp.fecha_ingreso
+                  ? `<div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="font-size:13px;color:#6b7280">Días disponibles</span>
+                      <span style="font-size:22px;font-weight:900;color:#1b4332">${diasDisp}</span>
+                    </div>`
+                  : `<div class="pc-empty">Sin fecha de ingreso registrada</div>`}
+              </div>
+            </div>
+
+          </div><!-- /inicio -->
+
+          <!-- SECCIÓN: LIQUIDACIONES -->
+          <div id="pc-sec-liquidaciones" class="pc-seccion">
+            <div class="pc-card">
+              <div class="pc-card-title">📑 Mis Liquidaciones de Sueldo</div>
+              <div id="pc-lista-liqs">
+                <div class="pc-empty">Cargando…</div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <!-- ACCIONES RÁPIDAS -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;">
-          <button onclick="abrirSolicitudPortal('vacaciones','${empDocId}','${empId}')" style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);color:var(--c-accent);font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            🏖️ Solicitar Vacaciones<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Días legales y convenidos</div>
-          </button>
-          <button onclick="abrirSolicitudPortal('permiso','${empDocId}','${empId}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            📋 Solicitar Permiso<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Con o sin goce de sueldo</div>
-          </button>
-          <button onclick="abrirSolicitudPortal('anticipo','${empDocId}','${empId}')" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            💵 Solicitar Anticipo<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Anticipo de sueldo</div>
-          </button>
-          <button onclick="registrarAsistenciaPortal('${empDocId}','${empId}')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            📍 Marcar Asistencia GPS<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Captura coordenadas reales del celular</div>
-          </button>
-        </div>
+          <!-- SECCIÓN: VACACIONES -->
+          <div id="pc-sec-vacaciones" class="pc-seccion">
+            <div class="pc-card">
+              <div class="pc-vac-big">
+                <div class="pc-vac-num">${diasDisp}</div>
+                <div class="pc-vac-sub">Días disponibles</div>
+              </div>
+              <div class="pc-vac-detail">
+                <span class="pc-vac-det-lbl">Días legales anuales</span>
+                <span class="pc-vac-det-val">15</span>
+              </div>
+              <div class="pc-vac-detail">
+                <span class="pc-vac-det-lbl">Días acumulados (${emp.fecha_ingreso ? Math.floor(((new Date()-new Date(emp.fecha_ingreso))/2629800000)*1.25/1) + " meses × 1.25" : "—"})</span>
+                <span class="pc-vac-det-val">${diasAcum}</span>
+              </div>
+              <div class="pc-vac-detail">
+                <span class="pc-vac-det-lbl">Días usados</span>
+                <span class="pc-vac-det-val usado">${diasUsados}</span>
+              </div>
+              <div class="pc-vac-detail" style="border-top:2px solid #e5e7eb;margin-top:4px;padding-top:10px">
+                <span style="font-weight:800;color:#374151">Días disponibles</span>
+                <span style="font-weight:900;font-size:18px;color:#1b4332">${diasDisp}</span>
+              </div>
+            </div>
 
-        <!-- MIS LIQUIDACIONES -->
-        <div class="data-table-wrap" style="margin-bottom:14px;">
-          <div class="data-table-head"><div><h3>📑 Mis Liquidaciones de Sueldo</h3><p>Últimos 12 períodos</p></div></div>
-          <table class="data-table"><thead><tr><th>Período</th><th>Total Haberes</th><th>Descuentos</th><th>Líquido a Pagar</th><th>Estado</th></tr></thead>
-          <tbody>${liqs}</tbody></table>
-        </div>
+            <div class="pc-card">
+              <div class="pc-card-title">📝 Solicitar Vacaciones</div>
+              <button class="pc-btn-ppal" onclick="pcAbrirFormVacaciones('${empDocId}','${empId}')">+ Nueva Solicitud</button>
+              <div id="pc-lista-vacs-prev" style="margin-top:14px">
+                <div class="pc-empty">Sin solicitudes previas</div>
+              </div>
+            </div>
+          </div>
 
-        <!-- MIS CONTRATOS -->
-        <div class="data-table-wrap" style="margin-bottom:14px;">
-          <div class="data-table-head"><div><h3>📝 Mis Contratos y Anexos</h3><p>Historial contractual</p></div></div>
-          <table class="data-table"><thead><tr><th>Tipo</th><th>Inicio</th><th>Término</th><th>Sueldo Pactado</th><th>Estado</th></tr></thead>
-          <tbody>${conts}</tbody></table>
-        </div>
+          <!-- SECCIÓN: PERMISOS -->
+          <div id="pc-sec-permisos" class="pc-seccion">
+            <div class="pc-card">
+              <div class="pc-card-title">📅 Permisos Administrativos</div>
+              <div style="background:#f9fafb;border-radius:10px;padding:14px;margin-bottom:10px">
+                <div style="font-size:13px;font-weight:800;color:#1b4332;margin-bottom:6px">✉️ Solicitar Permiso</div>
+                <button class="pc-btn-ppal" onclick="pcAbrirFormPermiso('${empDocId}','${empId}')">+ Nueva Solicitud</button>
+                <div id="pc-lista-permisos" style="margin-top:12px"><div class="pc-empty">Sin solicitudes previas</div></div>
+              </div>
+              <div style="background:#f9fafb;border-radius:10px;padding:14px">
+                <div style="font-size:13px;font-weight:800;color:#1b4332;margin-bottom:6px">💵 Solicitar Anticipo de Sueldo</div>
+                <button class="pc-btn-ppal" onclick="pcAbrirFormAnticipo('${empDocId}','${empId}')">+ Solicitar Anticipo</button>
+                <div id="pc-lista-anticipos" style="margin-top:12px"><div class="pc-empty">Sin solicitudes previas</div></div>
+              </div>
+            </div>
+          </div>
 
-        <!-- MIS VACACIONES -->
-        <div class="data-table-wrap" style="margin-bottom:14px;">
-          <div class="data-table-head"><div><h3>🏖️ Mis Vacaciones y Permisos</h3><p>Solicitudes registradas</p></div></div>
-          <table class="data-table"><thead><tr><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Días</th><th>Estado</th></tr></thead>
-          <tbody>${vacs}</tbody></table>
+          <!-- SECCIÓN: MI PERFIL -->
+          <div id="pc-sec-perfil" class="pc-seccion">
+            <div class="pc-card">
+              <div class="pc-card-title">👤 Mi Perfil</div>
+              <div id="pc-perfil-datos">
+                <div class="pc-empty">Cargando…</div>
+              </div>
+            </div>
+            <div class="pc-card">
+              <div class="pc-card-title">📜 Certificado de Antigüedad</div>
+              <button class="pc-cert-btn" onclick="pcGenerarCertificado('${empDocId}')">
+                <span class="pc-cert-ico">📋</span>
+                <span class="pc-cert-txt">
+                  <span class="pc-cert-titulo">Generar Certificado</span>
+                  <span class="pc-cert-sub" style="display:block">PDF oficial con timbre de empresa</span>
+                </span>
+              </button>
+              <button class="pc-btn-sec" onclick="imprimirFichaEmpleado('${empDocId}')">🖨️ Imprimir Mi Ficha Completa</button>
+            </div>
+          </div>
+
+        </div><!-- /body -->
+
+        <!-- BOTTOM NAVIGATION -->
+        <nav class="pc-bottom-nav" id="pc-bottom-nav">
+          <button class="pc-bnav-item activo" id="pc-bnav-inicio" onclick="pcNavegar('inicio')">
+            <span class="pc-bnav-ico">🏠</span><span class="pc-bnav-lbl">Inicio</span>
+          </button>
+          <button class="pc-bnav-item" id="pc-bnav-liquidaciones" onclick="pcNavegar('liquidaciones')">
+            <span class="pc-bnav-ico">📑</span><span class="pc-bnav-lbl">Liquidaciones</span>
+          </button>
+          <button class="pc-bnav-item" id="pc-bnav-vacaciones" onclick="pcNavegar('vacaciones')">
+            <span class="pc-bnav-ico">🏖️</span><span class="pc-bnav-lbl">Vacaciones</span>
+          </button>
+          <button class="pc-bnav-item" id="pc-bnav-permisos" onclick="pcNavegar('permisos')">
+            <span class="pc-bnav-ico">📅</span><span class="pc-bnav-lbl">Permisos</span>
+          </button>
+          <button class="pc-bnav-item" id="pc-bnav-perfil" onclick="pcNavegar('perfil')">
+            <span class="pc-bnav-ico">👤</span><span class="pc-bnav-lbl">Mi Perfil</span>
+          </button>
+        </nav>
+
+        <!-- MODAL CONTAINER -->
+        <div id="pc-modal-container"></div>
+
+      </div><!-- /pc-app -->
+      `;
+
+      // ── Poblar datos dinámicos ──
+
+      // Liquidaciones en inicio (últimas 2)
+      const inicioLiqsEl = document.getElementById("pc-inicio-liqs");
+      if (inicioLiqsEl) {
+        if (remSnap.empty) {
+          inicioLiqsEl.innerHTML = `<div class="pc-empty">Sin liquidaciones registradas</div>`;
+        } else {
+          let h = "";
+          remSnap.docs.slice(0,2).forEach(d => {
+            const r = d.data();
+            h += `<div class="pc-liq-row">
+              <div><div class="pc-liq-per">${r.periodo||"—"}</div><div style="font-size:11px;color:#9ca3af">${r.cargo||emp.cargo||"—"}</div></div>
+              <div style="text-align:right"><div class="pc-liq-liq">${fmt(r.liquido_pagar)}</div><span class="pc-liq-badge">Pagada</span></div>
+            </div>`;
+          });
+          inicioLiqsEl.innerHTML = h;
+        }
+      }
+
+      // Lista completa de liquidaciones
+      const listaLiqsEl = document.getElementById("pc-lista-liqs");
+      if (listaLiqsEl) {
+        if (remSnap.empty) {
+          listaLiqsEl.innerHTML = `<div class="pc-empty">Sin liquidaciones registradas aún</div>`;
+        } else {
+          let h = "";
+          remSnap.forEach(d => {
+            const r = d.data();
+            h += `<div class="pc-liq-row">
+              <div>
+                <div class="pc-liq-per">${r.periodo||"—"}</div>
+                <div style="font-size:11px;color:#9ca3af">Haberes: ${fmt(r.total_haberes)} · Desc: ${fmt(r.total_descuentos)}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="pc-liq-liq">${fmt(r.liquido_pagar)}</div>
+                <span class="pc-liq-badge">Pagada</span>
+              </div>
+            </div>`;
+          });
+          listaLiqsEl.innerHTML = h;
+        }
+      }
+
+      // Vacaciones previas
+      const listaVacsEl = document.getElementById("pc-lista-vacs-prev");
+      if (listaVacsEl) {
+        const vacsArr = [];
+        vacSnap.forEach(d => vacsArr.push(d.data()));
+        if (!vacsArr.length) {
+          listaVacsEl.innerHTML = `<div class="pc-empty">Sin solicitudes previas</div>`;
+        } else {
+          let h = "";
+          vacsArr.slice(0,5).forEach(r => {
+            const bCls = r.estado==="aprobada"?"pc-perm-apro":r.estado==="rechazada"?"pc-perm-rech":"pc-perm-pend";
+            h += `<div class="pc-perm-card">
+              <div class="pc-perm-tipo">🏖️ ${r.tipo||"Vacaciones"} · ${r.dias_solicitados||0} días</div>
+              <div class="pc-perm-fecha">${r.desde||"—"} → ${r.hasta||"—"}</div>
+              <span class="pc-perm-badge ${bCls}">${r.estado||"pendiente"}</span>
+            </div>`;
+          });
+          listaVacsEl.innerHTML = h;
+        }
+      }
+
+      // Permisos
+      const listaPermEl = document.getElementById("pc-lista-permisos");
+      if (listaPermEl) {
+        if (permSnap.empty) {
+          listaPermEl.innerHTML = `<div class="pc-empty">Sin solicitudes previas</div>`;
+        } else {
+          let h = "";
+          permSnap.forEach(d => {
+            const r = d.data();
+            const bCls = r.estado==="aprobada"?"pc-perm-apro":r.estado==="rechazada"?"pc-perm-rech":"pc-perm-pend";
+            h += `<div class="pc-perm-card">
+              <div class="pc-perm-tipo">📋 ${r.tipo||"Permiso"}</div>
+              <div class="pc-perm-fecha">${r.desde||"—"} → ${r.hasta||"—"}${r.motivo?" · "+r.motivo:""}</div>
+              <span class="pc-perm-badge ${bCls}">${r.estado||"pendiente"}</span>
+            </div>`;
+          });
+          listaPermEl.innerHTML = h;
+        }
+      }
+
+      // Anticipos
+      const listaAnticEl = document.getElementById("pc-lista-anticipos");
+      if (listaAnticEl) {
+        if (anticSnap.empty) {
+          listaAnticEl.innerHTML = `<div class="pc-empty">Sin solicitudes previas</div>`;
+        } else {
+          let h = "";
+          anticSnap.forEach(d => {
+            const r = d.data();
+            const bCls = r.estado==="aprobada"?"pc-perm-apro":r.estado==="rechazada"?"pc-perm-rech":"pc-perm-pend";
+            h += `<div class="pc-perm-card">
+              <div class="pc-perm-tipo">💵 Anticipo · $${Math.round(r.monto||0).toLocaleString("es-CL")}</div>
+              <div class="pc-perm-fecha">${r.motivo||"Sin motivo especificado"}</div>
+              <span class="pc-perm-badge ${bCls}">${r.estado||"pendiente"}</span>
+            </div>`;
+          });
+          listaAnticEl.innerHTML = h;
+        }
+      }
+
+      // Mi Perfil — datos
+      const perfilEl = document.getElementById("pc-perfil-datos");
+      if (perfilEl) {
+        const filas = [
+          ["Nombre completo", emp.nombre],
+          ["RUT", emp.rut],
+          ["Cargo", emp.cargo],
+          ["Fecha de ingreso", emp.fecha_ingreso],
+          ["Tipo de contrato", emp.tipo_contrato],
+          ["Sueldo base", fmt(emp.sueldo_base)],
+          ["AFP", emp.afp],
+          ["Salud", emp.salud],
+          ["Dirección", emp.direccion],
+          ["Teléfono", emp.telefono],
+          ["Correo", emp.correo],
+        ];
+        let h = filas.filter(f=>f[1]).map(f=>`
+          <div class="pc-perfil-row">
+            <span class="pc-perfil-lbl">${f[0]}</span>
+            <span class="pc-perfil-val">${f[1]}</span>
+          </div>`).join("");
+        if (!h) h = `<div class="pc-empty">Sin datos en la ficha</div>`;
+        perfilEl.innerHTML = h;
+      }
+
+    } // fin renderPortalTrabajador
+
+    // ── Navegación entre secciones del Portal Colaborador ──
+    window.pcNavegar = (seccion) => {
+      ["inicio","liquidaciones","vacaciones","permisos","perfil"].forEach(s => {
+        const sec  = document.getElementById("pc-sec-"+s);
+        const btn  = document.getElementById("pc-bnav-"+s);
+        if (sec) sec.classList.toggle("activa", s===seccion);
+        if (btn) btn.classList.toggle("activo", s===seccion);
+      });
+      const body = document.querySelector(".pc-body");
+      if (body) body.scrollTop = 0;
+    };
+
+    // ── Formulario: Solicitar Vacaciones ──
+    window.pcAbrirFormVacaciones = (empDocId, empId) => {
+      const cont = document.getElementById("pc-modal-container");
+      if (!cont) return;
+      cont.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:flex-end;justify-content:center">
+          <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px 32px">
+            <div style="font-size:16px;font-weight:800;color:#1b4332;margin-bottom:16px">🏖️ Solicitar Vacaciones</div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Fecha desde</label>
+              <input type="date" id="pcv-desde" class="pc-input">
+            </div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Fecha hasta</label>
+              <input type="date" id="pcv-hasta" class="pc-input">
+            </div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Observaciones (opcional)</label>
+              <input type="text" id="pcv-obs" class="pc-input" placeholder="Motivo o detalle">
+            </div>
+            <button class="pc-btn-ppal" id="pcv-enviar">Enviar Solicitud</button>
+            <button class="pc-btn-sec" onclick="document.getElementById('pc-modal-container').innerHTML=''">Cancelar</button>
+            <div class="pc-msg" id="pcv-msg"></div>
+          </div>
+        </div>`;
+      document.getElementById("pcv-enviar").onclick = async () => {
+        const desde = document.getElementById("pcv-desde").value;
+        const hasta = document.getElementById("pcv-hasta").value;
+        const obs   = document.getElementById("pcv-obs").value.trim();
+        if (!desde||!hasta) { document.getElementById("pcv-msg").style.color="#dc2626"; document.getElementById("pcv-msg").textContent="Indica las fechas"; return; }
+        const dias = Math.ceil((new Date(hasta)-new Date(desde))/(1000*60*60*24))+1;
+        const btn = document.getElementById("pcv-enviar"); btn.disabled=true; btn.textContent="Enviando…";
+        await db.collection("vacaciones").add({ entityId:empId, empleado_id:empDocId, tipo:"vacaciones", desde, hasta, dias_solicitados:dias, observacion:obs, estado:"pendiente", creado:firebase.firestore.FieldValue.serverTimestamp() });
+        document.getElementById("pc-modal-container").innerHTML="";
+        alert("✅ Solicitud enviada. Queda pendiente de aprobación.");
+        pcNavegar("vacaciones");
+      };
+    };
+
+    // ── Formulario: Solicitar Permiso ──
+    window.pcAbrirFormPermiso = (empDocId, empId) => {
+      const cont = document.getElementById("pc-modal-container");
+      if (!cont) return;
+      cont.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:flex-end;justify-content:center">
+          <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px 32px">
+            <div style="font-size:16px;font-weight:800;color:#1b4332;margin-bottom:16px">📅 Solicitar Permiso</div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Tipo de Permiso</label>
+              <select id="pcp-tipo" class="pc-select">
+                <option value="con_goce">Con Goce de Sueldo</option>
+                <option value="sin_goce">Sin Goce de Sueldo</option>
+                <option value="medico">Médico</option>
+              </select>
+            </div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Fecha desde</label>
+              <input type="date" id="pcp-desde" class="pc-input">
+            </div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Fecha hasta</label>
+              <input type="date" id="pcp-hasta" class="pc-input">
+            </div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Motivo</label>
+              <input type="text" id="pcp-motivo" class="pc-input" placeholder="Motivo del permiso">
+            </div>
+            <button class="pc-btn-ppal" id="pcp-enviar">Enviar Solicitud</button>
+            <button class="pc-btn-sec" onclick="document.getElementById('pc-modal-container').innerHTML=''">Cancelar</button>
+            <div class="pc-msg" id="pcp-msg"></div>
+          </div>
+        </div>`;
+      document.getElementById("pcp-enviar").onclick = async () => {
+        const tipo   = document.getElementById("pcp-tipo").value;
+        const desde  = document.getElementById("pcp-desde").value;
+        const hasta  = document.getElementById("pcp-hasta").value;
+        const motivo = document.getElementById("pcp-motivo").value.trim();
+        if (!desde) { document.getElementById("pcp-msg").style.color="#dc2626"; document.getElementById("pcp-msg").textContent="Indica la fecha"; return; }
+        const dias = desde&&hasta ? Math.ceil((new Date(hasta)-new Date(desde))/(1000*60*60*24))+1 : 1;
+        const btn = document.getElementById("pcp-enviar"); btn.disabled=true; btn.textContent="Enviando…";
+        await db.collection("permisos").add({ entityId:empId, empleado_id:empDocId, tipo, desde, hasta, dias_solicitados:dias, motivo, estado:"pendiente", creado:firebase.firestore.FieldValue.serverTimestamp() });
+        document.getElementById("pc-modal-container").innerHTML="";
+        alert("✅ Permiso solicitado. Queda pendiente de aprobación.");
+        pcNavegar("permisos");
+      };
+    };
+
+    // ── Formulario: Solicitar Anticipo ──
+    window.pcAbrirFormAnticipo = (empDocId, empId) => {
+      const cont = document.getElementById("pc-modal-container");
+      if (!cont) return;
+      cont.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:flex-end;justify-content:center">
+          <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px 32px">
+            <div style="font-size:16px;font-weight:800;color:#1b4332;margin-bottom:16px">💵 Solicitar Anticipo de Sueldo</div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Monto solicitado ($)</label>
+              <input type="number" id="pca-monto" class="pc-input" placeholder="0" min="0">
+            </div>
+            <div class="pc-form-group">
+              <label class="pc-form-lbl">Motivo</label>
+              <input type="text" id="pca-motivo" class="pc-input" placeholder="¿Para qué necesitas el anticipo?">
+            </div>
+            <button class="pc-btn-ppal" id="pca-enviar">Enviar Solicitud</button>
+            <button class="pc-btn-sec" onclick="document.getElementById('pc-modal-container').innerHTML=''">Cancelar</button>
+            <div class="pc-msg" id="pca-msg"></div>
+          </div>
+        </div>`;
+      document.getElementById("pca-enviar").onclick = async () => {
+        const monto  = parseFloat(document.getElementById("pca-monto").value)||0;
+        const motivo = document.getElementById("pca-motivo").value.trim();
+        if (monto<=0) { document.getElementById("pca-msg").style.color="#dc2626"; document.getElementById("pca-msg").textContent="Ingresa un monto válido"; return; }
+        const btn = document.getElementById("pca-enviar"); btn.disabled=true; btn.textContent="Enviando…";
+        await db.collection("anticipos").add({ entityId:empId, empleado_id:empDocId, monto, motivo, estado:"pendiente", creado:firebase.firestore.FieldValue.serverTimestamp() });
+        document.getElementById("pc-modal-container").innerHTML="";
+        alert("✅ Anticipo solicitado. Queda pendiente de aprobación.");
+        pcNavegar("permisos");
+      };
+    };
+
+    // ── Certificado de Antigüedad PDF ──
+    window.pcGenerarCertificado = async (empDocId) => {
+      const d = await db.collection("empleados").doc(empDocId).get();
+      if (!d.exists) { alert("No se encontró la ficha"); return; }
+      const emp = d.data();
+      const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
+      const hoy = new Date();
+      let empresaNombreC = emp.entityId||"—";
+      let empresaRut = "—";
+      try {
+        const eDoc = await db.collection("empresas").doc(emp.entityId||"").get();
+        if (eDoc.exists) { empresaNombreC=eDoc.data().nombre||empresaNombreC; empresaRut=eDoc.data().rut||"—"; }
+      } catch(e){}
+      const ing = emp.fecha_ingreso ? new Date(emp.fecha_ingreso) : null;
+      const mesesTotal = ing ? Math.floor((hoy-ing)/2629800000) : 0;
+      const años = Math.floor(mesesTotal/12);
+      const meses = mesesTotal%12;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Certificado de Antigüedad</title>
+        <style>body{font-family:Arial;font-size:12px;padding:50px;color:#111;max-width:700px;margin:0 auto}
+        h1{font-size:16px;text-align:center;text-transform:uppercase;letter-spacing:1px;color:#1b4332}
+        .firma{margin-top:60px;border-top:1px solid #000;width:200px;padding-top:6px;font-size:11px}
+        p{line-height:1.8} @media print{@page{size:A4;margin:20mm}}</style></head><body>
+        <div style="text-align:center;border-bottom:2px solid #1b4332;padding-bottom:14px;margin-bottom:24px">
+          <h1>Certificado de Antigüedad Laboral</h1>
+          <p style="font-size:11px;color:#555;margin:0">${empresaNombreC} · RUT: ${empresaRut}</p>
         </div>
-        <div id="portal-modal-solicitud"></div>`;
-    }
+        <p>Por medio del presente documento, <strong>${empresaNombreC}</strong>, RUT <strong>${empresaRut}</strong>, certifica que:</p>
+        <p><strong>${emp.nombre||"—"}</strong>, RUT <strong>${emp.rut||"—"}</strong>, se desempeña en el cargo de <strong>${emp.cargo||"—"}</strong>, con contrato de tipo <strong>${emp.tipo_contrato||"indefinido"}</strong>.</p>
+        <p>Su fecha de ingreso es el <strong>${emp.fecha_ingreso||"—"}</strong>, acumulando a la fecha <strong>${años} año(s) y ${meses} mes(es)</strong> de antigüedad (${mesesTotal} meses en total).</p>
+        <p>Su remuneración base mensual es de <strong>${fmt(emp.sueldo_base)}</strong> (${emp.afp||"—"} · ${emp.salud||"—"}).</p>
+        <p>Se extiende el presente certificado a solicitud del interesado, en Alto Hospicio, a ${hoy.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"})}.</p>
+        <div style="margin-top:50px;display:flex;gap:60px">
+          <div class="firma">Firma Empleador<br><span style="color:#555">${empresaNombreC}</span></div>
+          <div class="firma">Firma Trabajador<br><span style="color:#555">${emp.nombre||"—"}</span></div>
+        </div>
+        </body></html>`;
+      const w = window.open("","_blank"); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 600);
+    };
 
     
     window.abrirSolicitudPortal = (tipo, empDocId, empId) => {
@@ -9642,6 +10328,81 @@ Si necesita clave, edita el cliente y agrega una.`;
         "\nDías utilizados: " + diasUsados +
         "\nDías pendientes: " + diasPendientes +
         "\n\n(1.25 días por mes trabajado según Art. 67 Código del Trabajo)");
+    };
+
+    // ── PDF INDIVIDUAL VACACIONES TRABAJADOR ──
+    window.imprimirInformeVacTrabajador = async (empDocId, nombre, rut, ingreso, acum, usado, pend) => {
+      const empId = STATE.activeEntityId;
+      const empresa = await getEmpresaActiva(empId);
+      const logoH = empresa.logo_url ? "<img src='"+empresa.logo_url+"' style='height:40px;object-fit:contain;' onerror='this.remove()'>" : "";
+      // Detalle de vacaciones tomadas
+      const snap = await db.collection("vacaciones").where("empleado_id","==",empDocId).get();
+      let detalle = "";
+      snap.forEach(d => {
+        const r = d.data();
+        if (r.tipo === "vacaciones" && r.estado === "aprobada") {
+          detalle += "<tr><td>" + (r.desde||"—") + "</td><td>" + (r.hasta||"—") + "</td><td style='text-align:center'>" + (r.dias_solicitados||0) + "</td><td>" + (r.observacion||"—") + "</td></tr>";
+        }
+      });
+      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Vacaciones "+nombre+"</title>" +
+        "<style>body{font-family:Arial;font-size:11px;padding:30px;max-width:720px;margin:0 auto}" +
+        "h1{color:#1A7A3C;font-size:13px}h2{font-size:11px;color:#555;font-weight:normal;margin:0 0 16px}" +
+        ".grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0}" +
+        ".box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:10px;text-align:center}" +
+        ".box label{font-size:9px;color:#666;text-transform:uppercase;display:block;margin-bottom:3px}" +
+        ".box .val{font-size:18px;font-weight:900}" +
+        "table{width:100%;border-collapse:collapse;margin-top:12px}" +
+        "th{background:#1A7A3C;color:#fff;padding:5px;font-size:10px;text-align:left}" +
+        "td{padding:5px;border-bottom:1px solid #eee;font-size:11px}" +
+        "@media print{@page{size:A4;margin:12mm}}</style></head><body>" +
+        "<div style='display:flex;justify-content:space-between;border-bottom:2px solid #1A7A3C;padding-bottom:10px;margin-bottom:14px'>" +
+          logoH + "<div><h1>INFORME DE VACACIONES — " + nombre.toUpperCase() + "</h1>" +
+          "<h2>" + (empresa.nombre||"Empresa") + " | RUT Empresa: " + (empresa.rut||"—") + " | Emitido: " + new Date().toLocaleDateString("es-CL") + "</h2></div>" +
+        "</div>" +
+        "<p><strong>RUT Trabajador:</strong> " + rut + " | <strong>Fecha Ingreso:</strong> " + ingreso + "</p>" +
+        "<div class='grid'>" +
+          "<div class='box'><label>Días Acumulados</label><div class='val' style='color:#1A7A3C'>" + acum + "</div></div>" +
+          "<div class='box'><label>Días Utilizados</label><div class='val' style='color:#d97706'>" + usado + "</div></div>" +
+          "<div class='box'><label>Días Pendientes</label><div class='val' style='color:#dc2626'>" + pend + "</div></div>" +
+        "</div>" +
+        "<p style='font-size:10px;color:#666'>Cálculo: 1.25 días por mes trabajado = 15 días anuales según Art. 67 Código del Trabajo.</p>" +
+        (detalle ? "<table><thead><tr><th>Desde</th><th>Hasta</th><th>Días</th><th>Observación</th></tr></thead><tbody>" + detalle + "</tbody></table>" : "<p style='color:#999;margin-top:12px'>Sin vacaciones registradas aún.</p>") +
+        "</body></html>";
+      const w = window.open("","_blank"); w.document.write(html); w.document.close();
+      setTimeout(function(){ w.print(); }, 600);
+    };
+
+    // ── PDF ASISTENCIA POR MES ──
+    window.imprimirAsistenciaPDF = async (empId, mes, filtroRut) => {
+      if (!mes || !empId) { alert("Selecciona un mes primero"); return; }
+      const empresa = await getEmpresaActiva(empId);
+      const snap = await db.collection("asistencia").where("entityId","==",empId).get();
+      const logoH = empresa.logo_url ? "<img src='"+empresa.logo_url+"' style='height:40px;object-fit:contain;' onerror='this.remove()'>" : "";
+      let filas = ""; let count = 0;
+      snap.forEach(d => {
+        const r = d.data();
+        if (!r.fecha || !r.fecha.startsWith(mes)) return;
+        if (filtroRut && r.rut !== filtroRut) return;
+        const cls = {presente:"#1A7A3C",ausente:"#dc2626",tardanza:"#d97706",licencia:"#0ea5e9",no_registrado:"#999"}[r.estado]||"#999";
+        const h = (r.entrada && r.salida) ? ((new Date("2000-01-01T"+r.salida)-new Date("2000-01-01T"+r.entrada))/3600000).toFixed(1)+"h" : "—";
+        filas += "<tr><td>" + (r.fecha||"—") + "</td><td style='font-family:monospace;font-size:10px'>" + (r.rut||"—") + "</td><td><strong>" + (r.nombre||"—") + "</strong></td><td>" + (r.cargo||"—") + "</td><td>" + (r.entrada||"—") + "</td><td>" + (r.salida||"—") + "</td><td style='text-align:center'>" + h + "</td><td style='color:"+cls+";font-weight:700'>" + (r.estado||"—").toUpperCase() + "</td></tr>";
+        count++;
+      });
+      if (!count) { alert("Sin registros para ese período"); return; }
+      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Asistencia "+mes+"</title>" +
+        "<style>body{font-family:Arial;font-size:10px;padding:24px}h1{color:#1A7A3C;font-size:13px}" +
+        "table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:5px;text-align:left;font-size:9px}" +
+        "td{padding:4px;border-bottom:1px solid #eee}" +
+        "@media print{@page{size:A4 landscape;margin:8mm}}</style></head><body>" +
+        "<div style='display:flex;justify-content:space-between;border-bottom:2px solid #1A7A3C;padding-bottom:10px;margin-bottom:12px'>" +
+          logoH + "<div><h1>REGISTRO DE ASISTENCIA — " + mes + "</h1><p style='font-size:10px;color:#555'>" + (empresa.nombre||"Empresa") + " | Emitido: " + new Date().toLocaleDateString("es-CL") + "</p></div>" +
+        "</div>" +
+        "<table><thead><tr><th>Fecha</th><th>RUT</th><th>Trabajador</th><th>Cargo</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th></tr></thead><tbody>" +
+        filas + "</tbody></table>" +
+        "<p style='margin-top:10px;font-size:9px;color:#666'>Total registros: " + count + "</p>" +
+        "</body></html>";
+      const w = window.open("","_blank"); w.document.write(html); w.document.close();
+      setTimeout(function(){ w.print(); }, 600);
     };
 
   })();
