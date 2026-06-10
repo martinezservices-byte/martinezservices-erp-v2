@@ -1678,8 +1678,8 @@
             entidades: []
           };
         }
-        updateHeaderPlan();
         await loadEntities(uid);
+        await updateHeaderPlan(); // después de cargar datos
         showSAButton(); // respaldo: asegurar visibilidad SA Panel
       } catch (e) {
         console.error("Error cargando tenant:", e);
@@ -3664,7 +3664,16 @@ Clave: ${clavePortal}`);
           <div class="kpi-card"><div class="kpi-label">Total Descuentos</div><div class="kpi-value danger" id="kpi-rem-desc">—</div></div>
           <div class="kpi-card"><div class="kpi-label">Total Líquido</div><div class="kpi-value" id="kpi-rem-liquido">—</div></div>
         </div>` +
-        tableWrap("tbl-rem","Proceso de Remuneraciones","Período activo — valores calculados automáticamente",
+        `<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Ver período</label>
+            <input type="month" id="rem-ver-periodo" value="${new Date().toISOString().slice(0,7)}"
+              style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+          </div>
+          <button id="btn-ver-rem" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🔍 Ver</button>
+          <button id="btn-eliminar-periodo" style="background:var(--c-surface);border:1px solid var(--c-danger);color:var(--c-danger);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🗑 Eliminar Período</button>
+        </div>` +
+        tableWrap("tbl-rem","Proceso de Remuneraciones","Período seleccionado — valores calculados automáticamente",
           ["RUT","Trabajador","Sueldo Pactado","Gratificación","Total Haberes","AFP","Salud","Total Desc.","Líquido","Estado","Acciones"]);
 
       // ── PASO 1: Seleccionar período y cargar novedades ──
@@ -3859,42 +3868,89 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("remuneraciones").where("entityId","==",empId).limit(50).get();
-      const tb = document.getElementById("tbl-rem-tbody");
-      if (snap.empty) { tb.innerHTML = emptyRow(11); return; }
-      tb.innerHTML = "";
-      let tH=0, tD=0, tL=0; let periodoActual="";
-      snap.forEach(d => {
-        const r = d.data();
-        if (!periodoActual) periodoActual = r.periodo;
-        tH += r.total_haberes||0; tD += r.total_descuentos||0; tL += r.liquido_pagar||0;
-        tb.innerHTML += `<tr>
-          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
-          <td><strong>${r.nombre||"—"}</strong></td>
-          <td>${formatMonto(r.sueldo_base)}</td>
-          <td>${formatMonto(r.gratificacion)}</td>
-          <td>${formatMonto(r.horas_extra)}</td>
-          <td style="color:var(--c-accent);font-weight:700">${formatMonto(r.total_haberes)}</td>
-          <td style="font-size:11px">${formatMonto(r.desc_afp)}</td>
-          <td style="font-size:11px">${formatMonto(r.desc_salud)}</td>
-          <td style="color:var(--c-danger)">${formatMonto(r.total_descuentos)}</td>
-          <td style="font-weight:800;color:var(--c-text)">${formatMonto(r.liquido_pagar)}</td>
-          <td>${badgeHtml(r.estado,{procesado:{cls:"green",lbl:"Procesado"},_:{cls:"gray",lbl:"—"}})}</td>
+
+      const cargarPeriodoRem = async (periodo) => {
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+        const tb = document.getElementById("tbl-rem-tbody");
+        const docs = [];
+        snap.forEach(d => {
+          const r = d.data();
+          if (!periodo || r.periodo === periodo) docs.push({id:d.id,...r});
+        });
+        if (!docs.length) {
+          tb.innerHTML = emptyRow(11, "Sin remuneraciones para " + (periodo||"ningún período") + ". Usa el botón 'Procesar Remuneraciones del Mes'.");
+          return;
+        }
+        // Ordenar por nombre
+        docs.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+        tb.innerHTML = "";
+        let tH=0, tD=0, tL=0; let periodoActual="";
+        docs.forEach(r => {
+          if (!periodoActual) periodoActual = r.periodo;
+          tH += r.total_haberes||0; tD += r.total_descuentos||0; tL += r.liquido_pagar||0;
+          tb.innerHTML += `<tr>
+            <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+            <td><strong>${r.nombre||"—"}</strong></td>
+            <td>${formatMonto(r.sueldo_pactado||r.sueldo_base)}</td>
+            <td>${formatMonto(r.gratificacion)}</td>
+            <td style="color:var(--c-accent);font-weight:700">${formatMonto(r.total_haberes)}</td>
+            <td style="font-size:11px">${r.afp||"—"}</td>
+            <td style="font-size:11px">${r.salud||"—"}</td>
+            <td style="color:var(--c-danger)">${formatMonto(r.total_descuentos)}</td>
+            <td style="font-weight:800">${formatMonto(r.liquido_pagar)}</td>
+            <td><span class="badge badge-green">Procesado</span></td>
+            <td style="white-space:nowrap">
+              <button onclick="editarLiquidacion('${r.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;" title="Editar novedades del mes">✏️ Editar</button>
+              <button onclick="imprimirLiquidacionPorId('${r.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Ver PDF">🖨️</button>
+              <button onclick="eliminarLiqRemProceso('${r.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Eliminar">🗑</button>
+            </td>
+          </tr>`;
+        });
+        tb.innerHTML += `<tr style="background:var(--c-bg);font-weight:800">
+          <td colspan="4" style="text-align:right">TOTALES:</td>
+          <td style="color:var(--c-accent)">${formatMonto(tH)}</td>
+          <td colspan="2"></td>
+          <td style="color:var(--c-danger)">${formatMonto(tD)}</td>
+          <td style="font-weight:900">${formatMonto(tL)}</td>
+          <td colspan="2"></td>
         </tr>`;
-      });
-      tb.innerHTML += `<tr style="background:var(--c-bg)">
-        <td colspan="5" style="font-weight:700;text-align:right">TOTALES:</td>
-        <td style="color:var(--c-accent);font-weight:800">${formatMonto(tH)}</td>
-        <td colspan="2"></td>
-        <td style="color:var(--c-danger);font-weight:700">${formatMonto(tD)}</td>
-        <td style="font-weight:800">${formatMonto(tL)}</td>
-        <td></td>
-      </tr>`;
-      document.getElementById("kpi-rem-periodo").textContent = periodoActual||"—";
-      document.getElementById("kpi-rem-haberes").textContent = formatMonto(tH);
-      document.getElementById("kpi-rem-desc").textContent    = formatMonto(tD);
-      document.getElementById("kpi-rem-liquido").textContent = formatMonto(tL);
+        document.getElementById("kpi-rem-periodo").textContent = periodoActual||"—";
+        document.getElementById("kpi-rem-haberes").textContent = formatMonto(tH);
+        document.getElementById("kpi-rem-desc").textContent    = formatMonto(tD);
+        document.getElementById("kpi-rem-liquido").textContent = formatMonto(tL);
+      };
+
+      // Conectar botón Ver
+      document.getElementById("btn-ver-rem").onclick = () => {
+        const periodo = document.getElementById("rem-ver-periodo").value;
+        cargarPeriodoRem(periodo);
+      };
+
+      // Conectar botón Eliminar Período completo
+      document.getElementById("btn-eliminar-periodo").onclick = async () => {
+        const periodo = document.getElementById("rem-ver-periodo").value;
+        if (!periodo) { alert("Selecciona un período para eliminar"); return; }
+        if (!confirm("¿Eliminar TODAS las liquidaciones del período " + periodo + "? Esta acción no se puede deshacer.")) return;
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+        const batch = db.batch();
+        let count = 0;
+        snap.forEach(d => { if (d.data().periodo === periodo) { batch.delete(d.ref); count++; } });
+        if (!count) { alert("Sin registros para ese período."); return; }
+        await batch.commit();
+        alert("✓ " + count + " liquidaciones eliminadas del período " + periodo);
+        cargarPeriodoRem(periodo);
+      };
+
+      // Cargar el período actual automáticamente
+      const periodoInicial = document.getElementById("rem-ver-periodo").value;
+      await cargarPeriodoRem(periodoInicial);
     }
+
+    window.eliminarLiqRemProceso = async (docId, empId) => {
+      if (!confirm("¿Eliminar esta liquidación?")) return;
+      await db.collection("remuneraciones").doc(docId).delete();
+      renderRRHH_Remuneraciones(document.getElementById("module-dynamic-zone"), empId);
+    };
 
     // ── 3. LIQUIDACIONES ──
     async function renderRRHH_Liquidaciones(zone, empId) {
@@ -6249,21 +6305,50 @@ Si necesita clave, edita el cliente y agrega una.`;
           ${m.charAt(0).toUpperCase()+m.slice(1)}</label>`
       ).join('');
       modal.innerHTML = `
-        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:520px;">
-          <div style="background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;">
+          <div style="background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;">
             <div style="font-weight:800;color:#fff;">✏️ Editar Cliente — ${r.nombre||"—"}</div>
             <button onclick="document.getElementById('modal-editar-cliente').remove()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
           </div>
           <div style="padding:20px;">
+
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:6px 10px;margin-bottom:14px;font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;">👤 Datos del Cliente</div>
             <div style="margin-bottom:12px;">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nombre / Razón Social</label>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nombre / Razón Social *</label>
               <input id="ec-nombre" type="text" value="${r.nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:12px;">
               <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">RUT del Cliente</label>
+                <input id="ec-rut" type="text" value="${r.rut||''}" placeholder="76.XXX.XXX-X" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Tipo de Cliente</label>
+                <select id="ec-tipo" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                  <option value="empresa" ${(r.tipo||'empresa')==='empresa'?'selected':''}>Empresa PyME</option>
+                  <option value="condominio" ${r.tipo==='condominio'?'selected':''}>Condominio</option>
+                  <option value="persona_natural" ${r.tipo==='persona_natural'?'selected':''}>Persona Natural</option>
+                  <option value="municipio" ${r.tipo==='municipio'?'selected':''}>Municipio / Institución</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Correo de acceso *</label>
+                <input id="ec-correo" type="email" value="${r.correo||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Teléfono</label>
+                <input id="ec-tel" type="tel" value="${r.telefono||''}" placeholder="+56 9 xxxx xxxx" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+            </div>
+
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:6px 10px;margin:14px 0;font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;">🔑 Acceso y Plan</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:12px;">
+              <div>
                 <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Plan Contratado</label>
                 <select id="ec-plan" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
-                  <option value="demo" ${r.plan==='demo'?'selected':''}>Demo (7 días)</option>
+                  <option value="demo" ${r.plan==='demo'?'selected':''}>Demo (7 días gratis)</option>
                   <option value="basico" ${r.plan==='basico'?'selected':''}>Básico</option>
                   <option value="completo" ${r.plan==='completo'?'selected':''}>Completo</option>
                   <option value="premium" ${r.plan==='premium'?'selected':''}>Premium</option>
@@ -6272,21 +6357,27 @@ Si necesita clave, edita el cliente y agrega una.`;
               <div>
                 <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Estado</label>
                 <select id="ec-estado" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
-                  <option value="activo" ${(r.estado||'activo')==='activo'?'selected':''}>Activo</option>
-                  <option value="suspendido" ${r.estado==='suspendido'?'selected':''}>Suspendido</option>
-                  <option value="cancelado" ${r.estado==='cancelado'?'selected':''}>Cancelado</option>
+                  <option value="activo" ${(r.estado||'activo')==='activo'?'selected':''}>✅ Activo</option>
+                  <option value="suspendido" ${r.estado==='suspendido'?'selected':''}>⏸ Suspendido</option>
+                  <option value="cancelado" ${r.estado==='cancelado'?'selected':''}>❌ Cancelado</option>
                 </select>
               </div>
             </div>
-            <div style="margin-bottom:12px;">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Módulos Habilitados</label>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">${modsHtml}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Fecha Vencimiento</label>
+                <input id="ec-vencimiento" type="date" value="${r.fecha_vencimiento||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Nueva Clave Temporal (opcional)</label>
+                <input id="ec-clave-nueva" type="text" placeholder="Dejar vacío para no cambiar" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+              </div>
             </div>
-            <div style="margin-bottom:16px;">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Fecha Vencimiento</label>
-              <input id="ec-vencimiento" type="date" value="${r.fecha_vencimiento||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
-            </div>
-            <button id="btn-guardar-ec" class="btn-entrar" style="width:100%">💾 Guardar Cambios</button>
+
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:6px 10px;margin:14px 0;font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;">📦 Módulos Habilitados</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">${modsHtml}</div>
+
+            <button id="btn-guardar-ec" class="btn-entrar" style="width:100%;padding:12px;">💾 Guardar Cambios</button>
             <p id="ec-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:14px;"></p>
           </div>
         </div>`;
@@ -6295,14 +6386,44 @@ Si necesita clave, edita el cliente y agrega una.`;
         const modulos = [];
         document.querySelectorAll(".ec-mod-cb:checked").forEach(c => modulos.push(c.value));
         try {
+          const correoNuevo = document.getElementById("ec-correo").value.trim().toLowerCase();
+          const claveNueva = document.getElementById("ec-clave-nueva")?.value.trim()||"";
           await db.collection("sa_clientes").doc(docId).update({
-            nombre:   document.getElementById("ec-nombre").value.trim(),
-            plan:     document.getElementById("ec-plan").value,
-            estado:   document.getElementById("ec-estado").value,
+            nombre:    document.getElementById("ec-nombre").value.trim(),
+            rut:       document.getElementById("ec-rut")?.value.trim()||"",
+            tipo:      document.getElementById("ec-tipo")?.value||"empresa",
+            correo:    correoNuevo,
+            telefono:  document.getElementById("ec-tel")?.value.trim()||"",
+            plan:      document.getElementById("ec-plan").value,
+            estado:    document.getElementById("ec-estado").value,
             modulos,
             fecha_vencimiento: document.getElementById("ec-vencimiento").value,
             actualizado: firebase.firestore.FieldValue.serverTimestamp()
           });
+          // Si se ingresó nueva clave, actualizar en usuarios_pendientes
+          if (claveNueva.length >= 6 && correoNuevo) {
+            await db.collection("usuarios_pendientes").doc(correoNuevo).set({
+              correo: correoNuevo,
+              nombre: document.getElementById("ec-nombre").value.trim(),
+              rol: "cliente",
+              plan: document.getElementById("ec-plan").value,
+              modulos,
+              clave_temp: claveNueva,
+              activo: true,
+              creado_por: STATE.user?.email||"",
+              actualizado: firebase.firestore.FieldValue.serverTimestamp()
+            }, {merge: true});
+          }
+          // También actualizar en usuarios si ya existe
+          const userSnap = await db.collection("usuarios").where("correo","==",correoNuevo).limit(1).get();
+          if (!userSnap.empty) {
+            await db.collection("usuarios").doc(userSnap.docs[0].id).update({
+              plan: document.getElementById("ec-plan").value,
+              modulos,
+              estado: document.getElementById("ec-estado").value,
+              actualizado: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
           document.getElementById("ec-msg").style.color = "var(--c-accent)";
           document.getElementById("ec-msg").textContent = "✓ Cliente actualizado.";
           setTimeout(() => { document.getElementById("modal-editar-cliente")?.remove(); loadSAClientes(); }, 700);
