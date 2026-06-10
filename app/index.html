@@ -1512,6 +1512,7 @@
         name: "Recursos Humanos",
         desc: "Control de asistencia, libros de remuneraciones legalizados, fichas de personal y portal colaborador.",
         nav: [
+          { id: "haberes",       icon: "📋", label: "Haberes y Descuentos" },
           { id: "fichas",        icon: "🪪", label: "Fichas del Personal" },
           { id: "remuneraciones",icon: "💰", label: "Proceso de Remuneraciones" },
           { id: "liquidaciones", icon: "📑", label: "Liquidación de Sueldos" },
@@ -3277,6 +3278,7 @@
       const empId = STATE.activeEntityId
         || document.getElementById("entity-dropdown")?.value;
       switch(navId) {
+        case "haberes":        renderRRHH_Haberes(zone, empId);        break;
         case "fichas":         renderRRHH_Fichas(zone, empId);         break;
         case "remuneraciones": renderRRHH_Remuneraciones(zone, empId); break;
         case "liquidaciones":  renderRRHH_Liquidaciones(zone, empId);  break;
@@ -3309,37 +3311,152 @@
         </div>` +
         tableWrap("tbl-emp","Nómina General — Fichas de Colaboradores","Personal activo e inactivo",
           ["RUT","Nombre Completo","Cargo","Sueldo Base","AFP","Salud","Estado","Acciones"]) +
-        modalHtml("modal-emp","Ficha del Trabajador", `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-            <div>${formField("RUT", inp("emp-rut","text","12.345.678-9"))}</div>
-            <div>${formField("Estado", sel("emp-estado",[{v:"activo",l:"Activo"},{v:"inactivo",l:"Inactivo"},{v:"licencia",l:"Licencia médica"},{v:"vacaciones",l:"Vacaciones"}]))}</div>
+        modalHtml("modal-emp","Ficha de Contratación del Trabajador", `
+          <div style="overflow-y:auto;max-height:75vh;padding-right:4px;">
+
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:8px 12px;margin-bottom:14px;border-radius:0 var(--radius) var(--radius) 0;">
+              <div style="font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;">🪪 Datos Personales</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("RUT *", inp("emp-rut","text","12.345.678-9"))}<div id="emp-rut-feedback" style="font-size:11px;min-height:14px;margin-top:2px;"></div></div>
+              <div>${formField("Estado", sel("emp-estado",[{v:"activo",l:"✅ Activo"},{v:"inactivo",l:"⛔ Inactivo"},{v:"licencia",l:"🏥 Licencia Médica"},{v:"vacaciones",l:"🏖️ Vacaciones"}]))}</div>
+            </div>
+            ${formField("Nombre Completo *", inp("emp-nombre","text","Nombre y Apellidos completos"))}
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 10px;">
+              <div>${formField("Fecha Nacimiento", inp("emp-nacimiento","date",""))}</div>
+              <div>${formField("Nacionalidad", inp("emp-nacionalidad","text","Chilena"))}</div>
+              <div>${formField("Estado Civil", sel("emp-civil",[{v:"soltero",l:"Soltero/a"},{v:"casado",l:"Casado/a"},{v:"divorciado",l:"Divorciado/a"},{v:"viudo",l:"Viudo/a"},{v:"conviviente",l:"Conv. Civil"}]))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Profesión / Oficio", inp("emp-profesion","text","Ej: Técnico en Construcción"))}</div>
+              <div>${formField("Teléfono", inp("emp-tel","tel","+56 9 xxxx xxxx"))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Correo electrónico", inp("emp-correo","email","correo@trabajador.cl"))}</div>
+              <div>${formField("Ciudad / Comuna", inp("emp-ciudad","text","Ej: Alto Hospicio"))}</div>
+            </div>
+            ${formField("Dirección completa", inp("emp-dir","text","Calle, número, ciudad"))}
+
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:8px 12px;margin:14px 0;border-radius:0 var(--radius) var(--radius) 0;">
+              <div style="font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;">💼 Datos Laborales</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Cargo / Función *", inp("emp-cargo","text","Ej: Conserje, Contadora"))}</div>
+              <div>${formField("Departamento", inp("emp-depto","text","Ej: Administración, Operaciones"))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Centro de Costo", inp("emp-ceco","text","Ej: Bodega Norte, Oficina Central"))}</div>
+              <div>${formField("Tipo Contrato *", sel("emp-contrato",[{v:"indefinido",l:"Contrato Indefinido"},{v:"plazo_fijo",l:"Plazo Fijo"},{v:"obra_faena",l:"Obra o Faena"},{v:"honorarios",l:"Honorarios"},{v:"practica",l:"Práctica Profesional"}]))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Fecha Ingreso *", inp("emp-ingreso","date",""))}</div>
+              <div>${formField("Fecha Término (si aplica)", inp("emp-termino","date",""))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Sueldo Base ($) *", inp("emp-sueldo","number","0"))}</div>
+              <div>${formField("Sueldo Líquido Pactado ($)", inp("emp-sueldo-liq","number","0"))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Horas Semanales", inp("emp-horas","number","45"))}</div>
+              <div>${formField("Cargas Familiares", inp("emp-cargas","number","0"))}</div>
+            </div>
+
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:8px 12px;margin:14px 0;border-radius:0 var(--radius) var(--radius) 0;">
+              <div style="font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;">🏛️ Previsión y Salud</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("AFP", sel("emp-afp",[
+                {v:"capital",l:"Capital (11.45%)"},
+                {v:"cuprum",l:"Cuprum (11.45%)"},
+                {v:"habitat",l:"Hábitat (11.27%)"},
+                {v:"modelo",l:"Modelo (10.45%)"},
+                {v:"planvital",l:"PlanVital (11.16%)"},
+                {v:"provida",l:"ProVida (11.45%)"},
+                {v:"uno",l:"AFP Uno (10.45%)"}
+              ]))}</div>
+              <div>${formField("Sistema de Salud", sel("emp-tipo-salud",[
+                {v:"fonasa",l:"Fonasa"},
+                {v:"isapre",l:"Isapre"}
+              ]))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;" id="emp-salud-detalle">
+              <div>${formField("Plan Fonasa / Isapre", sel("emp-salud",[
+                {v:"fonasa_a",l:"Fonasa A"},
+                {v:"fonasa_b",l:"Fonasa B"},
+                {v:"fonasa_c",l:"Fonasa C"},
+                {v:"fonasa_d",l:"Fonasa D"},
+                {v:"isapre_banmedica",l:"Isapre Banmédica"},
+                {v:"isapre_colmena",l:"Isapre Colmena Golden Cross"},
+                {v:"isapre_consalud",l:"Isapre Consalud"},
+                {v:"isapre_cruzblanca",l:"Isapre Cruz Blanca"},
+                {v:"isapre_esencial",l:"Isapre Esencial"},
+                {v:"isapre_vida3",l:"Isapre Vida Tres"}
+              ]))}</div>
+              <div>${formField("Monto Salud ($)", inp("emp-monto-salud","number","0"))}</div>
+            </div>
+
+            <div style="background:rgba(21,101,192,0.08);border-left:3px solid #0ea5e9;padding:8px 12px;margin:14px 0;border-radius:0 var(--radius) var(--radius) 0;">
+              <div style="font-size:11px;font-weight:700;color:#0ea5e9;text-transform:uppercase;letter-spacing:.5px;">🏦 Datos Bancarios</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Banco", sel("emp-banco",[
+                {v:"",l:"— Seleccionar —"},
+                {v:"bancoestado",l:"BancoEstado"},
+                {v:"bci",l:"BCI"},
+                {v:"banco_chile",l:"Banco de Chile"},
+                {v:"santander",l:"Santander"},
+                {v:"scotiabank",l:"Scotiabank"},
+                {v:"itau",l:"Itaú"},
+                {v:"security",l:"Banco Security"},
+                {v:"falabella",l:"Banco Falabella"},
+                {v:"ripley",l:"Banco Ripley"},
+                {v:"coopeuch",l:"Coopeuch"}
+              ]))}</div>
+              <div>${formField("Tipo de Cuenta", sel("emp-tipo-cuenta",[
+                {v:"corriente",l:"Cuenta Corriente"},
+                {v:"vista",l:"Cuenta Vista / RUT"},
+                {v:"ahorro",l:"Cuenta de Ahorro"}
+              ]))}</div>
+            </div>
+            ${formField("Número de Cuenta", inp("emp-num-cuenta","text","Ej: 12345678"))}
+
+            <div style="background:rgba(245,158,11,0.08);border-left:3px solid #f59e0b;padding:8px 12px;margin:14px 0;border-radius:0 var(--radius) var(--radius) 0;">
+              <div style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.5px;">👕 Tallas de Uniformes</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0 10px;">
+              <div>${formField("Polera/Camiseta", sel("emp-talla-polera",[{v:"",l:"—"},{v:"XS",l:"XS"},{v:"S",l:"S"},{v:"M",l:"M"},{v:"L",l:"L"},{v:"XL",l:"XL"},{v:"XXL",l:"XXL"},{v:"XXXL",l:"XXXL"}]))}</div>
+              <div>${formField("Pantalón", inp("emp-talla-pantalon","text","Ej: 32"))}</div>
+              <div>${formField("Calzado (N°)", inp("emp-talla-calzado","text","Ej: 42"))}</div>
+              <div>${formField("Chaleco/Parka", sel("emp-talla-chaleco",[{v:"",l:"—"},{v:"S",l:"S"},{v:"M",l:"M"},{v:"L",l:"L"},{v:"XL",l:"XL"},{v:"XXL",l:"XXL"}]))}</div>
+            </div>
+
+            <div style="background:rgba(124,58,237,0.08);border-left:3px solid #7c3aed;padding:8px 12px;margin:14px 0;border-radius:0 var(--radius) var(--radius) 0;">
+              <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;">🔑 Acceso Portal del Colaborador</div>
+            </div>
+            <p style="font-size:12px;color:var(--c-muted);margin-bottom:10px;">El trabajador usará este correo y clave para entrar a su portal personal.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Correo acceso portal", inp("emp-correo-portal","email",""))}</div>
+              <div>${formField("Clave temporal (mín. 6 car.)", inp("emp-clave-portal","text",""))}</div>
+            </div>
+
+            <input type="hidden" id="emp-docid">
+            <button id="btn-save-emp" class="btn-entrar" style="width:100%;margin-top:14px;padding:12px;">💾 Guardar Ficha del Trabajador</button>
           </div>
-          ${formField("Nombre Completo", inp("emp-nombre","text","Nombre y apellidos"))}
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-            <div>${formField("Cargo / Función", inp("emp-cargo","text","Ej: Conserje"))}</div>
-            <div>${formField("Fecha de Ingreso", inp("emp-ingreso","date",""))}</div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-            <div>${formField("Sueldo Base ($)", inp("emp-sueldo","number","0"))}</div>
-            <div>${formField("Tipo Contrato", sel("emp-contrato",[{v:"indefinido",l:"Indefinido"},{v:"plazo_fijo",l:"Plazo Fijo"},{v:"obra_faena",l:"Obra o Faena"},{v:"honorarios",l:"Honorarios"}]))}</div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-            <div>${formField("AFP", sel("emp-afp",[{v:"capital",l:"Capital"},{v:"cuprum",l:"Cuprum"},{v:"habitat",l:"Hábitat"},{v:"modelo",l:"Modelo"},{v:"planvital",l:"PlanVital"},{v:"provida",l:"ProVida"},{v:"uno",l:"AFP Uno"}]))}</div>
-            <div>${formField("Salud", sel("emp-salud",[{v:"fonasa_a",l:"Fonasa A"},{v:"fonasa_b",l:"Fonasa B"},{v:"fonasa_c",l:"Fonasa C"},{v:"fonasa_d",l:"Fonasa D"},{v:"isapre",l:"Isapre"}]))}</div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-            <div>${formField("Correo", inp("emp-correo","email","correo@empresa.cl"))}</div>
-            <div>${formField("Teléfono", inp("emp-tel","tel","+56 9 xxxx xxxx"))}</div>
-          </div>
-          ${formField("Dirección", inp("emp-dir","text","Calle, número, ciudad"))}
-          <input type="hidden" id="emp-docid">
-          <button id="btn-save-emp" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Ficha</button>
         `);
 
       document.getElementById("btn-add-emp").onclick = () => {
-        ["emp-rut","emp-nombre","emp-cargo","emp-correo","emp-tel","emp-dir","emp-docid"].forEach(id => document.getElementById(id).value = "");
-        document.getElementById("emp-sueldo").value = 0;
+        ["emp-rut","emp-nombre","emp-nacimiento","emp-nacionalidad","emp-profesion",
+         "emp-correo","emp-tel","emp-ciudad","emp-dir","emp-cargo","emp-depto","emp-ceco",
+         "emp-ingreso","emp-termino","emp-num-cuenta","emp-talla-pantalon","emp-talla-calzado",
+         "emp-correo-portal","emp-clave-portal","emp-docid"].forEach(id => {
+          const el = document.getElementById(id); if(el) el.value = "";
+        });
+        ["emp-sueldo","emp-sueldo-liq","emp-horas","emp-cargas","emp-monto-salud"].forEach(id => {
+          const el = document.getElementById(id); if(el) el.value = id==="emp-horas"?"45":"0";
+        });
         document.getElementById("modal-emp").style.display = "flex";
+        // Activar validador RUT
+        setTimeout(() => aplicarValidadorRUT("emp-rut","emp-rut-feedback"), 100);
       };
       document.getElementById("btn-save-emp").onclick = async () => {
         if (!empId) { alert("Sin empresa/entidad activa"); return; }
@@ -3350,20 +3467,34 @@
         const correoPortal = (document.getElementById("emp-correo-portal")?.value||"").trim().toLowerCase();
         const clavePortal  = (document.getElementById("emp-clave-portal")?.value||"").trim();
         const data = {
-          rut, nombre, cargo: document.getElementById("emp-cargo").value.trim(),
-          fecha_ingreso:  document.getElementById("emp-ingreso").value,
-          fecha_termino:  document.getElementById("emp-termino")?.value||"",
-          sueldo_base:    parseFloat(document.getElementById("emp-sueldo").value)||0,
-          sueldo_pactado: parseFloat(document.getElementById("emp-sueldo").value)||0,
-          tipo_contrato:  document.getElementById("emp-contrato").value,
-          cargas_familiares: parseInt(document.getElementById("emp-cargas")?.value)||0,
-          afp:   document.getElementById("emp-afp").value,
-          salud: document.getElementById("emp-salud").value,
-          correo: document.getElementById("emp-correo").value.trim().toLowerCase(),
-          correo_portal: correoPortal || document.getElementById("emp-correo").value.trim().toLowerCase(),
-          telefono:   document.getElementById("emp-tel").value.trim(),
-          direccion:  document.getElementById("emp-dir").value.trim(),
-          estado:     document.getElementById("emp-estado").value,
+          rut, nombre,
+          // Datos personales
+          fecha_nacimiento: document.getElementById("emp-nacimiento")?.value||"",
+          nacionalidad:     document.getElementById("emp-nacionalidad")?.value.trim()||"Chilena",
+          estado_civil:     document.getElementById("emp-civil")?.value||"soltero",
+          profesion:        document.getElementById("emp-profesion")?.value.trim()||"",
+          // Datos laborales
+          cargo:         document.getElementById("emp-cargo").value.trim(),
+          departamento:  document.getElementById("emp-depto")?.value.trim()||"",
+          centro_costo:  document.getElementById("emp-ceco")?.value.trim()||"",
+          fecha_ingreso: document.getElementById("emp-ingreso").value,
+          fecha_termino: document.getElementById("emp-termino")?.value||"",
+          tipo_contrato: document.getElementById("emp-contrato").value,
+          sueldo_base:          parseFloat(document.getElementById("emp-sueldo").value)||0,
+          sueldo_pactado:       parseFloat(document.getElementById("emp-sueldo").value)||0,
+          sueldo_liquido_pactado: parseFloat(document.getElementById("emp-sueldo-liq")?.value)||0,
+          horas_semanales:      parseInt(document.getElementById("emp-horas")?.value)||45,
+          cargas_familiares:    parseInt(document.getElementById("emp-cargas")?.value)||0,
+          // Previsión y salud
+          afp:           document.getElementById("emp-afp").value,
+          tipo_salud:    document.getElementById("emp-tipo-salud")?.value||"fonasa",
+          salud:         document.getElementById("emp-salud").value,
+          monto_salud:   parseFloat(document.getElementById("emp-monto-salud")?.value)||0,
+          // Contacto
+          correo:   document.getElementById("emp-correo").value.trim().toLowerCase(),
+          telefono: document.getElementById("emp-tel").value.trim(),
+          ciudad:   document.getElementById("emp-ciudad")?.value.trim()||"",
+          direccion:document.getElementById("emp-dir").value.trim(),
           // Datos bancarios
           banco:       document.getElementById("emp-banco")?.value||"",
           tipo_cuenta: document.getElementById("emp-tipo-cuenta")?.value||"",
@@ -3371,11 +3502,13 @@
           // Tallas
           talla_polera:   document.getElementById("emp-talla-polera")?.value||"",
           talla_pantalon: document.getElementById("emp-talla-pantalon")?.value.trim()||"",
-          talla_calzado:  document.getElementById("emp-talla-calzado")?.value||"",
+          talla_calzado:  document.getElementById("emp-talla-calzado")?.value.trim()||"",
           talla_chaleco:  document.getElementById("emp-talla-chaleco")?.value||"",
-          // Acceso portal
+          // Portal
+          correo_portal: correoPortal || document.getElementById("emp-correo").value.trim().toLowerCase(),
           portal_activo: correoPortal.length > 0,
-          entityId: empId,
+          estado:    document.getElementById("emp-estado").value,
+          entityId:  empId,
           actualizado: firebase.firestore.FieldValue.serverTimestamp()
         };
         const ref = db.collection("empleados");
@@ -3444,29 +3577,41 @@ Clave: ${clavePortal}`);
       set("emp-docid", docId);
       set("emp-rut", r.rut);
       set("emp-nombre", r.nombre);
+      set("emp-nacimiento", r.fecha_nacimiento);
+      set("emp-nacionalidad", r.nacionalidad||"Chilena");
+      set("emp-profesion", r.profesion);
+      set("emp-correo", r.correo);
+      set("emp-tel", r.telefono);
+      set("emp-ciudad", r.ciudad);
+      set("emp-dir", r.direccion);
       set("emp-cargo", r.cargo);
+      set("emp-depto", r.departamento);
+      set("emp-ceco", r.centro_costo);
       set("emp-ingreso", r.fecha_ingreso);
       set("emp-termino", r.fecha_termino);
       set("emp-sueldo", r.sueldo_pactado||r.sueldo_base||0);
+      set("emp-sueldo-liq", r.sueldo_liquido_pactado||0);
+      set("emp-horas", r.horas_semanales||45);
       set("emp-cargas", r.cargas_familiares||0);
-      set("emp-correo", r.correo);
-      set("emp-tel", r.telefono);
-      set("emp-dir", r.direccion);
-      set("emp-correo-portal", r.correo_portal||r.correo);
-      set("emp-clave-portal", "");
-      set("emp-banco", r.banco);
-      set("emp-tipo-cuenta", r.tipo_cuenta||"vista");
+      set("emp-monto-salud", r.monto_salud||0);
       set("emp-num-cuenta", r.num_cuenta);
-      set("emp-talla-polera", r.talla_polera);
       set("emp-talla-pantalon", r.talla_pantalon);
       set("emp-talla-calzado", r.talla_calzado);
-      set("emp-talla-chaleco", r.talla_chaleco);
-      const selSet = (id, val) => { const el=document.getElementById(id); if(el && val) el.value=val; };
-      selSet("emp-contrato", r.tipo_contrato||"indefinido");
-      selSet("emp-afp", r.afp||"capital");
-      selSet("emp-salud", r.salud||"fonasa_b");
-      selSet("emp-estado", r.estado||"activo");
+      set("emp-correo-portal", r.correo_portal||r.correo);
+      set("emp-clave-portal", "");
+      const sel2 = (id, val) => { const el=document.getElementById(id); if(el && val) el.value=val; };
+      sel2("emp-estado", r.estado||"activo");
+      sel2("emp-civil", r.estado_civil||"soltero");
+      sel2("emp-contrato", r.tipo_contrato||"indefinido");
+      sel2("emp-afp", r.afp||"capital");
+      sel2("emp-tipo-salud", r.tipo_salud||"fonasa");
+      sel2("emp-salud", r.salud||"fonasa_b");
+      sel2("emp-banco", r.banco||"");
+      sel2("emp-tipo-cuenta", r.tipo_cuenta||"vista");
+      sel2("emp-talla-polera", r.talla_polera||"");
+      sel2("emp-talla-chaleco", r.talla_chaleco||"");
       document.getElementById("modal-emp").style.display = "flex";
+      setTimeout(() => aplicarValidadorRUT("emp-rut","emp-rut-feedback"), 100);
     };
     window.deleteEmpleado = async (docId, empId) => {
       if (!confirm("¿Eliminar este trabajador?")) return;
@@ -3580,10 +3725,24 @@ Clave: ${clavePortal}`);
           const batch2 = db.batch();
           let totalH=0,totalD=0,totalL=0;
 
+          // Leer config gratificación de la empresa activa
+          let configGratif = "art47_mensual";
+          try {
+            const cfgDoc = await getEmpresaActiva(empId);
+            configGratif = cfgDoc?.config_rem?.tipo_gratificacion || "art47_mensual";
+          } catch(e){}
+
           empSnap.forEach(d => {
             const r = d.data();
-            const base = r.sueldo_base||0;
-            const gratif = Math.min(base/12, Math.round(40000));
+            const base = r.sueldo_base||r.sueldo_pactado||0;
+            let gratif = 0;
+            if (configGratif === "art47_mensual") {
+              gratif = Math.min(Math.round(base/12), Math.round(510966*4.75/12)); // tope 4.75 IMM 2025
+            } else if (configGratif === "art50_25") {
+              gratif = Math.round(base * 0.25 / 12);
+            } else {
+              gratif = 0; // no_paga: condominios
+            }
             // Novedades del mes
             const col   = parseFloat(document.getElementById(`nv-col-${d.id}`)?.value)||0;
             const mov   = parseFloat(document.getElementById(`nv-mov-${d.id}`)?.value)||0;
@@ -3643,7 +3802,8 @@ Clave: ${clavePortal}`);
       // Cálculo en tiempo real por fila
       window.calcFilaRem = (empDocId, sueldoBase, afp, salud) => {
         const base  = parseFloat(sueldoBase)||0;
-        const gratif = Math.min(base/12, 40000);
+        // La gratificación se calculará definitivamente al procesar
+        const gratif = Math.min(base/12, 40000); // preview — se ajusta al confirmar
         const col   = parseFloat(document.getElementById(`nv-col-${empDocId}`)?.value)||0;
         const mov   = parseFloat(document.getElementById(`nv-mov-${empDocId}`)?.value)||0;
         const bonoa = parseFloat(document.getElementById(`nv-bonoa-${empDocId}`)?.value)||0;
@@ -6170,8 +6330,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       if (!periodo || !empId) return;
       const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
       if (snap.empty) { alert("Sin liquidaciones para ese periodo."); return; }
-      const empDoc = await db.collection("empresas").doc(empId).get();
-      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA", rut:"76.782.954-K"};
+      const empresa = await getEmpresaActiva(empId);
       let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
       <title>Liquidaciones ${periodo}</title>
       <style>
@@ -6242,296 +6401,85 @@ Si necesita clave, edita el cliente y agrega una.`;
     // ── IMPRIMIR FICHA EMPLEADO PDF ──
     window.imprimirFichaEmpleado = async (docId) => {
       const d = await db.collection("empleados").doc(docId).get();
-      if (!d.exists) return;
+      if (!d.exists) { alert("No se encontró la ficha"); return; }
       const r = d.data();
-      const empDoc = await db.collection("empresas").doc(r.entityId||'').get();
-      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA"};
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha ${r.nombre}</title>
-      <style>body{font-family:Arial,sans-serif;font-size:12px;padding:30px;max-width:700px;margin:0 auto}
-      .hdr{display:flex;justify-content:space-between;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:20px}
-      h2{color:#1A7A3C;margin:0;font-size:18px}.sub{font-size:11px;color:#555;margin-top:3px}
-      .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-      .box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:14px}
-      .box h4{font-size:11px;font-weight:700;color:#1A7A3C;text-transform:uppercase;margin-bottom:10px;border-left:3px solid #1A7A3C;padding-left:7px}
-      .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
-      .badge{background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
-      .firma{margin-top:40px;display:flex;justify-content:space-between}
-      .fl{border-top:1px solid #333;width:40%;padding-top:5px;font-size:10px;color:#555;text-align:center}
-      @media print{body{padding:16px}}</style></head><body>
-      <div class="hdr">
-        <div><h2>FICHA DEL COLABORADOR</h2><div class="sub">${empresa.nombre||'Martinez Services SPA'}</div></div>
-        <div style="text-align:right"><span class="badge">${r.estado?.toUpperCase()||'ACTIVO'}</span><div class="sub" style="margin-top:4px">Fecha emisión: ${new Date().toLocaleDateString('es-CL')}</div></div>
-      </div>
-      <div class="grid">
-        <div class="box"><h4>Datos Personales</h4>
-          <div class="row"><span>RUT</span><strong>${r.rut||'—'}</strong></div>
-          <div class="row"><span>Nombre</span><strong>${r.nombre||'—'}</strong></div>
-          <div class="row"><span>Correo</span><span>${r.correo||'—'}</span></div>
-          <div class="row"><span>Teléfono</span><span>${r.telefono||'—'}</span></div>
-          <div class="row"><span>Dirección</span><span>${r.direccion||'—'}</span></div>
-        </div>
-        <div class="box"><h4>Datos Laborales</h4>
-          <div class="row"><span>Cargo</span><strong>${r.cargo||'—'}</strong></div>
-          <div class="row"><span>Fecha Ingreso</span><span>${r.fecha_ingreso||'—'}</span></div>
-          <div class="row"><span>Tipo Contrato</span><span>${r.tipo_contrato||'—'}</span></div>
-          <div class="row"><span>Sueldo Base</span><strong>$${Math.round(r.sueldo_base||0).toLocaleString('es-CL')}</strong></div>
-          <div class="row"><span>AFP</span><span>${r.afp||'—'}</span></div>
-          <div class="row"><span>Salud</span><span>${r.salud||'—'}</span></div>
-        </div>
-      </div>
-      <div class="firma">
-        <div class="fl">Firma del Colaborador<br>${r.nombre||'—'}</div>
-        <div class="fl">Representante Legal<br>${empresa.nombre||'Empresa'}</div>
-      </div></body></html>`;
-      const w = window.open('', '_blank'); w.document.write(html); w.document.close();
-      setTimeout(() => w.print(), 600);
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
+      const logoHtml = empresa.logo_url
+        ? "<img src='" + empresa.logo_url + "' style='height:55px;object-fit:contain;' onerror='this.remove()'>"
+        : "<div style='width:55px;height:55px;background:#1A7A3C;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900'>" + (empresa.nombre||"E").charAt(0) + "</div>";
+      const fila = (l,v) => v ? "<div style='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px'><span style='color:#666'>" + l + "</span><strong style='color:#1a1a1a'>" + v + "</strong></div>" : "";
+      const afpPct = {capital:"11.45%",cuprum:"11.45%",habitat:"11.27%",modelo:"10.45%",planvital:"11.16%",provida:"11.45%",uno:"10.45%"}[r.afp?.toLowerCase()]||"";
+      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Ficha " + (r.nombre||"") + "</title>" +
+        "<style>body{font-family:Arial,sans-serif;font-size:12px;padding:28px;max-width:760px;margin:0 auto;color:#1a1a1a}" +
+        ".hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1A7A3C;padding-bottom:14px;margin-bottom:18px}" +
+        ".emp-info h2{color:#1A7A3C;font-size:18px;margin:0 0 3px}" +
+        ".emp-info .sub{font-size:11px;color:#555}" +
+        ".badge{background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700}" +
+        ".badge-red{background:#fee2e2;color:#dc2626}" +
+        ".grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}" +
+        ".box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:8px;padding:14px}" +
+        ".box h4{font-size:10px;font-weight:700;color:#1A7A3C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;border-left:3px solid #1A7A3C;padding-left:7px}" +
+        ".firma{display:flex;justify-content:space-between;margin-top:40px}" +
+        ".fl{text-align:center;width:44%}.fl-line{border-top:1px solid #333;padding-top:6px;font-size:10px;color:#555}" +
+        "@media print{body{padding:14px}@page{size:A4;margin:10mm}}</style></head><body>" +
+        "<div class='hdr'>" +
+          "<div style='display:flex;align-items:center;gap:14px'>" + logoHtml +
+            "<div class='emp-info'><h2>" + (empresa.nombre||"Martinez Services SPA") + "</h2>" +
+            "<div class='sub'>RUT: " + (empresa.rut||"—") + " | FICHA DE CONTRATACIÓN</div></div>" +
+          "</div>" +
+          "<div style='text-align:right'>" +
+            "<span class='badge" + (r.estado==="activo"?"":" badge-red") + "'>" + (r.estado?.toUpperCase()||"ACTIVO") + "</span>" +
+            "<div style='font-size:10px;color:#555;margin-top:4px'>Emitido: " + new Date().toLocaleDateString("es-CL") + "</div>" +
+          "</div>" +
+        "</div>" +
+        "<div class='grid'>" +
+          "<div class='box'><h4>Datos Personales</h4>" +
+            fila("RUT", r.rut) + fila("Nombre completo", r.nombre) +
+            fila("Fecha nacimiento", r.fecha_nacimiento) + fila("Nacionalidad", r.nacionalidad) +
+            fila("Estado civil", r.estado_civil) + fila("Profesión/Oficio", r.profesion) +
+            fila("Teléfono", r.telefono) + fila("Correo", r.correo) +
+            fila("Ciudad", r.ciudad) + fila("Dirección", r.direccion) +
+          "</div>" +
+          "<div class='box'><h4>Datos Laborales</h4>" +
+            fila("Cargo", r.cargo) + fila("Departamento", r.departamento) +
+            fila("Centro de costo", r.centro_costo) +
+            fila("Tipo contrato", r.tipo_contrato) +
+            fila("Fecha ingreso", r.fecha_ingreso) +
+            fila("Fecha término", r.fecha_termino||"Indefinido") +
+            fila("Sueldo base", r.sueldo_base ? "$"+Math.round(r.sueldo_base).toLocaleString("es-CL") : "") +
+            fila("Sueldo líquido pactado", r.sueldo_liquido_pactado ? "$"+Math.round(r.sueldo_liquido_pactado).toLocaleString("es-CL") : "") +
+            fila("Horas semanales", r.horas_semanales ? r.horas_semanales+"h" : "") +
+            fila("Cargas familiares", r.cargas_familiares||"0") +
+          "</div>" +
+          "<div class='box'><h4>Previsión y Salud</h4>" +
+            fila("AFP", r.afp ? r.afp.charAt(0).toUpperCase()+r.afp.slice(1) + " (" + afpPct + ")" : "") +
+            fila("Sistema salud", r.tipo_salud?.toUpperCase()||"") +
+            fila("Plan", r.salud?.replace(/_/g," ")?.toUpperCase()||"") +
+            fila("Monto salud", r.monto_salud ? "$"+Math.round(r.monto_salud).toLocaleString("es-CL") : "") +
+          "</div>" +
+          "<div class='box'><h4>Datos Bancarios</h4>" +
+            fila("Banco", r.banco) + fila("Tipo cuenta", r.tipo_cuenta) +
+            fila("N° cuenta", r.num_cuenta) +
+            "<h4 style='margin-top:12px'>Uniformes</h4>" +
+            fila("Polera", r.talla_polera) + fila("Pantalón", r.talla_pantalon) +
+            fila("Calzado", r.talla_calzado) + fila("Chaleco", r.talla_chaleco) +
+          "</div>" +
+        "</div>" +
+        "<div class='firma'>" +
+          "<div class='fl'><div class='fl-line'>Firma del Trabajador<br>" + (r.nombre||"—") + "<br>RUT: " + (r.rut||"—") + "</div></div>" +
+          "<div class='fl'><div class='fl-line'>Representante Legal<br>" + (empresa.nombre||"Empresa") + "<br>RUT: " + (empresa.rut||"—") + "</div></div>" +
+        "</div></body></html>";
+      const w = window.open("","_blank");
+      w.document.write(html); w.document.close();
+      setTimeout(function(){ w.print(); }, 700);
     };
 
-    // ── LIBROS DE REMUNERACIONES ──
-    async function renderRRHH_Libros(zone, empId) {
-      zone.innerHTML = `
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-end;">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Periodo</label>
-            <input type="month" id="libro-periodo" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
-          </div>
-          <button id="btn-ver-libro" class="btn-entrar">Ver Libro</button>
-          <button id="btn-libro-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ PDF para Archivar</button>
-          <button id="btn-libro-sii" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📋 Formato SII</button>
-          <button id="btn-libro-dt" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📤 Archivo DT Chile</button>
-        </div>` +
-        tableWrap("tbl-libro","Libro de Remuneraciones","Nómina mensual con todos los haberes y descuentos legales",
-          ["RUT","Nombre","Cargo","S.Base","Grat.","Col.","Mov.","Bono Asist.","H.Extra 50%","H.Extra 100%","Viat.","Total Impon.","Total Haberes","AFP","Mont.AFP","Salud","Mont.Salud","Tot.Desc.","Líquido"]);
 
-      const cargarLibro = async () => {
-        const periodo = document.getElementById("libro-periodo").value;
-        if (!periodo || !empId) return;
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
-        const tb = document.getElementById("tbl-libro-tbody");
-        if (snap.empty) { tb.innerHTML = emptyRow(12, `Sin remuneraciones para ${periodo}. Procésalas primero.`); return; }
-        tb.innerHTML = "";
-        let tH=0, tD=0, tL=0;
-        snap.forEach(d => {
-          const r = d.data(); tH+=r.total_haberes||0; tD+=r.total_descuentos||0; tL+=r.liquido_pagar||0;
-          tb.innerHTML += `<tr>
-            <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
-            <td><strong>${r.nombre||"—"}</strong></td>
-            <td style="font-size:11px">${r.cargo||"—"}</td>
-            <td>${formatMonto(r.sueldo_base)}</td>
-            <td>${formatMonto(r.gratificacion)}</td>
-            <td style="color:var(--c-accent);font-weight:700">${formatMonto(r.total_haberes)}</td>
-            <td style="font-size:11px">${r.afp||"—"}</td>
-            <td style="color:var(--c-danger)">${formatMonto(r.desc_afp)}</td>
-            <td style="font-size:11px">${r.salud||"—"}</td>
-            <td style="color:var(--c-danger)">${formatMonto(r.desc_salud)}</td>
-            <td style="color:var(--c-danger);font-weight:700">${formatMonto(r.total_descuentos)}</td>
-            <td style="font-weight:800">${formatMonto(r.liquido_pagar)}</td>
-          </tr>`;
-        });
-        tb.innerHTML += `<tr style="background:var(--c-bg);font-weight:800">
-          <td colspan="5" style="text-align:right">TOTALES:</td>
-          <td style="color:var(--c-accent)">${formatMonto(tH)}</td>
-          <td colspan="3"></td>
-          <td style="color:var(--c-danger)">${formatMonto(tD)}</td>
-          <td></td>
-          <td style="font-weight:800">${formatMonto(tL)}</td>
-        </tr>`;
-      };
-
-      document.getElementById("btn-ver-libro").onclick = cargarLibro;
-
-      document.getElementById("btn-libro-pdf").onclick = async () => {
-        const periodo = document.getElementById("libro-periodo").value;
-        if (!periodo || !empId) { alert("Selecciona el periodo primero"); return; }
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
-        if (snap.empty) { alert("Sin datos para ese periodo"); return; }
-        const empDoc = await db.collection("empresas").doc(empId).get();
-        const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA", rut:"76.782.954-K"};
-        const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
-        let filas = "";
-        let tH=0,tD=0,tL=0;
-        snap.forEach(d => {
-          const r=d.data(); tH+=r.total_haberes||0; tD+=r.total_descuentos||0; tL+=r.liquido_pagar||0;
-          filas += `<tr><td>${r.rut}</td><td>${r.nombre}</td><td>${r.cargo||'—'}</td><td>${fmt(r.sueldo_base)}</td><td>${fmt(r.gratificacion)}</td><td>${fmt(r.total_haberes)}</td><td>${r.afp}</td><td>${fmt(r.desc_afp)}</td><td>${r.salud}</td><td>${fmt(r.desc_salud)}</td><td>${fmt(r.total_descuentos)}</td><td><strong>${fmt(r.liquido_pagar)}</strong></td></tr>`;
-        });
-        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Libro Remuneraciones ${periodo}</title>
-        <style>body{font-family:Arial;font-size:10px;padding:20px}
-        h2{color:#1A7A3C;font-size:14px}h3{font-size:11px;color:#555;font-weight:normal;margin:2px 0 12px}
-        table{width:100%;border-collapse:collapse;font-size:9px}
-        th{background:#1A7A3C;color:#fff;padding:5px 4px;text-align:left;font-size:9px}
-        td{padding:4px;border-bottom:1px solid #eee}
-        tr:nth-child(even){background:#f9f9f9}
-        .total-row{background:#f0f9f0;font-weight:700}
-        @media print{body{padding:8px}}</style></head><body>
-        <h2>LIBRO DE REMUNERACIONES — ${empresa.nombre||'Martinez Services SPA'}</h2>
-        <h3>RUT: ${empresa.rut||'—'} | Período: ${periodo} | Emitido: ${new Date().toLocaleDateString('es-CL')}</h3>
-        <table><thead><tr>
-          <th>RUT</th><th>Nombre</th><th>Cargo</th><th>Sueldo Base</th><th>Gratif.</th><th>Total Haberes</th>
-          <th>AFP</th><th>Monto AFP</th><th>Salud</th><th>Monto Salud</th><th>Total Desc.</th><th>Líquido</th>
-        </tr></thead><tbody>${filas}
-        <tr class="total-row"><td colspan="5">TOTALES</td><td>${fmt(tH)}</td><td colspan="4"></td><td>${fmt(tD)}</td><td>${fmt(tL)}</td></tr>
-        </tbody></table></body></html>`;
-        const w = window.open('','_blank'); w.document.write(html); w.document.close();
-        setTimeout(() => w.print(), 600);
-      };
-
-      document.getElementById("btn-libro-sii").onclick = async () => {
-        const periodo = document.getElementById("libro-periodo").value;
-        if (!periodo || !empId) { alert("Selecciona el periodo primero"); return; }
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
-        if (snap.empty) { alert("Sin datos para ese periodo"); return; }
-        // Formato SII — Libro de Remuneraciones Electrónico (LRE) formato oficial
-        let csv = "RUT_TRABAJADOR;NOMBRE;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION_LEGAL;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;HORAS_EXTRA_50PCT;HORAS_EXTRA_100PCT;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;ISAPRE_FONASA;MONTO_SALUD;IMPUESTO_UNICO;OTROS_DESCUENTOS;TOTAL_DESCUENTOS;LIQUIDO_PAGAR\n";
-        snap.forEach(d => {
-          const r = d.data();
-          const tiSII=(r.sueldo_base||0)+(r.gratificacion||0)+(r.bono_asistencia||0)+(r.horas_extra_50||0)+(r.horas_extra_100||0);
-          const tiNiSII=(r.asig_colacion||0)+(r.asig_movilizacion||0)+(r.viaticos||0);
-          csv += [r.rut,r.nombre,r.tipo_contrato||'INDEFINIDO',r.periodo,
-            r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,
-            r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,
-            tiSII,tiNiSII,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,
-            r.impuesto_unico||0,r.otros_descuentos||0,
-            r.total_descuentos||0,r.liquido_pagar||0].join(';')+'\n';
-        });
-        const a = document.createElement("a");
-        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
-        a.download = `libro_rem_SII_${periodo}.csv`;
-        a.click();
-        alert("✓ Archivo formato SII exportado.");
-      };
-
-      document.getElementById("btn-libro-dt").onclick = async () => {
-        const periodo = document.getElementById("libro-periodo").value;
-        if (!periodo || !empId) { alert("Selecciona el periodo primero"); return; }
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).where("periodo","==",periodo).get();
-        if (snap.empty) { alert("Sin datos para ese periodo"); return; }
-        const empDoc = await db.collection("empresas").doc(empId).get();
-        const empresa = empDoc.exists ? empDoc.data() : {rut:"76.782.954-K"};
-        // Formato Dirección del Trabajo (DT Chile) — formato oficial carga masiva
-        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE_TRABAJADOR;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION_LEGAL;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;HORAS_EXTRA_50PCT;HORAS_EXTRA_100PCT;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;ISAPRE_FONASA;MONTO_SALUD;TOTAL_DESCUENTOS;LIQUIDO_PAGAR\n";
-        snap.forEach(d => {
-          const r = d.data();
-          const tiDT=(r.sueldo_base||0)+(r.gratificacion||0)+(r.bono_asistencia||0)+(r.horas_extra_50||0)+(r.horas_extra_100||0);
-          const tiNiDT=(r.asig_colacion||0)+(r.asig_movilizacion||0)+(r.viaticos||0);
-          csv += [empresa.rut||'',r.rut,r.nombre,r.tipo_contrato||'INDEFINIDO',r.periodo,
-            r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,
-            r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,
-            tiDT,tiNiDT,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,
-            r.total_descuentos||0,r.liquido_pagar||0].join(';')+'\n';
-        });
-        const a = document.createElement("a");
-        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
-        a.download = `DT_Chile_${periodo}_${(empresa.rut||'').replace(/\./g,'').replace('-','')}.csv`;
-        a.click();
-        alert("✓ Archivo para la Dirección del Trabajo exportado. Formato compatible con carga masiva DT Chile.");
-      };
-    }
-
-    // ── FINIQUITOS ──
-    async function renderRRHH_Finiquitos(zone, empId) {
-      zone.innerHTML =
-        btnPrimary("btn-add-finiquito","Generar Finiquito","📋") +
-        tableWrap("tbl-fin","Finiquitos Emitidos","Registro de finiquitos y desvinculaciones",
-          ["Fecha","RUT","Trabajador","Cargo","Causal","Monto Total","Estado","Acciones"]) +
-        modalHtml("modal-fin","Generar Finiquito", `
-          <div style="background:rgba(248,81,73,0.1);border:1px solid var(--c-danger);border-radius:var(--radius);padding:12px;margin-bottom:14px;">
-            <div style="font-size:12px;color:var(--c-danger);font-weight:600">⚠️ Este documento tiene valor legal. Revisar antes de emitir.</div>
-          </div>
-          ${formField("Trabajador", `<select id="fin-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
-          ${formField("Fecha de Término", inp("fin-fecha","date",""))}
-          ${formField("Causal de Despido", sel("fin-causal",[
-            {v:"art_159_1",l:"Art. 159 N°1 — Mutuo Acuerdo"},
-            {v:"art_159_2",l:"Art. 159 N°2 — Renuncia Voluntaria"},
-            {v:"art_159_3",l:"Art. 159 N°3 — Muerte del Trabajador"},
-            {v:"art_159_4",l:"Art. 159 N°4 — Vencimiento Plazo"},
-            {v:"art_159_5",l:"Art. 159 N°5 — Conclusión del Trabajo"},
-            {v:"art_160",  l:"Art. 160 — Causal Disciplinaria"},
-            {v:"art_161",  l:"Art. 161 — Necesidades de la Empresa"},
-          ]))}
-          ${formField("Días de Vacaciones Pendientes", inp("fin-vac-dias","number","0"))}
-          ${formField("Meses Indemnización (si aplica)", inp("fin-indem-meses","number","0"))}
-          ${formField("Observaciones / Acuerdos", `<textarea id="fin-obs" rows="3" placeholder="Acuerdos o condiciones especiales del finiquito..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>`)}
-          <input type="hidden" id="fin-docid">
-          <button id="btn-save-fin" class="btn-entrar" style="width:100%;margin-top:8px">💾 Generar y Guardar Finiquito</button>
-        `);
-
-      // Cargar trabajadores
-      if (empId) {
-        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
-        const selEmp = document.getElementById("fin-emp");
-        empSnap.forEach(d => {
-          const o = document.createElement("option"); o.value=d.id;
-          o.textContent = `${d.data().rut} — ${d.data().nombre}`; selEmp.appendChild(o);
-        });
-      }
-
-      document.getElementById("btn-add-finiquito").onclick = () => {
-        ["fin-fecha","fin-obs","fin-docid"].forEach(id=>document.getElementById(id).value="");
-        ["fin-vac-dias","fin-indem-meses"].forEach(id=>document.getElementById(id).value=0);
-        document.getElementById("modal-fin").style.display="flex";
-      };
-
-      document.getElementById("btn-save-fin").onclick = async () => {
-        if (!empId) return;
-        const empDocId = document.getElementById("fin-emp").value;
-        if (!empDocId) { alert("Selecciona un trabajador"); return; }
-        const empDoc = await db.collection("empleados").doc(empDocId).get();
-        const r = empDoc.data();
-        const vacDias = parseInt(document.getElementById("fin-vac-dias").value)||0;
-        const indemMeses = parseInt(document.getElementById("fin-indem-meses").value)||0;
-        const sueldoBase = r.sueldo_base||0;
-        const montoVac = Math.round((sueldoBase/30)*vacDias);
-        const montoIndem = sueldoBase * indemMeses;
-        const montoTotal = montoVac + montoIndem;
-        const data = {
-          entityId:empId, empleado_id:empDocId,
-          rut:r.rut||"", nombre:r.nombre||"", cargo:r.cargo||"",
-          fecha_termino: document.getElementById("fin-fecha").value,
-          causal: document.getElementById("fin-causal").value,
-          vac_dias_pendientes: vacDias, monto_vacaciones: montoVac,
-          meses_indemnizacion: indemMeses, monto_indemnizacion: montoIndem,
-          monto_total: montoTotal,
-          observaciones: document.getElementById("fin-obs").value.trim(),
-          estado: "emitido",
-          creado: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        const docId = document.getElementById("fin-docid").value;
-        const ref = db.collection("finiquitos");
-        if (docId) await ref.doc(docId).update(data);
-        else await ref.add(data);
-        // Actualizar estado del empleado a inactivo
-        await db.collection("empleados").doc(empDocId).update({estado:"inactivo"});
-        document.getElementById("modal-fin").style.display="none";
-        await renderRRHH_Finiquitos(zone, empId);
-        // Abrir PDF automáticamente
-        setTimeout(() => imprimirFiniquito(data), 500);
-      };
-
-      if (!empId) return;
-      const snap = await db.collection("finiquitos").where("entityId","==",empId).orderBy("creado","desc").get();
-      const tb = document.getElementById("tbl-fin-tbody");
-      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
-      tb.innerHTML = "";
-      snap.forEach(d => {
-        const r=d.data();
-        const causales = {art_159_1:"Mutuo Acuerdo",art_159_2:"Renuncia",art_159_3:"Fallecimiento",art_159_4:"Vencimiento Plazo",art_159_5:"Término Obra",art_160:"Causal Discipl.",art_161:"Nec. Empresa"};
-        tb.innerHTML += `<tr>
-          <td>${r.fecha_termino||"—"}</td>
-          <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
-          <td><strong>${r.nombre||"—"}</strong></td>
-          <td>${r.cargo||"—"}</td>
-          <td style="font-size:11px">${causales[r.causal]||r.causal||"—"}</td>
-          <td style="font-weight:700;color:var(--c-danger)">${formatMonto(r.monto_total)}</td>
-          <td><span class="badge badge-green">${r.estado||"—"}</span></td>
-          <td>
-            <button onclick="imprimirFiniquitoById('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
-            <button onclick="deleteFiniquito('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
-          </td>
-        </tr>`;
-      });
-    }
-
-    window.imprimirFiniquito = (r) => {
+    window.imprimirFiniquito = async (r) => {
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
+      const empNombre = empresa.nombre||"Martinez Services SPA";
+      const empRut = empresa.rut||"76.782.954-K";
+      const empDir = empresa.direccion||"Alto Hospicio, Chile";
       const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
       const causales = {art_159_1:"Artículo 159 N°1 — Mutuo Acuerdo de las Partes",art_159_2:"Artículo 159 N°2 — Renuncia Voluntaria del Trabajador",art_159_3:"Artículo 159 N°3 — Muerte del Trabajador",art_159_4:"Artículo 159 N°4 — Vencimiento del Plazo Convenido",art_159_5:"Artículo 159 N°5 — Conclusión del Trabajo",art_160:"Artículo 160 — Causal Disciplinaria",art_161:"Artículo 161 — Necesidades de la Empresa"};
       const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Finiquito ${r.nombre}</title>
@@ -6553,7 +6501,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       <h2>FINIQUITO LABORAL</h2>
       <div class="sub">Documento de Término de Contrato de Trabajo — ${new Date().toLocaleDateString('es-CL')}</div>
       <div class="section"><h4>Partes</h4>
-        <div class="row"><span>Empleador</span><strong>Martinez Services SPA — RUT 76.782.954-K</strong></div>
+        <div class="row"><span>Empleador</span><strong>${empNombre} — RUT ${empRut}</strong></div>
         <div class="row"><span>Trabajador</span><strong>${r.nombre||'—'}</strong></div>
         <div class="row"><span>RUT Trabajador</span><span>${r.rut||'—'}</span></div>
         <div class="row"><span>Cargo</span><span>${r.cargo||'—'}</span></div>
@@ -7011,8 +6959,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       const d = await db.collection("contratos").doc(docId).get();
       if (!d.exists) return;
       const r = d.data();
-      const empDoc = await db.collection("empresas").doc(r.entityId||'').get();
-      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA",rut:"76.782.954-K"};
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
       const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
       const tipos = {indefinido:"Indefinido",plazo_fijo:"Plazo Fijo",obra_faena:"Obra o Faena",honorarios:"Honorarios",anexo:"Anexo de Contrato"};
       const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Contrato ${r.nombre}</title>
@@ -8223,12 +8170,7 @@ Si necesita clave, edita el cliente y agrega una.`;
     }
 
     // Conectar validador a campos RUT al renderizar
-    const _origRenderFichas = window.renderRRHH_Fichas || null;
-    const _conectarValidadores = () => {
-      // Se llama desde renderRRHH_Fichas y desde modal-emp al abrirse
-      aplicarValidadorRUT('emp-rut', 'emp-rut-feedback');
-      aplicarValidadorRUT('nc-correo', null); // No es RUT pero valida formato
-    };
+
 
     // Validar RUT en guardar ficha trabajador
     const _origBtnSaveEmp = null; // se conecta via MutationObserver
@@ -8409,8 +8351,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       const d = await db.collection("remuneraciones").doc(docId).get();
       if (!d.exists) { alert("No se encontró la liquidación"); return; }
       const r = d.data();
-      const empDoc = await db.collection("empresas").doc(r.entityId||"").get();
-      const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA", rut:"76.782.954-K"};
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
       const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
       const filaH = (label, val) => "<div style='display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px'><span>" + label + "</span><span>" + val + "</span></div>";
       const filaD = (label, val) => val ? "<div style='display:flex;justify-content:space-between;padding:4px 0;font-size:12px'><span>" + label + "</span><span style='color:#e53e3e'>-" + fmt(val) + "</span></div>" : "";
@@ -8473,6 +8414,222 @@ Si necesita clave, edita el cliente y agrega una.`;
       if (!confirm("Eliminar esta liquidacion?")) return;
       await db.collection("remuneraciones").doc(docId).delete();
       renderRRHH_Liquidaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── HELPER: Obtener datos de la empresa/entidad activa correcta ──
+    async function getEmpresaActiva(entityId) {
+      if (!entityId) return {nombre:"Martinez Services SPA", rut:"76.782.954-K"};
+      // Buscar en empresas primero
+      const docEmp = await db.collection("empresas").doc(entityId).get();
+      if (docEmp.exists) return docEmp.data();
+      // Si no, buscar en condominios
+      const docCondo = await db.collection("condominios").doc(entityId).get();
+      if (docCondo.exists) return docCondo.data();
+      // Si no, buscar en sa_clientes entidades propias
+      const snap = await db.collection("empresas").where("uid_owner","==",STATE.user?.uid||"").get();
+      if (!snap.empty) return snap.docs[0].data();
+      return {nombre: STATE.tenantData?.nombre||"Empresa", rut: STATE.tenantData?.rut||"—"};
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // RRHH — HABERES Y DESCUENTOS (catálogo de conceptos)
+    // ═══════════════════════════════════════════════════════════
+    async function renderRRHH_Haberes(zone, empId) {
+      zone.innerHTML =
+        `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+          <button id="btn-add-haber" class="btn-entrar">＋ Agregar Concepto</button>
+          <button id="btn-cargar-default" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 Cargar Plan Estándar Chile</button>
+          <div style="margin-left:auto;display:flex;gap:6px;">
+            <select id="haber-filtro-tipo" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
+              <option value="">Todos los tipos</option>
+              <option value="haber">Solo Haberes</option>
+              <option value="descuento">Solo Descuentos</option>
+            </select>
+            <button id="btn-filtrar-haber" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:7px 12px;border-radius:var(--radius);cursor:pointer;">Filtrar</button>
+          </div>
+        </div>` +
+        tableWrap("tbl-hab","Catálogo de Haberes y Descuentos","Conceptos que se usan en el proceso de remuneraciones",
+          ["Cód.","Descripción","Tipo","Imponible","Tributable","Gratif.","LRE","Estado","Acciones"]) +
+        modalHtml("modal-hab","Concepto de Remuneración", `
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:0 12px;">
+            <div>${formField("Código", inp("hab-cod","text","Ej: 100"))}</div>
+            <div>${formField("Descripción *", inp("hab-desc","text","Ej: Sueldo Base"))}</div>
+          </div>
+          ${formField("Tipo", sel("hab-tipo",[{v:"haber",l:"Haber (ingreso del trabajador)"},{v:"descuento",l:"Descuento (deducción del trabajador)"}]))}
+          <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Clasificación legal (requerida por SII y DT Chile)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px;border-radius:4px;border:1px solid var(--c-border);">
+                <input type="checkbox" id="hab-imponible" style="accent-color:var(--c-accent);width:15px;height:15px;"> Imponible (AFP/Salud)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px;border-radius:4px;border:1px solid var(--c-border);">
+                <input type="checkbox" id="hab-tributable" style="accent-color:var(--c-accent);width:15px;height:15px;"> Tributable (Imp. Único)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px;border-radius:4px;border:1px solid var(--c-border);">
+                <input type="checkbox" id="hab-gratif" style="accent-color:var(--c-accent);width:15px;height:15px;"> Gratificación (base de cálculo)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px;border-radius:4px;border:1px solid var(--c-border);">
+                <input type="checkbox" id="hab-lre" checked style="accent-color:var(--c-accent);width:15px;height:15px;"> LRE (Libro Rem. Electrónico)
+              </label>
+            </div>
+          </div>
+          ${formField("Valor fijo ($) — dejar en 0 si es variable", inp("hab-valor","number","0"))}
+          ${formField("Observación", inp("hab-obs","text",""))}
+          <input type="hidden" id="hab-docid">
+          <button id="btn-save-hab" class="btn-entrar" style="width:100%;margin-top:8px">💾 Guardar Concepto</button>
+        `);
+
+      document.getElementById("btn-add-haber").onclick = () => {
+        ["hab-cod","hab-desc","hab-obs","hab-docid"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("hab-valor").value = 0;
+        ["hab-imponible","hab-tributable","hab-gratif"].forEach(id => document.getElementById(id).checked = false);
+        document.getElementById("hab-lre").checked = true;
+        document.getElementById("modal-hab").style.display = "flex";
+      };
+
+      document.getElementById("btn-save-hab").onclick = async () => {
+        if (!empId) { alert("Sin entidad activa"); return; }
+        const desc = document.getElementById("hab-desc").value.trim();
+        if (!desc) { alert("La descripción es obligatoria"); return; }
+        const docId = document.getElementById("hab-docid").value;
+        const data = {
+          entityId: empId,
+          codigo:       document.getElementById("hab-cod").value.trim(),
+          descripcion:  desc,
+          tipo:         document.getElementById("hab-tipo").value,
+          imponible:    document.getElementById("hab-imponible").checked,
+          tributable:   document.getElementById("hab-tributable").checked,
+          gratificacion:document.getElementById("hab-gratif").checked,
+          lre:          document.getElementById("hab-lre").checked,
+          valor_fijo:   parseFloat(document.getElementById("hab-valor").value)||0,
+          observacion:  document.getElementById("hab-obs").value.trim(),
+          activo:       true,
+          actualizado:  firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("haberes_descuentos");
+        if (docId) await ref.doc(docId).update(data);
+        else await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-hab").style.display = "none";
+        renderRRHH_Haberes(zone, empId);
+      };
+
+      document.getElementById("btn-cargar-default").onclick = async () => {
+        if (!empId) return;
+        if (!confirm("Esto cargará el plan estándar de haberes y descuentos para Chile.\nSi ya tienes conceptos propios no se eliminarán.\n¿Continuar?")) return;
+        const defaults = [
+          {cod:"100",desc:"SUELDO BASE",tipo:"haber",imp:true,trib:true,grat:true,lre:true},
+          {cod:"107",desc:"HORAS EXTRA 50%",tipo:"haber",imp:true,trib:true,grat:false,lre:true},
+          {cod:"404",desc:"HORAS EXTRA 100%",tipo:"haber",imp:true,trib:true,grat:true,lre:true},
+          {cod:"115",desc:"GRATIFICACION LEGAL",tipo:"haber",imp:true,trib:true,grat:false,lre:true},
+          {cod:"118",desc:"ASIGNACION COLACION",tipo:"haber",imp:false,trib:false,grat:false,lre:true},
+          {cod:"119",desc:"ASIGNACION MOVILIZACION",tipo:"haber",imp:false,trib:false,grat:false,lre:true},
+          {cod:"123",desc:"VIATICO",tipo:"haber",imp:false,trib:false,grat:false,lre:true},
+          {cod:"105",desc:"ASIGNACION FAMILIAR",tipo:"haber",imp:false,trib:false,grat:false,lre:true},
+          {cod:"111",desc:"BONIFICACION",tipo:"haber",imp:true,trib:true,grat:false,lre:true},
+          {cod:"117",desc:"COMISIONES",tipo:"haber",imp:true,trib:true,grat:false,lre:true},
+          {cod:"264",desc:"HORAS FESTIVAS 50%",tipo:"haber",imp:true,trib:true,grat:false,lre:true},
+          {cod:"922",desc:"HORAS DOMINGO 30%",tipo:"haber",imp:true,trib:true,grat:true,lre:true},
+          {cod:"914",desc:"BENEFICIO SEMANA CORRIDA",tipo:"haber",imp:true,trib:true,grat:true,lre:true},
+          {cod:"696",desc:"AGUINALDO",tipo:"haber",imp:true,trib:true,grat:false,lre:true},
+          {cod:"200",desc:"PREVISION AFP",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+          {cod:"201",desc:"SALUD",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+          {cod:"907",desc:"SEGURO CESANTIA",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+          {cod:"205",desc:"IMPUESTO UNICO",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+          {cod:"208",desc:"ANTICIPO DE SUELDOS",tipo:"descuento",imp:false,trib:false,grat:false,lre:false},
+          {cod:"67",desc:"PRESTAMO",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+          {cod:"501",desc:"DIAS CON LICENCIA",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+          {cod:"502",desc:"DIAS SIN LICENCIA",tipo:"descuento",imp:false,trib:false,grat:false,lre:false},
+          {cod:"909",desc:"HORAS FALTADAS",tipo:"descuento",imp:true,trib:true,grat:false,lre:true},
+          {cod:"901",desc:"CREDITOS PERSONALES CCAF",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+          {cod:"904",desc:"DESCTO. SEGURO VIDA CCAF",tipo:"descuento",imp:false,trib:false,grat:false,lre:true},
+        ];
+        let cargados = 0;
+        const batch = db.batch();
+        defaults.forEach(h => {
+          const ref = db.collection("haberes_descuentos").doc();
+          batch.set(ref, {
+            entityId:empId, codigo:h.cod, descripcion:h.desc,
+            tipo:h.tipo, imponible:h.imp, tributable:h.trib,
+            gratificacion:h.grat, lre:h.lre, valor_fijo:0,
+            activo:true, es_default:true,
+            creado:firebase.firestore.FieldValue.serverTimestamp()
+          });
+          cargados++;
+        });
+        await batch.commit();
+        alert("Plan estándar cargado: " + cargados + " conceptos.\nAhora puedes editar, agregar o eliminar según las necesidades de esta empresa.");
+        renderRRHH_Haberes(zone, empId);
+      };
+
+      document.getElementById("btn-filtrar-haber").onclick = () => cargarHaberes();
+
+      const cargarHaberes = async () => {
+        if (!empId) return;
+        const filtro = document.getElementById("haber-filtro-tipo").value;
+        let query = db.collection("haberes_descuentos").where("entityId","==",empId).orderBy("codigo");
+        const snap = await query.get();
+        const tb = document.getElementById("tbl-hab-tbody");
+        if (snap.empty) {
+          tb.innerHTML = emptyRow(9, "Sin conceptos registrados. Haz clic en 'Cargar Plan Estándar Chile' para comenzar.");
+          return;
+        }
+        tb.innerHTML = "";
+        let total = 0;
+        snap.forEach(d => {
+          const r = d.data();
+          if (filtro && r.tipo !== filtro) return;
+          total++;
+          const tipoCls = r.tipo === "haber" ? "green" : "danger";
+          const si = "<span style='color:var(--c-accent);font-weight:700'>Sí</span>";
+          const no = "<span style='color:var(--c-muted)'>No</span>";
+          tb.innerHTML += "<tr>" +
+            "<td style='font-family:monospace;font-weight:700;color:var(--c-muted)'>" + (r.codigo||"—") + "</td>" +
+            "<td><strong>" + (r.descripcion||"—") + "</strong>" + (r.valor_fijo ? "<br><small style='color:var(--c-muted)'>$" + Math.round(r.valor_fijo).toLocaleString("es-CL") + " fijo</small>" : "") + "</td>" +
+            "<td><span class='badge badge-" + tipoCls + "'>" + (r.tipo||"—").toUpperCase() + "</span></td>" +
+            "<td style='text-align:center'>" + (r.imponible ? si : no) + "</td>" +
+            "<td style='text-align:center'>" + (r.tributable ? si : no) + "</td>" +
+            "<td style='text-align:center'>" + (r.gratificacion ? si : no) + "</td>" +
+            "<td style='text-align:center'>" + (r.lre ? si : no) + "</td>" +
+            "<td><span class='badge badge-" + (r.activo !== false ? "green" : "gray") + "'>" + (r.activo !== false ? "Activo" : "Inactivo") + "</span></td>" +
+            "<td style='white-space:nowrap'>" +
+              "<button onclick='editHaber(\"" + d.id + "\")' style='background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;'>✏️</button>" +
+              "<button onclick='toggleHaber(\"" + d.id + "\"," + (r.activo !== false) + ",\"" + empId + "\")' style='background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;'>" + (r.activo !== false ? "⛔" : "✅") + "</button>" +
+              "<button onclick='deleteHaber(\"" + d.id + "\",\"" + empId + "\")' style='background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;'>🗑</button>" +
+            "</td>" +
+            "</tr>";
+        });
+        if (!total) tb.innerHTML = emptyRow(9, "Sin resultados para ese filtro.");
+      };
+
+      await cargarHaberes();
+    }
+
+    window.editHaber = async (docId) => {
+      const d = await db.collection("haberes_descuentos").doc(docId).get();
+      if (!d.exists) return;
+      const r = d.data();
+      document.getElementById("hab-docid").value = docId;
+      document.getElementById("hab-cod").value = r.codigo||"";
+      document.getElementById("hab-desc").value = r.descripcion||"";
+      document.getElementById("hab-tipo").value = r.tipo||"haber";
+      document.getElementById("hab-imponible").checked = r.imponible||false;
+      document.getElementById("hab-tributable").checked = r.tributable||false;
+      document.getElementById("hab-gratif").checked = r.gratificacion||false;
+      document.getElementById("hab-lre").checked = r.lre !== false;
+      document.getElementById("hab-valor").value = r.valor_fijo||0;
+      document.getElementById("hab-obs").value = r.observacion||"";
+      document.getElementById("modal-hab").style.display = "flex";
+    };
+
+    window.toggleHaber = async (docId, activo, empId) => {
+      await db.collection("haberes_descuentos").doc(docId).update({activo: !activo});
+      renderRRHH_Haberes(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    window.deleteHaber = async (docId, empId) => {
+      if (!confirm("Eliminar este concepto? Si se elimina no podrá usarse en nuevas liquidaciones.")) return;
+      await db.collection("haberes_descuentos").doc(docId).delete();
+      renderRRHH_Haberes(document.getElementById("module-dynamic-zone"), empId);
     };
 
   })();
