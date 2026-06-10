@@ -3740,7 +3740,7 @@ Clave: ${clavePortal}`);
             <td style="font-size:11px">${r.salud||"—"}</td>
             <td style="white-space:nowrap">
               <button onclick="imprimirLiquidacionPorId('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
-              <button onclick="eliminarLiquidacion('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
+              <button onclick="eliminarLiq('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
             </td>
           </tr>`;
         });
@@ -3758,6 +3758,11 @@ Clave: ${clavePortal}`);
           </div>
           <button id="btn-cargar-asist" class="btn-entrar">Ver Asistencia</button>
           <button id="btn-marcar-todos" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">✓ Marcar todos Presentes</button>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:8px;">
+            <input type="month" id="asist-mes-hist" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
+            <button id="btn-hist-mes" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📋 Ver Historial Mes</button>
+            <button id="btn-export-asist-csv" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar CSV</button>
+          </div>
         </div>` +
         `<div class="kpi-row">
           <div class="kpi-card"><div class="kpi-label">Presentes</div><div class="kpi-value green" id="kpi-asist-p">—</div></div>
@@ -3812,6 +3817,61 @@ Clave: ${clavePortal}`);
       };
 
       document.getElementById("btn-cargar-asist").onclick = cargarAsist;
+      document.getElementById("btn-hist-mes").onclick = async () => {
+        const mes = document.getElementById("asist-mes-hist").value;
+        const tb = document.getElementById("tbl-asist-tbody");
+        if (!mes || !empId) { alert("Selecciona un mes"); return; }
+        const snap = await db.collection("asistencia")
+          .where("entityId","==",empId).orderBy("fecha","desc").get();
+        tb.innerHTML = "";
+        let total = 0;
+        snap.forEach(d => {
+          const r = d.data();
+          if (!r.fecha || r.fecha.substring(0,7) !== mes) return;
+          total++;
+          const cls = {presente:"green",ausente:"red",tardanza:"warn",licencia:"warn"}[r.estado]||"gray";
+          const h = (r.entrada && r.salida) ?
+            ((new Date("2000-01-01T"+r.salida)-new Date("2000-01-01T"+r.entrada))/3600000).toFixed(1)+"h" : "—";
+          tb.innerHTML += "<tr>" +
+            "<td>" + (r.fecha||"—") + "</td>" +
+            "<td style='font-family:monospace;font-size:11px'>" + (r.rut||"—") + "</td>" +
+            "<td><strong>" + (r.nombre||"—") + "</strong></td>" +
+            "<td>" + (r.cargo||"—") + "</td>" +
+            "<td>" + (r.entrada||"—") + "</td>" +
+            "<td>" + (r.salida||"—") + "</td>" +
+            "<td>" + h + "</td>" +
+            "<td><span class='badge badge-" + cls + "'>" + (r.estado||"—") + "</span></td>" +
+            "<td></td>" +
+            "</tr>";
+        });
+        if (!total) tb.innerHTML = emptyRow(9, "Sin registros para " + mes);
+      };
+
+      document.getElementById("btn-export-asist-csv").onclick = async () => {
+        const mes = document.getElementById("asist-mes-hist").value;
+        if (!mes || !empId) { alert("Selecciona un mes primero"); return; }
+        const snap = await db.collection("asistencia")
+          .where("entityId","==",empId).orderBy("fecha").get();
+        let csv = "Fecha,RUT,Nombre,Cargo,Entrada,Salida,Estado,Horas\n";
+        let count = 0;
+        snap.forEach(d => {
+          const r = d.data();
+          if (!r.fecha || r.fecha.substring(0,7) !== mes) return;
+          const h = (r.entrada && r.salida) ?
+            ((new Date("2000-01-01T"+r.salida)-new Date("2000-01-01T"+r.entrada))/3600000).toFixed(1) : "";
+          csv += (r.fecha||"") + "," + (r.rut||"") + "," + (r.nombre||"") + "," +
+                 (r.cargo||"") + "," + (r.entrada||"") + "," + (r.salida||"") + "," +
+                 (r.estado||"") + "," + h + "\n";
+          count++;
+        });
+        if (!count) { alert("Sin registros para " + mes); return; }
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8,﻿" + encodeURIComponent(csv);
+        a.download = "asistencia_" + mes + ".csv";
+        a.click();
+        alert("Exportados " + count + " registros");
+      };
+
       document.getElementById("btn-marcar-todos").onclick = async () => {
         const fecha = document.getElementById("asist-fecha").value;
         if (!fecha || !empId) return;
@@ -3826,77 +3886,6 @@ Clave: ${clavePortal}`);
         cargarAsist();
       };
       cargarAsist();
-
-      // ── HISTORIAL POR MES + EXPORTAR ──
-      // Agregar botones de historial si no existen
-      const asistZone = document.getElementById("module-dynamic-zone");
-      const extraDiv = document.createElement("div");
-      extraDiv.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:flex-end;";
-      extraDiv.innerHTML = `
-        <div>
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">📋 Ver historial del mes</label>
-          <input type="month" id="asist-mes-hist" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-        </div>
-        <button id="btn-hist-asist" class="btn-entrar">Ver Historial Mensual</button>
-        <button id="btn-export-mes-asist" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar Informe CSV</button>`;
-      zone.appendChild(extraDiv);
-
-      const histTable = document.createElement("div");
-      histTable.id = "asist-hist-tabla";
-      zone.appendChild(histTable);
-
-      document.getElementById("btn-hist-asist").onclick = async () => {
-        const mes = document.getElementById("asist-mes-hist").value;
-        if (!mes || !empId) { alert("Selecciona un mes"); return; }
-        const snap = await db.collection("asistencia").where("entityId","==",empId).orderBy("fecha","desc").get();
-        let filas = "";
-        snap.forEach(d => {
-          const r = d.data();
-          if (!r.fecha || !r.fecha.startsWith(mes)) return;
-          const cls = {presente:"green",ausente:"red",tardanza:"warn",licencia:"warn",no_registrado:"gray"}[r.estado]||"gray";
-          const horas = (r.entrada && r.salida) ?
-            ((new Date("2000-01-01T"+r.salida)-new Date("2000-01-01T"+r.entrada))/3600000).toFixed(1)+"h" : "—";
-          filas += "<tr>" +
-            "<td>" + (r.fecha||"—") + "</td>" +
-            "<td style='font-family:monospace;font-size:11px'>" + (r.rut||"—") + "</td>" +
-            "<td><strong>" + (r.nombre||"—") + "</strong></td>" +
-            "<td>" + (r.entrada||"—") + "</td>" +
-            "<td>" + (r.salida||"—") + "</td>" +
-            "<td>" + horas + "</td>" +
-            "<td><span class='badge badge-" + cls + "'>" + (r.estado||"—") + "</span></td>" +
-            "</tr>";
-        });
-        if (filas) {
-          histTable.innerHTML = "<div class='data-table-wrap' style='margin-top:16px;'>" +
-            "<div class='data-table-head'><div><h3>Historial " + mes + "</h3><p>Registros del período</p></div></div>" +
-            "<table class='data-table'><thead><tr><th>Fecha</th><th>RUT</th><th>Trabajador</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th></tr></thead>" +
-            "<tbody>" + filas + "</tbody></table></div>";
-        } else {
-          histTable.innerHTML = "<p style='color:var(--c-muted);padding:16px'>Sin registros para " + mes + "</p>";
-        }
-      };
-
-      document.getElementById("btn-export-mes-asist").onclick = async () => {
-        const mes = document.getElementById("asist-mes-hist").value;
-        if (!mes || !empId) { alert("Selecciona un mes para exportar"); return; }
-        const snap = await db.collection("asistencia").where("entityId","==",empId).orderBy("fecha").get();
-        let csv = "Fecha,RUT,Nombre,Cargo,Entrada,Salida,Estado,Horas Trabajadas\n";
-        let count = 0;
-        snap.forEach(d => {
-          const r = d.data();
-          if (!r.fecha?.startsWith(mes)) return;
-          const horas = (r.entrada && r.salida) ?
-            ((new Date("2000-01-01T"+r.salida)-new Date("2000-01-01T"+r.entrada))/3600000).toFixed(1) : "";
-          csv += `${r.fecha},${r.rut||""},${r.nombre||""},${r.cargo||""},${r.entrada||""},${r.salida||""},${r.estado||""},${horas}
-`;
-          count++;
-        });
-        if (!count) { alert(`Sin registros para ${mes}`); return; }
-        const a = document.createElement("a");
-        a.href = "data:text/csv;charset=utf-8,﻿"+encodeURIComponent(csv);
-        a.download = `asistencia_${mes}.csv`; a.click();
-        alert(`✓ ${count} registros exportados correctamente`);
-      };
     }
 
     window.guardarAsistencia = async (empDocId, empId, fecha) => {
@@ -8415,7 +8404,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       };
     };
 
-    // ── IMPRIMIR LIQUIDACIÓN POR ID ──
+    // ── PDF LIQUIDACIÓN INDIVIDUAL ──
     window.imprimirLiquidacionPorId = async (docId) => {
       const d = await db.collection("remuneraciones").doc(docId).get();
       if (!d.exists) { alert("No se encontró la liquidación"); return; }
@@ -8423,65 +8412,68 @@ Si necesita clave, edita el cliente y agrega una.`;
       const empDoc = await db.collection("empresas").doc(r.entityId||"").get();
       const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA", rut:"76.782.954-K"};
       const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liquidación ${r.nombre}</title>
-      <style>body{font-family:Arial,sans-serif;font-size:12px;padding:30px;max-width:700px;margin:0 auto}
-      .hdr{display:flex;justify-content:space-between;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:16px}
-      .hdr h2{color:#1A7A3C;font-size:16px;margin:0}.sub{font-size:11px;color:#555}
-      .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-      .box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:12px}
-      .box h4{font-size:11px;font-weight:700;color:#1A7A3C;text-transform:uppercase;margin-bottom:8px;border-left:3px solid #1A7A3C;padding-left:6px}
-      .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
-      .total{background:#1A7A3C;color:#fff;padding:12px;border-radius:6px;text-align:center}
-      .total .monto{font-size:24px;font-weight:900;margin-top:4px}
-      .firma{display:flex;justify-content:space-between;margin-top:36px}
-      .fl{text-align:center;width:44%}.fl-line{border-top:1px solid #333;padding-top:5px;font-size:10px;color:#555}
-      @media print{body{padding:16px}}</style></head><body>
-      <div class="hdr">
-        <div><h2>${empresa.nombre||"Martinez Services SPA"}</h2>
-          <div class="sub">RUT: ${empresa.rut||"—"} | Liquidación de Sueldo | Período: ${r.periodo||"—"}</div></div>
-        <div style="text-align:right"><div class="sub">Emitido: ${new Date().toLocaleDateString("es-CL")}</div></div>
-      </div>
-      <div class="grid">
-        <div class="box"><h4>Datos del Trabajador</h4>
-          <div class="row"><span>RUT</span><strong>${r.rut||"—"}</strong></div>
-          <div class="row"><span>Nombre</span><strong>${r.nombre||"—"}</strong></div>
-          <div class="row"><span>Cargo</span><span>${r.cargo||"—"}</span></div>
-          <div class="row"><span>AFP</span><span>${r.afp||"—"}</span></div>
-          <div class="row"><span>Salud</span><span>${r.salud||"—"}</span></div>
-          <div class="row"><span>Contrato</span><span>${r.tipo_contrato||"Indefinido"}</span></div>
-        </div>
-        <div class="box"><h4>Haberes del Período</h4>
-          <div class="row"><span>Sueldo Base</span><span>${fmt(r.sueldo_base)}</span></div>
-          <div class="row"><span>Gratificación Legal</span><span>${fmt(r.gratificacion)}</span></div>
-          ${r.bono_asistencia?`<div class="row"><span>Bono Asistencia</span><span>${fmt(r.bono_asistencia)}</span></div>`:""}
-          ${r.horas_extra_50?`<div class="row"><span>Horas Extra 50%</span><span>${fmt(r.horas_extra_50)}</span></div>`:""}
-          ${r.horas_extra_100?`<div class="row"><span>Horas Extra 100%</span><span>${fmt(r.horas_extra_100)}</span></div>`:""}
-          ${r.asig_colacion?`<div class="row"><span>Asig. Colación (NI)</span><span>${fmt(r.asig_colacion)}</span></div>`:""}
-          ${r.asig_movilizacion?`<div class="row"><span>Asig. Movilización (NI)</span><span>${fmt(r.asig_movilizacion)}</span></div>`:""}
-          ${r.viaticos?`<div class="row"><span>Viáticos (NI)</span><span>${fmt(r.viaticos)}</span></div>`:""}
-          <div class="row" style="font-weight:700;border-top:2px solid #ddd;margin-top:4px"><span>Total Haberes</span><span style="color:#1A7A3C">${fmt(r.total_haberes)}</span></div>
-        </div>
-        <div class="box"><h4>Descuentos Legales</h4>
-          <div class="row"><span>AFP ${r.afp||""}</span><span style="color:#e53e3e">-${fmt(r.desc_afp)}</span></div>
-          <div class="row"><span>Salud (7%)</span><span style="color:#e53e3e">-${fmt(r.desc_salud)}</span></div>
-          ${r.impuesto_unico?`<div class="row"><span>Impuesto Único</span><span style="color:#e53e3e">-${fmt(r.impuesto_unico)}</span></div>`:""}
-          ${r.otros_descuentos?`<div class="row"><span>Otros Descuentos</span><span style="color:#e53e3e">-${fmt(r.otros_descuentos)}</span></div>`:""}
-          <div class="row" style="font-weight:700;border-top:2px solid #ddd;margin-top:4px"><span>Total Descuentos</span><span style="color:#e53e3e">-${fmt(r.total_descuentos)}</span></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center">
-          <div class="total" style="width:100%"><div>💰 LÍQUIDO A PAGAR</div><div class="monto">${fmt(r.liquido_pagar)}</div></div>
-        </div>
-      </div>
-      <div class="firma">
-        <div class="fl"><div class="fl-line">Firma Trabajador<br>${r.nombre||"—"}</div></div>
-        <div class="fl"><div class="fl-line">Representante Legal<br>${empresa.nombre||"Empresa"}</div></div>
-      </div></body></html>`;
-      const w = window.open("","_blank"); w.document.write(html); w.document.close();
-      setTimeout(()=>w.print(),600);
+      const filaH = (label, val) => "<div style='display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px'><span>" + label + "</span><span>" + val + "</span></div>";
+      const filaD = (label, val) => val ? "<div style='display:flex;justify-content:space-between;padding:4px 0;font-size:12px'><span>" + label + "</span><span style='color:#e53e3e'>-" + fmt(val) + "</span></div>" : "";
+      let haberes = filaH("Sueldo Base", fmt(r.sueldo_base)) +
+        filaH("Gratificación Legal", fmt(r.gratificacion));
+      if (r.bono_asistencia) haberes += filaH("Bono Asistencia", fmt(r.bono_asistencia));
+      if (r.horas_extra_50) haberes += filaH("Horas Extra 50%", fmt(r.horas_extra_50));
+      if (r.horas_extra_100) haberes += filaH("Horas Extra 100%", fmt(r.horas_extra_100));
+      if (r.asig_colacion) haberes += filaH("Colación (no impon.)", fmt(r.asig_colacion));
+      if (r.asig_movilizacion) haberes += filaH("Movilización (no impon.)", fmt(r.asig_movilizacion));
+      if (r.viaticos) haberes += filaH("Viáticos (no impon.)", fmt(r.viaticos));
+      let descuentos = filaD("AFP " + (r.afp||""), r.desc_afp) +
+        filaD("Salud 7%", r.desc_salud) +
+        filaD("Impuesto Único", r.impuesto_unico) +
+        filaD("Otros descuentos", r.otros_descuentos);
+      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Liquidacion</title>" +
+        "<style>body{font-family:Arial,sans-serif;font-size:12px;padding:30px;max-width:700px;margin:0 auto}" +
+        ".hdr{display:flex;justify-content:space-between;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:16px}" +
+        "h2{color:#1A7A3C;font-size:16px;margin:0}.sub{font-size:11px;color:#555}" +
+        ".grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}" +
+        ".box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:12px}" +
+        ".box h4{font-size:11px;font-weight:700;color:#1A7A3C;text-transform:uppercase;margin-bottom:8px;border-left:3px solid #1A7A3C;padding-left:6px}" +
+        ".total{background:#1A7A3C;color:#fff;padding:14px;border-radius:6px;text-align:center}" +
+        ".monto{font-size:26px;font-weight:900;margin-top:4px}" +
+        ".firma{display:flex;justify-content:space-between;margin-top:36px}" +
+        ".fl{text-align:center;width:44%}.fl-line{border-top:1px solid #333;padding-top:5px;font-size:10px;color:#555}" +
+        "@media print{body{padding:16px}}</style></head><body>" +
+        "<div class='hdr'>" +
+          "<div><h2>" + (empresa.nombre||"Martinez Services SPA") + "</h2>" +
+          "<div class='sub'>RUT: " + (empresa.rut||"—") + " | Liquidación de Sueldo | Período: " + (r.periodo||"—") + "</div></div>" +
+          "<div style='text-align:right'><div class='sub'>Emitido: " + new Date().toLocaleDateString("es-CL") + "</div></div>" +
+        "</div>" +
+        "<div class='grid'>" +
+          "<div class='box'><h4>Datos del Trabajador</h4>" +
+            filaH("RUT", r.rut||"—") + filaH("Nombre", r.nombre||"—") +
+            filaH("Cargo", r.cargo||"—") + filaH("AFP", r.afp||"—") +
+            filaH("Salud", r.salud||"—") +
+          "</div>" +
+          "<div class='box'><h4>Haberes</h4>" + haberes +
+            "<div style='display:flex;justify-content:space-between;padding:5px 0;font-weight:700;border-top:2px solid #ddd;margin-top:4px;font-size:12px'><span>Total Haberes</span><span style='color:#1A7A3C'>" + fmt(r.total_haberes) + "</span></div>" +
+          "</div>" +
+          "<div class='box'><h4>Descuentos</h4>" + descuentos +
+            "<div style='display:flex;justify-content:space-between;padding:5px 0;font-weight:700;border-top:2px solid #ddd;margin-top:4px;font-size:12px'><span>Total Descuentos</span><span style='color:#e53e3e'>-" + fmt(r.total_descuentos) + "</span></div>" +
+          "</div>" +
+          "<div style='display:flex;align-items:center;justify-content:center'>" +
+            "<div class='total' style='width:100%'><div>LÍQUIDO A PAGAR</div><div class='monto'>" + fmt(r.liquido_pagar) + "</div></div>" +
+          "</div>" +
+        "</div>" +
+        "<div class='firma'>" +
+          "<div class='fl'><div class='fl-line'>Firma Trabajador<br>" + (r.nombre||"—") + "</div></div>" +
+          "<div class='fl'><div class='fl-line'>Representante Legal<br>" + (empresa.nombre||"Empresa") + "</div></div>" +
+        "</div></body></html>";
+      const w = window.open("","_blank");
+      w.document.write(html);
+      w.document.close();
+      setTimeout(function(){ w.print(); }, 600);
     };
 
-    
-
+    window.eliminarLiq = async (docId, empId) => {
+      if (!confirm("Eliminar esta liquidacion?")) return;
+      await db.collection("remuneraciones").doc(docId).delete();
+      renderRRHH_Liquidaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
 
   })();
   </script>
