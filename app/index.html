@@ -3637,8 +3637,16 @@ Clave: ${clavePortal}`);
       setTimeout(() => aplicarValidadorRUT("emp-rut","emp-rut-feedback"), 100);
     };
     window.deleteEmpleado = async (docId, empId) => {
-      if (!confirm("¿Eliminar este trabajador?")) return;
+      if (!confirm("ATENCIÓN: Se eliminarán la ficha y TODOS los registros del trabajador (contratos, liquidaciones, vacaciones, asistencia). Esta acción no se puede deshacer. ¿Continuar?")) return;
+      const cols = ["contratos","remuneraciones","vacaciones","permisos","anticipos","finiquitos"];
+      for (const col of cols) {
+        const s = await db.collection(col).where("empleado_id","==",docId).get();
+        if (!s.empty) { const b = db.batch(); s.forEach(d=>b.delete(d.ref)); await b.commit(); }
+      }
+      const asist = await db.collection("asistencia").where("entityId","==",empId).get();
+      const ba = db.batch(); asist.forEach(d=>{ if(d.data().empleado_id===docId) ba.delete(d.ref); }); await ba.commit();
       await db.collection("empleados").doc(docId).delete();
+      alert("Trabajador eliminado correctamente.");
       renderRRHH_Fichas(document.getElementById("module-dynamic-zone"), empId);
     };
 
@@ -3923,6 +3931,7 @@ Clave: ${clavePortal}`);
             <td style="font-size:11px">${r.salud||"—"}</td>
             <td style="white-space:nowrap">
               <button onclick="imprimirLiquidacionPorId('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
+              <button onclick="editarLiquidacion('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Editar novedades">✏️</button>
               <button onclick="eliminarLiq('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
             </td>
           </tr>`;
@@ -7761,17 +7770,73 @@ Si necesita clave, edita el cliente y agrega una.`;
 
         if (snap && snap.exists) {
           STATE.tenantData = snap.data();
+          // Si el doc existe pero no tiene plan, buscar en sa_clientes
+          if (!STATE.tenantData.plan && STATE.user?.email) {
+            try {
+              const sc = await db.collection("sa_clientes")
+                .where("correo","==",STATE.user.email.toLowerCase()).limit(1).get();
+              if (!sc.empty) {
+                const clienteData = sc.docs[0].data();
+                STATE.tenantData.plan = clienteData.plan || "demo";
+                STATE.tenantData.modulos = clienteData.modulos || STATE.tenantData.modulos || [];
+                STATE.tenantData.fecha_vencimiento = clienteData.fecha_vencimiento || "";
+                // Actualizar el doc en usuarios con el plan correcto
+                await db.collection("usuarios").doc(uid).update({
+                  plan: STATE.tenantData.plan,
+                  modulos: STATE.tenantData.modulos
+                }).catch(()=>{});
+              }
+            } catch(e) {}
+          }
         } else {
           // Superadmin o usuario nuevo sin doc → acceso total o limitado
           const esSuperadmin = STATE.user?.uid === SUPERADMIN_UID ||
                                STATE.user?.email === "aybserviciosg@gmail.com";
-          STATE.tenantData = {
-            nombre: STATE.user?.email || "",
-            modulos: esSuperadmin ? MODULE_META.map(m => m.id) : [],
-            plan: esSuperadmin ? "Superadmin" : "Sin Plan",
-            diasDemo: null,
-            entidades: []
-          };
+          if (!esSuperadmin && STATE.user?.email) {
+            // Buscar en sa_clientes por correo
+            try {
+              const sc = await db.collection("sa_clientes")
+                .where("correo","==",STATE.user.email.toLowerCase()).limit(1).get();
+              if (!sc.empty) {
+                const cd = sc.docs[0].data();
+                // Crear doc en usuarios para futuros ingresos
+                await db.collection("usuarios").doc(uid).set({
+                  correo: STATE.user.email.toLowerCase(),
+                  nombre: cd.nombre || STATE.user.email,
+                  rol: "cliente",
+                  plan: cd.plan || "demo",
+                  modulos: cd.modulos || [],
+                  fecha_vencimiento: cd.fecha_vencimiento || "",
+                  activo: true,
+                  creado: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                STATE.tenantData = {
+                  nombre: cd.nombre || STATE.user.email,
+                  modulos: cd.modulos || MODULE_META.map(m => m.id),
+                  plan: cd.plan || "demo",
+                  fecha_vencimiento: cd.fecha_vencimiento || "",
+                  entidades: []
+                };
+              } else {
+                STATE.tenantData = {
+                  nombre: STATE.user?.email || "",
+                  modulos: [],
+                  plan: "demo",
+                  entidades: []
+                };
+              }
+            } catch(e) {
+              STATE.tenantData = { nombre: STATE.user?.email||"", modulos: [], plan: "demo", entidades: [] };
+            }
+          } else {
+            STATE.tenantData = {
+              nombre: STATE.user?.email || "",
+              modulos: esSuperadmin ? MODULE_META.map(m => m.id) : [],
+              plan: esSuperadmin ? "Superadmin" : "Sin Plan",
+              diasDemo: null,
+              entidades: []
+            };
+          }
         }
         updateHeaderPlan();
         await loadEntities(uid);
@@ -8817,6 +8882,70 @@ Si necesita clave, edita el cliente y agrega una.`;
       // Cargar automáticamente el mes actual
       await cargarLibro();
     }
+
+    // ── EDITAR LIQUIDACIÓN — abre modal con novedades editables ──
+    window.editarLiquidacion = async (docId, empId) => {
+      const d = await db.collection("remuneraciones").doc(docId).get();
+      if (!d.exists) { alert("No se encontró la liquidación"); return; }
+      const r = d.data();
+      const modal = document.createElement("div");
+      modal.id = "modal-edit-liq";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;";
+      modal.innerHTML =
+        "<div style='background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:560px;'>" +
+          "<div style='background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;'>" +
+            "<div style='font-weight:800;color:#fff;'>✏️ Editar Liquidación — " + (r.nombre||"—") + " | " + (r.periodo||"—") + "</div>" +
+            "<button onclick='document.getElementById(\"modal-edit-liq\").remove()' style='background:none;border:none;color:#fff;font-size:18px;cursor:pointer'>✕</button>" +
+          "</div>" +
+          "<div style='padding:20px;'>" +
+            "<div style='display:grid;grid-template-columns:1fr 1fr;gap:0 12px;'>" +
+              formField("Asig. Colación ($)", inp("el-colacion","number", String(r.asig_colacion||0))) +
+              formField("Asig. Movilización ($)", inp("el-movil","number", String(r.asig_movilizacion||0))) +
+              formField("Bono Asistencia ($)", inp("el-bonoa","number", String(r.bono_asistencia||0))) +
+              formField("Viáticos ($)", inp("el-viaticos","number", String(r.viaticos||0))) +
+              formField("Horas Extra 50% (monto $)", inp("el-h50","number", String(r.horas_extra_50||0))) +
+              formField("Horas Extra 100% (monto $)", inp("el-h100","number", String(r.horas_extra_100||0))) +
+              formField("Otros Descuentos ($)", inp("el-otros","number", String(r.otros_descuentos||0))) +
+            "</div>" +
+            "<button id='btn-save-edit-liq' class='btn-entrar' style='width:100%;margin-top:12px'>💾 Guardar Cambios y Recalcular</button>" +
+            "<p id='el-msg' style='text-align:center;font-size:12px;margin-top:6px;min-height:14px;'></p>" +
+          "</div>" +
+        "</div>";
+      document.body.appendChild(modal);
+      document.getElementById("btn-save-edit-liq").onclick = async () => {
+        const base      = r.sueldo_base||0;
+        const gratif    = r.gratificacion||0;
+        const col       = parseFloat(document.getElementById("el-colacion").value)||0;
+        const mov       = parseFloat(document.getElementById("el-movil").value)||0;
+        const bonoa     = parseFloat(document.getElementById("el-bonoa").value)||0;
+        const viat      = parseFloat(document.getElementById("el-viaticos").value)||0;
+        const h50       = parseFloat(document.getElementById("el-h50").value)||0;
+        const h100      = parseFloat(document.getElementById("el-h100").value)||0;
+        const otros     = parseFloat(document.getElementById("el-otros").value)||0;
+        const totalImp  = base + gratif + bonoa + h50 + h100;
+        const totalNoImp= col + mov + viat;
+        const totalHab  = totalImp + totalNoImp;
+        const afpPct    = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[r.afp?.toLowerCase()]||0.1145;
+        const descAfp   = Math.round(totalImp * afpPct);
+        const descSalud = Math.round(totalImp * 0.07);
+        const totalDesc = descAfp + descSalud + otros;
+        const liquido   = Math.round(totalHab - totalDesc);
+        await db.collection("remuneraciones").doc(docId).update({
+          asig_colacion:col, asig_movilizacion:mov, bono_asistencia:bonoa,
+          viaticos:viat, horas_extra_50:h50, horas_extra_100:h100, otros_descuentos:otros,
+          total_imponible:Math.round(totalImp), total_no_imponible:Math.round(totalNoImp),
+          total_haberes:Math.round(totalHab), desc_afp:descAfp, desc_salud:descSalud,
+          total_descuentos:totalDesc, liquido_pagar:liquido,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("el-msg").style.color = "var(--c-accent)";
+        document.getElementById("el-msg").textContent = "Guardado. Líquido recalculado: $" + liquido.toLocaleString("es-CL");
+        setTimeout(()=>{
+          document.getElementById("modal-edit-liq")?.remove();
+          renderRRHH_Liquidaciones(document.getElementById("module-dynamic-zone"), empId);
+        }, 800);
+      };
+    };
 
   })();
   </script>
