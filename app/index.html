@@ -1335,10 +1335,17 @@
             <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
               <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:10px;">🖼️ Logo de la Empresa</div>
               <div>
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">URL del Logo (link a imagen)</label>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Subir imagen (PNG, JPG, SVG — máx. 2 MB)</label>
+                <input type="file" id="ne-logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
+                  onchange="logoFileToBase64('ne-logo-file','ne-logo','ne-logo-preview')">
+                <div id="ne-logo-preview" style="display:none;margin-bottom:6px;">
+                  <img id="ne-logo-preview-img" src="" style="height:48px;border-radius:6px;border:1px solid var(--c-border);object-fit:contain;" onerror="this.parentElement.style.display='none'">
+                </div>
+                <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL directamente —</div>
                 <input id="ne-logo" type="url" placeholder="https://mi-empresa.cl/logo.png"
-                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                <div style="font-size:11px;color:var(--c-muted);margin-top:3px;">Sube tu logo a Google Drive, Dropbox o cualquier hosting y pega el link aquí.</div>
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;"
+                  oninput="if(this.value){document.getElementById('ne-logo-preview-img').src=this.value;document.getElementById('ne-logo-preview').style.display='block';}">
               </div>
             </div>
 
@@ -1790,15 +1797,41 @@
       showSAButton(); // ← CRÍTICO: mostrar SA Panel si es superadmin
 
       // ── DETECTOR DE ROL: redirige automáticamente según quién entra ──
-      const rol = STATE.tenantData?.rol || "";
-      if (rol === "trabajador") {
-        // Trabajador → va directo a su portal personal
+      const rol  = STATE.tenantData?.rol  || "";
+      const plan = STATE.tenantData?.plan || "";
+      // Detectar trabajador por rol O por plan "Portal" (fallback para usuarios ya creados)
+      const esTrabajador = rol === "trabajador" || (plan === "Portal" && rol !== "residente");
+      if (esTrabajador) {
+        // Ocultar elementos del header que no aplican al trabajador
+        const hdrCenter = document.getElementById("header-center") || document.querySelector(".header-center");
+        if (hdrCenter) hdrCenter.style.display = "none";
+        const planBadge = document.getElementById("plan-badge");
+        if (planBadge) { planBadge.textContent = "Colaborador"; planBadge.style.background = "rgba(46,168,79,0.2)"; planBadge.style.color = "var(--c-accent)"; }
+        const saBtn = document.getElementById("btn-sa-panel");
+        if (saBtn) saBtn.style.display = "none";
+        const misEmpBtn = document.getElementById("btn-mis-empresas");
+        if (misEmpBtn) misEmpBtn.style.display = "none";
+        // Trabajador → portal personal (sin sidebar ERP)
         showScreen("screen-level2");
+        const sidebar = document.getElementById("module-sidebar");
+        if (sidebar) sidebar.style.display = "none";
+        const content = document.getElementById("module-content");
+        if (content) {
+          content.style.padding = "0";
+          content.style.overflow = "auto";
+          content.innerHTML = `<div id="module-dynamic-zone"></div>`;
+        }
         const zone = document.getElementById("module-dynamic-zone");
         if (zone) await renderPortalTrabajador(zone, user);
       } else if (rol === "residente") {
-        // Residente de condominio → portal de residente
         showScreen("screen-level2");
+        const sidebar = document.getElementById("module-sidebar");
+        if (sidebar) sidebar.style.display = "none";
+        const content = document.getElementById("module-content");
+        if (content) {
+          content.style.padding = "0";
+          content.innerHTML = `<div id="module-dynamic-zone"></div>`;
+        }
         const zone = document.getElementById("module-dynamic-zone");
         if (zone) await renderPortalResidente(zone, user);
       } else {
@@ -4179,6 +4212,21 @@ Clave: ${clavePortal}`);
         </div>` +
         tableWrap("tbl-asist","Registro de Asistencia Diaria","Control por trabajador",
           ["RUT","Trabajador","Cargo","Entrada","Salida","Horas","Estado","Acciones"]);
+
+      // Poblar select filtro con trabajadores ACTIVOS solamente (se hace una sola vez)
+      const poblarFiltroTrab = async () => {
+        const sel = document.getElementById("asist-filtro-trab");
+        if (!sel || sel.options.length > 1) return; // ya poblado
+        const actSnap = await db.collection("empleados")
+          .where("entityId","==",empId).where("estado","==","activo").get();
+        actSnap.forEach(d => {
+          const o = document.createElement("option");
+          o.value = d.data().rut;
+          o.textContent = d.data().nombre + " — " + d.data().rut;
+          sel.appendChild(o);
+        });
+      };
+      await poblarFiltroTrab();
 
       const cargarAsist = async () => {
         const fecha = document.getElementById("asist-fecha").value;
@@ -6838,6 +6886,28 @@ Si necesita clave, edita el cliente y agrega una.`;
       setTimeout(() => w.print(), 800);
     };
 
+    // ── LOGO: CONVERTIR ARCHIVO A BASE64 ──
+    // Guarda la imagen como base64 en el campo URL oculto y muestra preview
+    window.logoFileToBase64 = (fileInputId, urlFieldId, previewDivId) => {
+      const fileInput = document.getElementById(fileInputId);
+      const urlField  = document.getElementById(urlFieldId);
+      const preview   = document.getElementById(previewDivId);
+      if (!fileInput?.files?.length) return;
+      const file = fileInput.files[0];
+      if (!file.type.startsWith("image/")) { alert("Solo se aceptan imágenes (PNG, JPG, SVG, WEBP)"); return; }
+      if (file.size > 2 * 1024 * 1024) { alert("El logo no puede superar 2 MB"); return; }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const b64 = e.target.result; // data:image/png;base64,...
+        if (urlField)  { urlField.value = b64; }
+        if (preview)   {
+          const img = preview.querySelector("img") || document.getElementById(previewDivId + "-img");
+          if (img) { img.src = b64; preview.style.display = "block"; }
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+
     // ── IMPRIMIR FICHA EMPLEADO PDF ──
     window.imprimirFichaEmpleado = async (docId) => {
       const d = await db.collection("empleados").doc(docId).get();
@@ -9350,8 +9420,19 @@ Si necesita clave, edita el cliente y agrega una.`;
             </div>
 
             <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">🖼️ Logo</div>
-            ${formField("URL del Logo", `<input id="ee-logo" type="url" value="${r.logo_url||''}" placeholder="https://..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}
-            ${r.logo_url?`<div style="margin-top:4px;"><img src="${r.logo_url}" style="height:50px;border-radius:6px;border:1px solid var(--c-border);" onerror="this.style.display='none'"></div>`:''}
+            <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:10px;margin-bottom:8px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Subir imagen (PNG, JPG, SVG — máx. 2 MB)</label>
+              <input type="file" id="ee-logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
+                onchange="logoFileToBase64('ee-logo-file','ee-logo','ee-logo-preview')">
+              <div id="ee-logo-preview" style="${r.logo_url?'display:block':'display:none'};margin-bottom:6px;">
+                <img id="ee-logo-preview-img" src="${r.logo_url||''}" style="height:48px;border-radius:6px;border:1px solid var(--c-border);object-fit:contain;" onerror="this.parentElement.style.display='none'">
+              </div>
+              <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL —</div>
+              <input id="ee-logo" type="url" value="${r.logo_url||''}" placeholder="https://..."
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"
+                oninput="if(this.value){document.getElementById('ee-logo-preview-img').src=this.value;document.getElementById('ee-logo-preview').style.display='block';}">
+            </div>
 
             <div style="font-size:12px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">⚙️ Configuración de Remuneraciones</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
@@ -9791,23 +9872,102 @@ Si necesita clave, edita el cliente y agrega una.`;
         if (!docs.length) { alert("Sin datos para " + periodo); return; }
         const empresa = await getEmpresaActiva(empId);
         const fmt = n => "$" + Math.round(n||0).toLocaleString("es-CL");
-        let filas = ""; let tH=0, tD=0, tL=0;
+        const fmtN = n => Math.round(n||0).toLocaleString("es-CL");
+        let filas = ""; let tBase=0,tGrat=0,tBonA=0,tHE50=0,tHE100=0,tCol=0,tMov=0,tViat=0,tImp=0,tNoImp=0,tH=0,tAfp=0,tSal=0,tIU=0,tOtros=0,tD=0,tL=0;
         docs.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
         docs.forEach(r => {
-          tH += r.total_haberes||0; tD += r.total_descuentos||0; tL += r.liquido_pagar||0;
-          filas += "<tr><td>" + (r.rut||"") + "</td><td>" + (r.nombre||"") + "</td><td>" + (r.cargo||"") + "</td><td>" + fmt(r.sueldo_base) + "</td><td>" + fmt(r.gratificacion) + "</td><td>" + fmt(r.total_haberes) + "</td><td>" + (r.afp||"") + "</td><td>" + fmt(r.desc_afp) + "</td><td>" + (r.salud||"") + "</td><td>" + fmt(r.desc_salud) + "</td><td>" + fmt(r.total_descuentos) + "</td><td><strong>" + fmt(r.liquido_pagar) + "</strong></td></tr>";
+          tBase+=r.sueldo_base||0; tGrat+=r.gratificacion||0; tBonA+=r.bono_asistencia||0;
+          tHE50+=r.horas_extra_50||0; tHE100+=r.horas_extra_100||0;
+          tCol+=r.asig_colacion||0; tMov+=r.asig_movilizacion||0; tViat+=r.viaticos||0;
+          tImp+=r.total_imponible||0; tNoImp+=r.total_no_imponible||0;
+          tH+=r.total_haberes||0; tAfp+=r.desc_afp||0; tSal+=r.desc_salud||0;
+          tIU+=r.impuesto_unico||0; tOtros+=r.otros_descuentos||0;
+          tD+=r.total_descuentos||0; tL+=r.liquido_pagar||0;
+          filas += "<tr>" +
+            "<td class='f-rut'>"+(r.rut||"")+"</td>"+
+            "<td class='f-nom'><strong>"+(r.nombre||"")+"</strong></td>"+
+            "<td class='f-car'>"+(r.cargo||"")+"</td>"+
+            "<td class='f-n'>"+fmt(r.sueldo_base)+"</td>"+
+            "<td class='f-n'>"+fmt(r.gratificacion)+"</td>"+
+            "<td class='f-n'>"+fmt(r.bono_asistencia)+"</td>"+
+            "<td class='f-n'>"+fmt(r.horas_extra_50)+"</td>"+
+            "<td class='f-n'>"+fmt(r.horas_extra_100)+"</td>"+
+            "<td class='f-n f-ni'>"+fmt(r.asig_colacion)+"</td>"+
+            "<td class='f-n f-ni'>"+fmt(r.asig_movilizacion)+"</td>"+
+            "<td class='f-n f-ni'>"+fmt(r.viaticos)+"</td>"+
+            "<td class='f-n f-tot'>"+fmt(r.total_imponible)+"</td>"+
+            "<td class='f-n f-tot'>"+fmt(r.total_haberes)+"</td>"+
+            "<td class='f-n f-dc'>"+(r.afp||"—")+"</td>"+
+            "<td class='f-n f-dc'>"+fmt(r.desc_afp)+"</td>"+
+            "<td class='f-n f-dc'>"+(r.salud||"—")+"</td>"+
+            "<td class='f-n f-dc'>"+fmt(r.desc_salud)+"</td>"+
+            "<td class='f-n f-dc'>"+fmt(r.impuesto_unico)+"</td>"+
+            "<td class='f-n f-dc'>"+fmt(r.otros_descuentos)+"</td>"+
+            "<td class='f-n f-td'>"+fmt(r.total_descuentos)+"</td>"+
+            "<td class='f-n f-liq'>"+fmt(r.liquido_pagar)+"</td>"+
+            "</tr>";
         });
-        const logoHtml = empresa.logo_url ? "<img src='" + empresa.logo_url + "' style='height:45px;object-fit:contain;'>" : "";
-        const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Libro Remuneraciones</title>" +
-          "<style>body{font-family:Arial;font-size:9px;padding:16px}h2{color:#1A7A3C;font-size:13px}" +
-          "table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:5px;font-size:8px;text-align:left}" +
-          "td{padding:4px;border-bottom:1px solid #eee}.tot{font-weight:700;background:#f0f9f0}" +
-          "@media print{@page{size:A4 landscape;margin:8mm}}</style></head><body>" +
-          "<div style='display:flex;justify-content:space-between;border-bottom:2px solid #1A7A3C;padding-bottom:10px;margin-bottom:12px'>" +
-            logoHtml + "<div><h2>LIBRO DE REMUNERACIONES — " + (empresa.nombre||"Empresa") + "</h2>" +
-            "<p style='font-size:10px;color:#555'>RUT: " + (empresa.rut||"—") + " | Período: " + periodo + " | Emitido: " + new Date().toLocaleDateString("es-CL") + "</p></div></div>" +
-          "<table><thead><tr><th>RUT</th><th>Nombre</th><th>Cargo</th><th>S.Base</th><th>Gratif.</th><th>T.Haberes</th><th>AFP</th><th>M.AFP</th><th>Salud</th><th>M.Salud</th><th>T.Desc.</th><th>Líquido</th></tr></thead>" +
-          "<tbody>" + filas + "<tr class='tot'><td colspan='5'>TOTALES</td><td>" + fmt(tH) + "</td><td colspan='4'></td><td>" + fmt(tD) + "</td><td>" + fmt(tL) + "</td></tr></tbody></table>" +
+        const logoHtml = empresa.logo_url ? "<img src='"+empresa.logo_url+"' style='height:48px;object-fit:contain;'>" : "";
+        const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Libro Remuneraciones</title>"+
+          "<style>"+
+          "body{font-family:Arial,sans-serif;font-size:8px;padding:12px;color:#111}"+
+          "h2{color:#1A7A3C;font-size:12px;margin:0 0 2px}"+
+          ".hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1A7A3C;padding-bottom:8px;margin-bottom:10px}"+
+          "table{width:100%;border-collapse:collapse;font-size:7.5px}"+
+          "th{background:#1A7A3C;color:#fff;padding:4px 3px;text-align:center;white-space:nowrap;border:1px solid #0d5c2a;font-size:7px}"+
+          "th.left{text-align:left}"+
+          "td{padding:3px;border-bottom:1px solid #e8e8e8;white-space:nowrap}"+
+          "td.f-n{text-align:right} td.f-rut{font-family:monospace;font-size:7px} td.f-nom{font-size:8px;min-width:90px} td.f-car{font-size:7px}"+
+          "td.f-tot{color:#1A7A3C;font-weight:700} td.f-dc{color:#555} td.f-td{color:#dc2626;font-weight:700} td.f-liq{font-weight:900;font-size:9px} td.f-ni{color:#0ea5e9}"+
+          "tr.tot td{background:#f0f9f0;font-weight:700;border-top:2px solid #1A7A3C;font-size:8px}"+
+          ".sec{background:#e8f5e9;color:#1A7A3C;font-size:7px;font-weight:700;text-align:center;padding:2px;border:1px solid #a5d6a7}"+
+          "@media print{@page{size:A3 landscape;margin:6mm} body{padding:4px}}"+
+          "</style></head><body>"+
+          "<div class='hdr'>"+logoHtml+
+          "<div><h2>LIBRO DE REMUNERACIONES</h2>"+
+          "<div style='font-size:9px;color:#555'>"+
+          (empresa.nombre||"Empresa")+" · RUT: "+(empresa.rut||"—")+" · Período: "+periodo+" · Emitido: "+new Date().toLocaleDateString("es-CL")+
+          " · "+docs.length+" trabajadores</div></div>"+
+          "<div style='text-align:right;font-size:10px'><strong>Total Líquido: "+fmt(tL)+"</strong></div></div>"+
+          "<table><thead>"+
+          "<tr>"+
+          "<th colspan='3' class='left sec'>TRABAJADOR</th>"+
+          "<th colspan='5' class='sec'>HABERES IMPONIBLES</th>"+
+          "<th colspan='3' class='sec' style='color:#b3e5fc'>HABERES NO IMPONIBLES</th>"+
+          "<th colspan='2' class='sec'>TOTALES HABERES</th>"+
+          "<th colspan='6' class='sec' style='color:#ffcdd2'>DESCUENTOS</th>"+
+          "<th colspan='2' class='sec' style='color:#ffcdd2'>TOTALES DESC.</th>"+
+          "</tr>"+
+          "<tr>"+
+          "<th class='left'>RUT</th><th class='left'>Nombre</th><th class='left'>Cargo</th>"+
+          "<th>S.Base</th><th>Gratif.</th><th>B.Asist.</th><th>HE 50%</th><th>HE 100%</th>"+
+          "<th>Colación</th><th>Movil.</th><th>Viáticos</th>"+
+          "<th>Tot.Imp.</th><th>Tot.Hab.</th>"+
+          "<th>AFP</th><th>M.AFP</th><th>Salud</th><th>M.Salud</th><th>Imp.Único</th><th>Otros Desc.</th>"+
+          "<th>Tot.Desc.</th><th>LÍQUIDO</th>"+
+          "</tr></thead><tbody>"+
+          filas+
+          "<tr class='tot'>"+
+          "<td colspan='3'>TOTALES ("+docs.length+" trabajadores)</td>"+
+          "<td class='f-n'>"+fmt(tBase)+"</td>"+
+          "<td class='f-n'>"+fmt(tGrat)+"</td>"+
+          "<td class='f-n'>"+fmt(tBonA)+"</td>"+
+          "<td class='f-n'>"+fmt(tHE50)+"</td>"+
+          "<td class='f-n'>"+fmt(tHE100)+"</td>"+
+          "<td class='f-n'>"+fmt(tCol)+"</td>"+
+          "<td class='f-n'>"+fmt(tMov)+"</td>"+
+          "<td class='f-n'>"+fmt(tViat)+"</td>"+
+          "<td class='f-n f-tot'>"+fmt(tImp)+"</td>"+
+          "<td class='f-n f-tot'>"+fmt(tH)+"</td>"+
+          "<td colspan='2'></td>"+
+          "<td class='f-n'>"+fmt(tSal)+"</td>"+  
+          "<td class='f-n'>"+fmt(tAfp)+"</td>"+
+          "<td class='f-n'>"+fmt(tIU)+"</td>"+
+          "<td class='f-n'>"+fmt(tOtros)+"</td>"+
+          "<td class='f-n f-td'>"+fmt(tD)+"</td>"+
+          "<td class='f-n f-liq'>"+fmt(tL)+"</td>"+
+          "</tr></tbody></table>"+
+          "<p style='margin-top:8px;font-size:7px;color:#999'>Imponibles: Sueldo base + Gratificación + Bono Asistencia + HE 50% + HE 100% | No imponibles: Colación + Movilización + Viáticos</p>"+
           "</body></html>";
         const w = window.open("","_blank"); w.document.write(html); w.document.close();
         setTimeout(function(){ w.print(); }, 600);
@@ -9837,13 +9997,81 @@ Si necesita clave, edita el cliente y agrega una.`;
         const docs = [];
         snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
         if (!docs.length) { alert("Sin datos para " + periodo); return; }
-        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;H_EXTRA_50;H_EXTRA_100;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;SALUD;MONTO_SALUD;TOTAL_DESCUENTOS;LIQUIDO\n";
+        // Formato oficial Libro de Remuneraciones DT (Dirección del Trabajo Chile)
+        // Encabezado con códigos oficiales del formato DT
+        const cols = [
+          "Rut trabajador(1101)","Fecha inicio contrato(1102)","Fecha término de contrato(1103)",
+          "Causal término de contrato(1104)","Región prestación servicios(1105)","Comuna prestación servicios(1106)",
+          "Tipo impuesto renta(1170)","Código tipo jornada(1107)","Persona Discapacidad/Inválido(1108)",
+          "Pensionado vejez(1109)","AFP(1141)","IPS ExINP(1142)","FONASA-ISAPRE(1143)","AFC(1151)",
+          "Nro cargas familiares legales(1111)","Nro días trabajados(1115)","Nro días licencia médica(1116)","Nro días vacaciones(1117)",
+          "Sueldo(2101)","Sobresueldo HE(2102)","Gratificación(2106)","Bono asistencia(2111)",
+          "Colación(2301)","Movilización(2302)","Viáticos(2303)",
+          "Cotización AFP/IPS(3141)","Cotización salud 7%(3143)","Cotización AFC trabajador(3151)",
+          "Impuesto retenido(3161)","Otros descuentos(3185)",
+          "Total haberes(5201)","Total haberes imponibles tributables(5210)",
+          "Total haberes no imponibles(5230)","Total descuentos(5301)","Total líquido(5501)"
+        ];
+        let csv = cols.join(";") + "\n";
+        const [yy,mm] = periodo.split("-");
+        const diasMes = new Date(parseInt(yy), parseInt(mm), 0).getDate();
+        // Mapas códigos AFP e Isapres para el formato DT
+        const afpCod = {capital:"08",cuprum:"02",habitat:"05",modelo:"33",planvital:"34",provida:"07",uno:"35"};
+        const saludCod = (s) => {
+          if (!s) return "01"; // FONASA por defecto
+          const sl = s.toLowerCase();
+          if (sl.includes("fonasa")) return "01";
+          if (sl.includes("banmedica")) return "12"; if (sl.includes("consalud")) return "06";
+          if (sl.includes("colmena")) return "07"; if (sl.includes("vida tres")) return "21";
+          if (sl.includes("nueva masvida")) return "15"; if (sl.includes("cruzblanca")) return "14";
+          if (sl.includes("esencial")) return "27"; return "01";
+        };
         docs.forEach(r => {
-          csv += [empresa.rut||"",r.rut,r.nombre,r.tipo_contrato||"INDEFINIDO",r.periodo,r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,r.total_imponible||0,r.total_no_imponible||0,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,r.total_descuentos||0,r.liquido_pagar||0].join(";") + "\n";
+          const afpK = (r.afp||"").toLowerCase().replace(/\s/g,"");
+          const row = [
+            r.rut||"",
+            r.fecha_ingreso||"",
+            r.fecha_termino||"",
+            "",                                             // 1104 causal término
+            "01",                                           // 1105 región (01=Tarapacá)
+            "01101",                                        // 1106 comuna (01101=Iquique — ajustable)
+            "02",                                           // 1170 tipo impuesto (02=2da categoría trabajador)
+            "01",                                           // 1107 jornada (01=completa)
+            "0",                                            // 1108 discapacidad
+            "0",                                            // 1109 pensionado vejez
+            afpCod[afpK]||"05",                             // 1141 AFP
+            "",                                             // 1142 IPS
+            saludCod(r.salud),                              // 1143 salud
+            "1",                                            // 1151 AFC
+            r.cargas_familiares||"0",                       // 1111 cargas
+            diasMes,                                        // 1115 días trabajados
+            "0",                                            // 1116 días licencia
+            "0",                                            // 1117 días vacaciones
+            Math.round(r.sueldo_base||0),                  // 2101 sueldo
+            Math.round((r.horas_extra_50||0)+(r.horas_extra_100||0)), // 2102 sobresueldo
+            Math.round(r.gratificacion||0),                 // 2106 gratificación
+            Math.round(r.bono_asistencia||0),               // 2111 bono asistencia
+            Math.round(r.asig_colacion||0),                 // 2301 colación
+            Math.round(r.asig_movilizacion||0),             // 2302 movilización
+            Math.round(r.viaticos||0),                      // 2303 viáticos
+            Math.round(r.desc_afp||0),                      // 3141 cotización AFP
+            Math.round(r.desc_salud||0),                    // 3143 cotización salud
+            Math.round((r.total_imponible||0)*0.006),        // 3151 AFC trabajador 0.6%
+            Math.round(r.impuesto_unico||0),                // 3161 impuesto retenido
+            Math.round(r.otros_descuentos||0),              // 3185 otros descuentos
+            Math.round(r.total_haberes||0),                 // 5201 total haberes
+            Math.round(r.total_imponible||0),               // 5210 imponibles tributables
+            Math.round(r.total_no_imponible||0),            // 5230 no imponibles
+            Math.round(r.total_descuentos||0),              // 5301 total descuentos
+            Math.round(r.liquido_pagar||0)                  // 5501 total líquido
+          ];
+          csv += row.join(";") + "\n";
         });
         const a = document.createElement("a");
         a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
-        a.download = "DT_Chile_" + periodo + ".csv"; a.click();
+        a.download = "LibroDT_" + (empresa.rut||"empresa").replace(/\./g,"").replace(/-/g,"") + "_" + periodo + ".csv";
+        a.click();
+        alert("✅ Libro DT exportado para " + docs.length + " trabajadores.\nFormato compatible con portal Dirección del Trabajo (DT Chile).\nArchivo: LibroDT_" + periodo + ".csv");
       };
 
       document.getElementById("btn-libro-previred").onclick = async () => {
