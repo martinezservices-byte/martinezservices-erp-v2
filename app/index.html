@@ -1686,7 +1686,7 @@
       }
     }
 
-    function updateHeaderPlan() {
+    async function updateHeaderPlan() {
       const badge = document.getElementById("plan-badge");
       if (!badge) return;
       // Solo mostrar "Superadmin" a la dueña real
@@ -1695,8 +1695,21 @@
         badge.style.background = "rgba(46,168,79,0.2)";
         badge.style.color = "var(--c-accent)";
       } else {
-        const plan = STATE.tenantData?.plan || "Demo";
-        const planLabel = {demo:"Demo", basico:"Básico", completo:"Completo", premium:"Premium"}[plan?.toLowerCase()] || plan;
+        // Buscar el plan real del cliente en sa_clientes si no está en tenantData
+        let plan = STATE.tenantData?.plan || "";
+        if (!plan && STATE.user?.email) {
+          try {
+            const snapCliente = await db.collection("sa_clientes")
+              .where("correo","==",STATE.user.email.toLowerCase()).limit(1).get();
+            if (!snapCliente.empty) {
+              plan = snapCliente.docs[0].data().plan || "demo";
+              STATE.tenantData = STATE.tenantData || {};
+              STATE.tenantData.plan = plan;
+            }
+          } catch(e) {}
+        }
+        plan = plan || "demo";
+        const planLabel = {demo:"Demo", basico:"Básico", completo:"Completo", premium:"Premium"}[plan.toLowerCase()] || plan;
         badge.textContent = "Plan " + planLabel;
         badge.style.background = "rgba(14,165,233,0.15)";
         badge.style.color = "#0ea5e9";
@@ -3547,7 +3560,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+      const snap = await db.collection("empleados").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-emp-tbody");
       let total=0, activos=0, masa=0, conContrato=0;
       if (snap.empty) { tb.innerHTML = emptyRow(8, "Sin trabajadores registrados. Haz clic en '+ Agregar Trabajador' para comenzar."); }
@@ -3838,7 +3851,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("remuneraciones").where("entityId","==",empId).orderBy("periodo","desc").limit(50).get();
+      const snap = await db.collection("remuneraciones").where("entityId","==",empId).limit(50).get();
       const tb = document.getElementById("tbl-rem-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(11); return; }
       tb.innerHTML = "";
@@ -3955,7 +3968,14 @@ Clave: ${clavePortal}`);
         if (empSnap.empty) { tb.innerHTML = emptyRow(8,"Sin trabajadores activos"); return; }
         tb.innerHTML = "";
         let p=0, a=0, t=0;
+        // Deduplicar por RUT — evitar mostrar el mismo trabajador dos veces
+        const rutVistos = new Set();
+        const empList = [];
         empSnap.forEach(d => {
+          const rut = d.data().rut;
+          if (rut && !rutVistos.has(rut)) { rutVistos.add(rut); empList.push(d); }
+        });
+        empList.forEach(d => {
           const r = d.data();
           const reg = asistMap[d.id];
           const est = reg?.estado||"no_registrado";
@@ -3992,7 +4012,7 @@ Clave: ${clavePortal}`);
         const tb = document.getElementById("tbl-asist-tbody");
         if (!mes || !empId) { alert("Selecciona un mes"); return; }
         const snap = await db.collection("asistencia")
-          .where("entityId","==",empId).orderBy("fecha","desc").get();
+          .where("entityId","==",empId).get();
         tb.innerHTML = "";
         let total = 0;
         snap.forEach(d => {
@@ -4021,7 +4041,7 @@ Clave: ${clavePortal}`);
         const mes = document.getElementById("asist-mes-hist").value;
         if (!mes || !empId) { alert("Selecciona un mes primero"); return; }
         const snap = await db.collection("asistencia")
-          .where("entityId","==",empId).orderBy("fecha").get();
+          .where("entityId","==",empId).get();
         let csv = "Fecha,RUT,Nombre,Cargo,Entrada,Salida,Estado,Horas\n";
         let count = 0;
         snap.forEach(d => {
@@ -4095,7 +4115,7 @@ Clave: ${clavePortal}`);
 
       // Cargar empleados en el select
       if (empId) {
-        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).get();
         const sel2 = document.getElementById("cont-emp");
         empSnap.forEach(d => { const o=document.createElement("option"); o.value=d.id; o.textContent=`${d.data().rut} — ${d.data().nombre}`; sel2.appendChild(o); });
       }
@@ -4132,7 +4152,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("contratos").where("entityId","==",empId).orderBy("fecha_inicio","desc").get();
+      const snap = await db.collection("contratos").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-cont-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(7); return; }
       tb.innerHTML = "";
@@ -4185,7 +4205,7 @@ Clave: ${clavePortal}`);
         `);
 
       if (empId) {
-        const empSnap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).get();
         const selEmp = document.getElementById("vac-emp");
         empSnap.forEach(d => { const o=document.createElement("option"); o.value=d.id; o.textContent=`${d.data().rut} — ${d.data().nombre}`; selEmp.appendChild(o); });
       }
@@ -4221,7 +4241,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("vacaciones").where("entityId","==",empId).orderBy("desde","desc").get();
+      const snap = await db.collection("vacaciones").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-vac-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
       tb.innerHTML = "";
@@ -4343,7 +4363,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("asientos_contables").where("entityId","==",empId).orderBy("fecha","desc").limit(100).get();
+      const snap = await db.collection("asientos_contables").where("entityId","==",empId).limit(100).get();
       const tb = document.getElementById("tbl-ld-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
       tb.innerHTML = ""; let tD=0, tH=0;
@@ -4429,7 +4449,7 @@ Clave: ${clavePortal}`);
 
       document.getElementById("btn-export-bal").onclick = async () => {
         if (!empId) return;
-        const snap = await db.collection("cuentas").where("entityId","==",empId).orderBy("codigo").get();
+        const snap = await db.collection("cuentas").where("entityId","==",empId).get();
         let csv = "Código,Cuenta,Débitos,Créditos,Saldo Deudor,Saldo Acreedor\n";
         snap.forEach(d => {
           const r = d.data();
@@ -4442,7 +4462,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("cuentas").where("entityId","==",empId).orderBy("codigo").get();
+      const snap = await db.collection("cuentas").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-bal8-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
       tb.innerHTML = ""; let tDeb=0,tCred=0,tSD=0,tSA=0,tRP=0,tRG=0;
@@ -4541,7 +4561,7 @@ Clave: ${clavePortal}`);
 
       // Cargar conciliaciones previas
       if (!empId) return;
-      const snap = await db.collection("conciliacion_bancaria").where("entityId","==",empId).orderBy("creado","desc").limit(50).get();
+      const snap = await db.collection("conciliacion_bancaria").where("entityId","==",empId).limit(50).get();
       if (snap.empty) return;
       const tb = document.getElementById("tbl-conc-tbody");
       tb.innerHTML = "";
@@ -4603,7 +4623,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("declaraciones_iva").where("entityId","==",empId).orderBy("periodo","desc").get();
+      const snap = await db.collection("declaraciones_iva").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-iva-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(6); return; }
       tb.innerHTML = "";
@@ -4731,7 +4751,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("documentos_emitidos").where("entityId","==",empId).orderBy("creado","desc").limit(100).get();
+      const snap = await db.collection("documentos_emitidos").where("entityId","==",empId).limit(100).get();
       const tb = document.getElementById("tbl-dte-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
       tb.innerHTML = ""; let tN=0,tI=0,tB=0;
@@ -4876,7 +4896,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("libro_compras").where("entityId","==",empId).orderBy("creado","desc").limit(100).get();
+      const snap = await db.collection("libro_compras").where("entityId","==",empId).limit(100).get();
       const tb = document.getElementById("tbl-lc-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
       tb.innerHTML = ""; let tN=0,tI=0;
@@ -5135,7 +5155,7 @@ Clave: ${clavePortal}`);
 
     async function cargarTablaCotizaciones(empId) {
       if(!empId) return;
-      const snap=await db.collection('cotizaciones').where('entityId','==',empId).orderBy('creado','desc').get();
+      const snap=await db.collection('cotizaciones').where('entityId','==',empId).get();
       const tb=document.getElementById('tbl-cot-tbody');
       if(!tb) return;
       const tipos={software:'💻 Software',servicios:'🔧 Servicios',productos:'📦 Productos',presupuesto:'📊 Presupuesto'};
@@ -5314,7 +5334,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("inventarios").where("entityId","==",empId).orderBy("nombre").get();
+      const snap = await db.collection("inventarios").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-inv-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
       tb.innerHTML = ""; let total=0,critico=0,valor=0;
@@ -5483,7 +5503,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("arriendos").where("entityId","==",empId).orderBy("creado","desc").get();
+      const snap = await db.collection("arriendos").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-arr-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(9); return; }
       tb.innerHTML = ""; let activos=0,vence=0,ingresos=0;
@@ -5653,7 +5673,7 @@ Clave: ${clavePortal}`);
       };
 
       if (!empId) return;
-      const snap = await db.collection("ordenes_compra").where("entityId","==",empId).orderBy("creado","desc").get();
+      const snap = await db.collection("ordenes_compra").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-oc-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
       tb.innerHTML = "";
@@ -5716,7 +5736,7 @@ Clave: ${clavePortal}`);
           ["Fecha/Hora","Usuario","Módulo Operado","Acción Ejecutada","IP Origen"]);
 
       if (!empId) return;
-      const snap = await db.collection("system_logs").where("entityId","==",empId).orderBy("timestamp","desc").limit(100).get();
+      const snap = await db.collection("system_logs").where("entityId","==",empId).limit(100).get();
       const tb = document.getElementById("tbl-logs-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(5,"Sin registros de acceso aún"); return; }
       tb.innerHTML = "";
@@ -6599,7 +6619,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           ["Trabajador","RUT","Cargo","Correo Portal","Estado Acceso","Última vez","Acciones"]);
 
       if (!empId) return;
-      const snap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
+      const snap = await db.collection("empleados").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-portal-accesos-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(7, "Sin trabajadores registrados. Agrégalos primero en Fichas del Personal."); return; }
       tb.innerHTML = "";
@@ -7080,7 +7100,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       };
 
       document.getElementById("btn-export-plan-csv").onclick = async () => {
-        const snap = await db.collection("plan_cuentas").where("entityId","==",empId).orderBy("codigo").get();
+        const snap = await db.collection("plan_cuentas").where("entityId","==",empId).get();
         let csv = "Codigo,Nombre,Tipo,Naturaleza,Nivel,Estado\n";
         snap.forEach(d=>{const r=d.data(); csv+=`${r.codigo},${r.nombre},${r.tipo},${r.naturaleza},${r.nivel},${r.estado}\n`;});
         const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
@@ -7088,7 +7108,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       };
 
       if (!empId) return;
-      const snap = await db.collection("plan_cuentas").where("entityId","==",empId).orderBy("codigo").get();
+      const snap = await db.collection("plan_cuentas").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-plan-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(7,"Sin cuentas registradas. Agrega las primeras cuentas contables."); return; }
       tb.innerHTML="";
@@ -7129,7 +7149,7 @@ Si necesita clave, edita el cliente y agrega una.`;
     // ── BALANCE PDF ──
     window.imprimirBalancePDF = async (empId) => {
       const [snap, empDoc] = await Promise.all([
-        db.collection("cuentas").where("entityId","==",empId).orderBy("codigo").get(),
+        db.collection("cuentas").where("entityId","==",empId).get(),
         db.collection("empresas").doc(empId).get()
       ]);
       const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA"};
@@ -7302,7 +7322,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       };
 
       if (!empId) return;
-      const snap = await db.collection("crm_leads").where("entityId","==",empId).orderBy("creado","desc").get();
+      const snap = await db.collection("crm_leads").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-crm-tbody");
       if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
       tb.innerHTML=""; let total=0,neg=0,gan=0,valor=0;
@@ -7594,7 +7614,7 @@ Si necesita clave, edita el cliente y agrega una.`;
 
     window.exportarInformeAuditoria = async (empId) => {
       const [logsSnap, empDoc] = await Promise.all([
-        db.collection("system_logs").where("entityId","==",empId).orderBy("timestamp","desc").limit(100).get(),
+        db.collection("system_logs").where("entityId","==",empId).limit(100).get(),
         db.collection("empresas").doc(empId).get()
       ]);
       const empresa = empDoc.exists ? empDoc.data() : {nombre:"Martinez Services SPA"};
@@ -8645,6 +8665,158 @@ Si necesita clave, edita el cliente y agrega una.`;
       await db.collection("haberes_descuentos").doc(docId).delete();
       renderRRHH_Haberes(document.getElementById("module-dynamic-zone"), empId);
     };
+
+    // ═══════════════════════════════════════════════════════════
+    // LIBROS DE REMUNERACIONES — completo
+    // ═══════════════════════════════════════════════════════════
+    async function renderRRHH_Libros(zone, empId) {
+      const mesActual = new Date().toISOString().slice(0,7);
+      zone.innerHTML =
+        `<div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:14px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">📚 Libros de Remuneraciones</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Período</label>
+              <input type="month" id="libro-periodo" value="${mesActual}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <button id="btn-ver-libro" class="btn-entrar">📋 Ver Libro</button>
+            <button id="btn-libro-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ PDF Archivar</button>
+            <button id="btn-libro-sii" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📋 SII/LRE</button>
+            <button id="btn-libro-dt" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📤 DT Chile</button>
+            <button id="btn-libro-previred" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">💳 Previred</button>
+          </div>
+        </div>` +
+        tableWrap("tbl-libro","Nómina del Período","Haberes, descuentos y líquido por trabajador",
+          ["RUT","Trabajador","Cargo","S.Base","Gratif.","Col.","Mov.","H.E.50%","H.E.100%","Viát.","Tot.Imp.","T.Haberes","AFP","Salud","T.Desc.","Líquido"]);
+
+      const cargarLibro = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) return;
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+        const tb = document.getElementById("tbl-libro-tbody");
+        const docs = [];
+        snap.forEach(d => { if (d.data().periodo === periodo) docs.push({id:d.id,...d.data()}); });
+        if (!docs.length) { tb.innerHTML = emptyRow(16,"Sin remuneraciones procesadas para " + periodo + ". Ve a Proceso de Remuneraciones para procesar el mes."); return; }
+        tb.innerHTML = "";
+        let tH=0, tD=0, tL=0;
+        docs.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+        docs.forEach(r => {
+          tH += r.total_haberes||0; tD += r.total_descuentos||0; tL += r.liquido_pagar||0;
+          tb.innerHTML += "<tr>" +
+            "<td style='font-family:monospace;font-size:10px'>" + (r.rut||"—") + "</td>" +
+            "<td><strong style='font-size:11px'>" + (r.nombre||"—") + "</strong></td>" +
+            "<td style='font-size:10px'>" + (r.cargo||"—") + "</td>" +
+            "<td>" + formatMonto(r.sueldo_base) + "</td>" +
+            "<td>" + formatMonto(r.gratificacion) + "</td>" +
+            "<td style='color:#0ea5e9'>" + formatMonto(r.asig_colacion) + "</td>" +
+            "<td style='color:#0ea5e9'>" + formatMonto(r.asig_movilizacion) + "</td>" +
+            "<td>" + formatMonto(r.horas_extra_50) + "</td>" +
+            "<td>" + formatMonto(r.horas_extra_100) + "</td>" +
+            "<td style='color:#0ea5e9'>" + formatMonto(r.viaticos) + "</td>" +
+            "<td style='color:var(--c-accent);font-weight:700'>" + formatMonto(r.total_imponible) + "</td>" +
+            "<td style='color:var(--c-accent);font-weight:700'>" + formatMonto(r.total_haberes) + "</td>" +
+            "<td style='font-size:10px'>" + (r.afp||"—") + "</td>" +
+            "<td style='font-size:10px'>" + (r.salud||"—") + "</td>" +
+            "<td style='color:var(--c-danger)'>" + formatMonto(r.total_descuentos) + "</td>" +
+            "<td style='font-weight:900'>" + formatMonto(r.liquido_pagar) + "</td>" +
+            "</tr>";
+        });
+        tb.innerHTML += "<tr style='background:var(--c-bg);font-weight:800'>" +
+          "<td colspan='11' style='text-align:right;font-size:12px'>TOTALES:</td>" +
+          "<td style='color:var(--c-accent)'>" + formatMonto(tH) + "</td>" +
+          "<td colspan='2'></td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(tD) + "</td>" +
+          "<td style='font-weight:900'>" + formatMonto(tL) + "</td>" +
+          "</tr>";
+      };
+
+      document.getElementById("btn-ver-libro").onclick = cargarLibro;
+
+      document.getElementById("btn-libro-pdf").onclick = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+        const docs = [];
+        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
+        if (!docs.length) { alert("Sin datos para " + periodo); return; }
+        const empresa = await getEmpresaActiva(empId);
+        const fmt = n => "$" + Math.round(n||0).toLocaleString("es-CL");
+        let filas = ""; let tH=0, tD=0, tL=0;
+        docs.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+        docs.forEach(r => {
+          tH += r.total_haberes||0; tD += r.total_descuentos||0; tL += r.liquido_pagar||0;
+          filas += "<tr><td>" + (r.rut||"") + "</td><td>" + (r.nombre||"") + "</td><td>" + (r.cargo||"") + "</td><td>" + fmt(r.sueldo_base) + "</td><td>" + fmt(r.gratificacion) + "</td><td>" + fmt(r.total_haberes) + "</td><td>" + (r.afp||"") + "</td><td>" + fmt(r.desc_afp) + "</td><td>" + (r.salud||"") + "</td><td>" + fmt(r.desc_salud) + "</td><td>" + fmt(r.total_descuentos) + "</td><td><strong>" + fmt(r.liquido_pagar) + "</strong></td></tr>";
+        });
+        const logoHtml = empresa.logo_url ? "<img src='" + empresa.logo_url + "' style='height:45px;object-fit:contain;'>" : "";
+        const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Libro Remuneraciones</title>" +
+          "<style>body{font-family:Arial;font-size:9px;padding:16px}h2{color:#1A7A3C;font-size:13px}" +
+          "table{width:100%;border-collapse:collapse}th{background:#1A7A3C;color:#fff;padding:5px;font-size:8px;text-align:left}" +
+          "td{padding:4px;border-bottom:1px solid #eee}.tot{font-weight:700;background:#f0f9f0}" +
+          "@media print{@page{size:A4 landscape;margin:8mm}}</style></head><body>" +
+          "<div style='display:flex;justify-content:space-between;border-bottom:2px solid #1A7A3C;padding-bottom:10px;margin-bottom:12px'>" +
+            logoHtml + "<div><h2>LIBRO DE REMUNERACIONES — " + (empresa.nombre||"Empresa") + "</h2>" +
+            "<p style='font-size:10px;color:#555'>RUT: " + (empresa.rut||"—") + " | Período: " + periodo + " | Emitido: " + new Date().toLocaleDateString("es-CL") + "</p></div></div>" +
+          "<table><thead><tr><th>RUT</th><th>Nombre</th><th>Cargo</th><th>S.Base</th><th>Gratif.</th><th>T.Haberes</th><th>AFP</th><th>M.AFP</th><th>Salud</th><th>M.Salud</th><th>T.Desc.</th><th>Líquido</th></tr></thead>" +
+          "<tbody>" + filas + "<tr class='tot'><td colspan='5'>TOTALES</td><td>" + fmt(tH) + "</td><td colspan='4'></td><td>" + fmt(tD) + "</td><td>" + fmt(tL) + "</td></tr></tbody></table>" +
+          "</body></html>";
+        const w = window.open("","_blank"); w.document.write(html); w.document.close();
+        setTimeout(function(){ w.print(); }, 600);
+      };
+
+      document.getElementById("btn-libro-sii").onclick = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+        const docs = [];
+        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
+        if (!docs.length) { alert("Sin datos para " + periodo); return; }
+        let csv = "RUT_TRABAJADOR;NOMBRE;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;H_EXTRA_50;H_EXTRA_100;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;SALUD;MONTO_SALUD;IMPUESTO_UNICO;OTROS_DESC;TOTAL_DESCUENTOS;LIQUIDO\n";
+        docs.forEach(r => {
+          csv += [r.rut,r.nombre,r.tipo_contrato||"INDEFINIDO",r.periodo,r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,r.total_imponible||0,r.total_no_imponible||0,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,r.impuesto_unico||0,r.otros_descuentos||0,r.total_descuentos||0,r.liquido_pagar||0].join(";") + "\n";
+        });
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+        a.download = "LRE_SII_" + periodo + ".csv"; a.click();
+      };
+
+      document.getElementById("btn-libro-dt").onclick = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+        const empresa = await getEmpresaActiva(empId);
+        const docs = [];
+        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
+        if (!docs.length) { alert("Sin datos para " + periodo); return; }
+        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;H_EXTRA_50;H_EXTRA_100;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;SALUD;MONTO_SALUD;TOTAL_DESCUENTOS;LIQUIDO\n";
+        docs.forEach(r => {
+          csv += [empresa.rut||"",r.rut,r.nombre,r.tipo_contrato||"INDEFINIDO",r.periodo,r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,r.total_imponible||0,r.total_no_imponible||0,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,r.total_descuentos||0,r.liquido_pagar||0].join(";") + "\n";
+        });
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+        a.download = "DT_Chile_" + periodo + ".csv"; a.click();
+      };
+
+      document.getElementById("btn-libro-previred").onclick = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
+        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+        const empresa = await getEmpresaActiva(empId);
+        const docs = [];
+        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
+        if (!docs.length) { alert("Sin datos para " + periodo); return; }
+        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE;AFP;MONTO_AFP;SALUD;MONTO_SALUD;SUELDO_IMPONIBLE;LIQUIDO;PERIODO\n";
+        docs.forEach(r => {
+          csv += [empresa.rut||"",r.rut,r.nombre,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,r.total_imponible||0,r.liquido_pagar||0,r.periodo].join(";") + "\n";
+        });
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+        a.download = "Previred_" + periodo + ".csv"; a.click();
+        alert("Archivo Previred exportado para " + docs.length + " trabajadores.");
+      };
+
+      // Cargar automáticamente el mes actual
+      await cargarLibro();
+    }
 
   })();
   </script>
