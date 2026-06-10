@@ -3852,26 +3852,28 @@ Clave: ${clavePortal}`);
         let filas = "";
         snap.forEach(d => {
           const r = d.data();
-          if (!r.fecha?.startsWith(mes)) return;
+          if (!r.fecha || !r.fecha.startsWith(mes)) return;
           const cls = {presente:"green",ausente:"red",tardanza:"warn",licencia:"warn",no_registrado:"gray"}[r.estado]||"gray";
           const horas = (r.entrada && r.salida) ?
             ((new Date("2000-01-01T"+r.salida)-new Date("2000-01-01T"+r.entrada))/3600000).toFixed(1)+"h" : "—";
-          filas += `<tr>
-            <td>${r.fecha||"—"}</td>
-            <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
-            <td><strong>${r.nombre||"—"}</strong></td>
-            <td>${r.entrada||"—"}</td>
-            <td>${r.salida||"—"}</td>
-            <td>${horas}</td>
-            <td><span class="badge badge-${cls}">${r.estado||"—"}</span></td>
-          </tr>`;
+          filas += "<tr>" +
+            "<td>" + (r.fecha||"—") + "</td>" +
+            "<td style='font-family:monospace;font-size:11px'>" + (r.rut||"—") + "</td>" +
+            "<td><strong>" + (r.nombre||"—") + "</strong></td>" +
+            "<td>" + (r.entrada||"—") + "</td>" +
+            "<td>" + (r.salida||"—") + "</td>" +
+            "<td>" + horas + "</td>" +
+            "<td><span class='badge badge-" + cls + "'>" + (r.estado||"—") + "</span></td>" +
+            "</tr>";
         });
-        histTable.innerHTML = filas ? `
-          <div class="data-table-wrap" style="margin-top:16px;">
-            <div class="data-table-head"><div><h3>📋 Historial ${mes}</h3><p>Registros del período seleccionado</p></div></div>
-            <table class="data-table"><thead><tr><th>Fecha</th><th>RUT</th><th>Trabajador</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th></tr></thead>
-            <tbody>${filas}</tbody></table></div>` :
-          `<p style="color:var(--c-muted);padding:16px">Sin registros para ${mes}</p>`;
+        if (filas) {
+          histTable.innerHTML = "<div class='data-table-wrap' style='margin-top:16px;'>" +
+            "<div class='data-table-head'><div><h3>Historial " + mes + "</h3><p>Registros del período</p></div></div>" +
+            "<table class='data-table'><thead><tr><th>Fecha</th><th>RUT</th><th>Trabajador</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th></tr></thead>" +
+            "<tbody>" + filas + "</tbody></table></div>";
+        } else {
+          histTable.innerHTML = "<p style='color:var(--c-muted);padding:16px'>Sin registros para " + mes + "</p>";
+        }
       };
 
       document.getElementById("btn-export-mes-asist").onclick = async () => {
@@ -8479,11 +8481,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       setTimeout(()=>w.print(),600);
     };
 
-    window.eliminarLiquidacion = window.eliminarLiquidacion || async function(docId, empId) {
-      if (!confirm("¿Eliminar esta liquidación? No se puede deshacer.")) return;
-      await db.collection("remuneraciones").doc(docId).delete();
-      renderRRHH_Liquidaciones(document.getElementById("module-dynamic-zone"), empId);
-    };
+    
 
 
   })();
