@@ -3880,8 +3880,7 @@ Clave: ${clavePortal}`);
         const mes = document.getElementById("asist-mes-hist").value;
         if (!mes || !empId) { alert("Selecciona un mes para exportar"); return; }
         const snap = await db.collection("asistencia").where("entityId","==",empId).orderBy("fecha").get();
-        let csv = "Fecha,RUT,Nombre,Cargo,Entrada,Salida,Estado,Horas Trabajadas
-";
+        let csv = "Fecha,RUT,Nombre,Cargo,Entrada,Salida,Estado,Horas Trabajadas\n";
         let count = 0;
         snap.forEach(d => {
           const r = d.data();
