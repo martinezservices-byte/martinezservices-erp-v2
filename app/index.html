@@ -1465,12 +1465,12 @@
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;">
                 <div>
                   <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">IMM vigente ($)</label>
-                  <input id="cfg-imm" type="number" value="510966" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <input id="cfg-imm" type="number" value="539000" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
                   <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Ingreso Mínimo Mensual 2025</div>
                 </div>
                 <div>
                   <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Valor UF ($)</label>
-                  <input id="cfg-uf" type="number" value="38500" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <input id="cfg-uf" type="number" value="40610" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
                   <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Actualizar mensualmente</div>
                 </div>
                 <div>
@@ -1480,7 +1480,7 @@
                 </div>
                 <div style="margin-top:12px;">
                   <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope gratificación Art.47 ($)</label>
-                  <input id="cfg-tope-grat" type="number" value="202196" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <input id="cfg-tope-grat" type="number" value="213396" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
                   <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">IMM × 4.75 / 12</div>
                 </div>
                 <div style="margin-top:12px;">
@@ -1494,7 +1494,21 @@
                   <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Porcentaje IVA Chile</div>
                 </div>
               </div>
-              <button id="btn-save-valores" class="btn-entrar" style="margin-top:16px;width:100%;">💾 Guardar Valores Legales</button>
+              <div style="margin-top:16px;background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
+                <div style="font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Tasas AFP — Cargo Trabajador (Mayo 2026)</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0 10px;">
+                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Capital (%)</label><input id="cfg-afp-capital" type="number" step="0.01" value="11.44" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Cuprum (%)</label><input id="cfg-afp-cuprum" type="number" step="0.01" value="11.44" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Hábitat (%)</label><input id="cfg-afp-habitat" type="number" step="0.01" value="11.27" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">PlanVital (%)</label><input id="cfg-afp-planvital" type="number" step="0.01" value="11.16" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">ProVida (%)</label><input id="cfg-afp-provida" type="number" step="0.01" value="11.45" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Modelo (%)</label><input id="cfg-afp-modelo" type="number" step="0.01" value="10.58" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">AFP Uno (%)</label><input id="cfg-afp-uno" type="number" step="0.01" value="10.46" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Tope Imponible AFP ($)</label><input id="cfg-tope-afp" type="number" value="3654962" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                </div>
+                <div style="font-size:10px;color:var(--c-muted);margin-top:6px;">Actualiza estos valores cada vez que Previred publique nuevas tasas (normalmente en julio).</div>
+              </div>
+              <button id="btn-save-valores" class="btn-entrar" style="margin-top:16px;width:100%;">💾 Guardar Valores Legales y Tasas AFP</button>
               <p id="cfg-valores-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
             </div>
           </div>
@@ -3910,7 +3924,8 @@ Clave: ${clavePortal}`);
             const base = r.sueldo_base||r.sueldo_pactado||0;
             let gratif = 0;
             if (configGratif === "art47_mensual") {
-              gratif = Math.min(Math.round(base/12), Math.round(510966*4.75/12)); // tope 4.75 IMM 2025
+              // IMM Mayo 2026: $539.000 | Tope gratif = IMM × 4.75 / 12 = $213.396
+              gratif = Math.min(Math.round(base/12), 213396);
             } else if (configGratif === "art50_25") {
               gratif = Math.round(base * 0.25 / 12);
             } else {
@@ -3934,10 +3949,18 @@ Clave: ${clavePortal}`);
             const totalNoImpon = col + mov + viat;
             const totalHaberes = totalImpon + totalNoImpon;
             // Descuentos sobre base imponible
-            const afpPct = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[r.afp?.toLowerCase()]||0.1145;
-            const descAfp   = Math.round(totalImpon * afpPct);
-            const descSalud = Math.round(totalImpon * 0.07);
-            const totalDesc = descAfp + descSalud + otros;
+            // Tasas AFP vigentes Mayo 2026 (Previred) — cargo trabajador
+            const afpPct = {
+              capital:  0.1144, cuprum:   0.1144, habitat:  0.1127,
+              modelo:   0.1058, planvital: 0.1116, provida:  0.1145,
+              uno:      0.1046
+            }[r.afp?.toLowerCase()] || 0.1144;
+            const descAfp    = Math.round(totalImpon * afpPct);
+            const descSalud  = Math.round(totalImpon * 0.07);
+            // Seguro cesantía: 0.6% indefinido / 3% plazo fijo (cargo trabajador)
+            const pctCesantia = (r.tipo_contrato === "plazo_fijo") ? 0.03 : 0.006;
+            const descCesantia = Math.round(totalImpon * pctCesantia);
+            const totalDesc  = descAfp + descSalud + descCesantia + otros;
             const liquido   = Math.round(totalHaberes - totalDesc);
             totalH+=Math.round(totalHaberes); totalD+=totalDesc; totalL+=liquido;
 
@@ -6773,6 +6796,11 @@ Si necesita clave, edita el cliente y agrega una.`;
       const empNombre = empresa.nombre||"Martinez Services SPA";
       const empRut = empresa.rut||"76.782.954-K";
       const empDir = empresa.direccion||"Alto Hospicio, Chile";
+      const empRepLegal = empresa.rep_legal_nombre||"";
+      const empRepRut = empresa.rep_legal_rut||"";
+      const logoHtml = empresa.logo_url
+        ? "<img src='" + empresa.logo_url + "' style='height:50px;object-fit:contain;' onerror='this.remove()'>"
+        : "<div style='width:50px;height:50px;background:#1A7A3C;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900'>" + (empNombre||"E").charAt(0) + "</div>";
       const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
       const causales = {art_159_1:"Artículo 159 N°1 — Mutuo Acuerdo de las Partes",art_159_2:"Artículo 159 N°2 — Renuncia Voluntaria del Trabajador",art_159_3:"Artículo 159 N°3 — Muerte del Trabajador",art_159_4:"Artículo 159 N°4 — Vencimiento del Plazo Convenido",art_159_5:"Artículo 159 N°5 — Conclusión del Trabajo",art_160:"Artículo 160 — Causal Disciplinaria",art_161:"Artículo 161 — Necesidades de la Empresa"};
       const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Finiquito ${r.nombre}</title>
@@ -7255,37 +7283,54 @@ Si necesita clave, edita el cliente y agrega una.`;
       const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
       const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
       const tipos = {indefinido:"Indefinido",plazo_fijo:"Plazo Fijo",obra_faena:"Obra o Faena",honorarios:"Honorarios",anexo:"Anexo de Contrato"};
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Contrato ${r.nombre}</title>
-      <style>body{font-family:Arial;font-size:12px;padding:30px;max-width:720px;margin:0 auto;line-height:1.6}
-      h2{color:#1A7A3C;text-align:center;font-size:16px}h3{color:#555;text-align:center;font-size:12px;font-weight:normal;margin-bottom:20px}
-      .seccion{margin:16px 0}.seccion h4{color:#1A7A3C;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #ddd;padding-bottom:5px;margin-bottom:10px}
-      p{margin-bottom:8px;text-align:justify}
-      .firma-box{display:flex;justify-content:space-between;margin-top:50px}
-      .firma{text-align:center;width:44%}.firma-line{border-top:1px solid #333;padding-top:6px;font-size:10px;color:#555}
-      @media print{body{padding:16px}}</style></head><body>
-      <h2>CONTRATO INDIVIDUAL DE TRABAJO</h2>
-      <h3>Tipo: ${tipos[r.tipo]||r.tipo||'—'}</h3>
-      <div class="seccion"><h4>Partes Contratantes</h4>
-        <p><strong>EMPLEADOR:</strong> ${empresa.nombre||'Martinez Services SPA'}, RUT ${empresa.rut||'76.782.954-K'}, con domicilio en ${empresa.direccion||'Alto Hospicio, Chile'}.</p>
-        <p><strong>TRABAJADOR:</strong> ${r.nombre||'—'}, RUT ${r.rut||'—'}.</p>
-      </div>
-      <div class="seccion"><h4>Condiciones del Contrato</h4>
-        <p><strong>Cargo o función:</strong> ${r.cargo||'—'}</p>
-        <p><strong>Fecha de inicio:</strong> ${r.fecha_inicio||'—'}</p>
-        <p><strong>Fecha de término:</strong> ${r.fecha_fin||'Contrato de duración indefinida'}</p>
-        <p><strong>Remuneración mensual:</strong> ${fmt(r.sueldo_pactado)} (incluye sueldo base y todos los beneficios legales)</p>
-        <p><strong>Jornada de trabajo:</strong> 45 horas semanales distribuidas de lunes a viernes, o según lo acordado entre las partes.</p>
-        <p><strong>Lugar de prestación de servicios:</strong> ${empresa.direccion||'Alto Hospicio, Chile'}, o donde el empleador lo requiera según las necesidades de la empresa.</p>
-      </div>
-      <div class="seccion"><h4>Disposiciones Generales</h4>
-        <p>El presente contrato se rige por el Código del Trabajo de Chile y demás leyes y reglamentos vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.</p>
-        ${r.observaciones?`<p><strong>Observaciones:</strong> ${r.observaciones}</p>`:''}
-      </div>
-      <p style="text-align:center;font-size:11px;color:#777">Firmado en ${empresa.ciudad||'Alto Hospicio'}, el ${new Date().toLocaleDateString('es-CL')}</p>
-      <div class="firma-box">
-        <div class="firma"><div class="firma-line">Empleador<br>${empresa.nombre||'Martinez Services SPA'}<br>RUT: ${empresa.rut||'76.782.954-K'}</div></div>
-        <div class="firma"><div class="firma-line">Trabajador<br>${r.nombre||'—'}<br>RUT: ${r.rut||'—'}</div></div>
-      </div></body></html>`;
+      const logoH = empresa.logo_url
+        ? "<img src='" + empresa.logo_url + "' style='height:50px;object-fit:contain;' onerror='this.remove()'>"
+        : "<div style='width:50px;height:50px;background:#1A7A3C;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900'>" + (empresa.nombre||"E").charAt(0) + "</div>";
+      const empNomC = empresa.nombre||"Martinez Services SPA";
+      const empRutC = empresa.rut||"76.782.954-K";
+      const empDirC = empresa.direccion||"Alto Hospicio, Chile";
+      const empCiudC = empresa.ciudad||"Alto Hospicio";
+      const empRepC = empresa.rep_legal_nombre||"Representante Legal";
+      const empRepRutC = empresa.rep_legal_rut||"";
+      const tipoLabel2 = tipos[r.tipo]||r.tipo||"Indefinido";
+      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Contrato " + r.nombre + "</title>" +
+        "<style>body{font-family:'Times New Roman',serif;font-size:12px;padding:40px;max-width:820px;margin:0 auto;line-height:1.8;color:#1a1a1a}" +
+        ".hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:20px}" +
+        "h1{text-align:center;font-size:16px;color:#1A7A3C;text-transform:uppercase;letter-spacing:2px;margin:0 0 4px}" +
+        "h2{text-align:center;font-size:13px;color:#555;margin:0 0 20px;font-weight:normal}" +
+        "h3{color:#1A7A3C;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1.5px solid #1A7A3C;padding-bottom:3px;margin-top:20px;letter-spacing:.5px}" +
+        "p{margin:8px 0;text-align:justify}" +
+        ".firma-box{display:flex;justify-content:space-around;margin-top:70px}" +
+        ".firma{text-align:center;width:42%}.firma-line{border-top:1px solid #333;padding-top:6px;font-size:10px;color:#555;margin-top:50px}" +
+        "@media print{body{padding:16px}@page{size:A4;margin:12mm}}</style></head><body>" +
+        "<div class='hdr'>" + logoH +
+          "<div style='flex:1;text-align:center'>" +
+            "<h1>Contrato Individual de Trabajo</h1>" +
+            "<h2>Tipo: " + tipoLabel2 + "</h2>" +
+          "</div>" +
+          "<div style='text-align:right;font-size:10px;color:#666'>" + empCiudC + ", " + new Date().toLocaleDateString("es-CL") + "</div>" +
+        "</div>" +
+        "<h3>Partes Contratantes</h3>" +
+        "<p>En <strong>" + empCiudC + "</strong>, a <strong>" + new Date().toLocaleDateString("es-CL") + "</strong>, entre:</p>" +
+        "<p><strong>EMPLEADOR:</strong> " + empNomC + ", RUT " + empRutC + ", representada(o) por don/ña <strong>" + empRepC + "</strong>" + (empRepRutC ? ", RUT " + empRepRutC : "") + ", con domicilio en " + empDirC + ", en adelante <em>'el empleador'</em>.</p>" +
+        "<p><strong>TRABAJADOR:</strong> don/ña <strong>" + (r.nombre||"—") + "</strong>, RUT <strong>" + (r.rut||"—") + "</strong>, en adelante <em>'el trabajador'</em>.</p>" +
+        "<p>Se ha convenido el siguiente contrato de trabajo:</p>" +
+        "<h3>Condiciones del Contrato</h3>" +
+        "<p><strong>PRIMERO — Cargo o función:</strong> El trabajador se obliga a desempeñar el cargo de <strong>" + (r.cargo||"—") + "</strong> en " + empNomC + ".</p>" +
+        "<p><strong>SEGUNDO — Lugar de trabajo:</strong> Los servicios se prestarán en " + empDirC + ", sin perjuicio de la facultad del empleador de alterar, por causa justificada, el sitio o recinto, conforme al Art. 12 del Código del Trabajo.</p>" +
+        "<p><strong>TERCERO — Jornada de trabajo:</strong> La jornada de trabajo será de <strong>45 horas semanales</strong>, distribuidas de lunes a viernes de 08:00 a 18:00 hrs, con 1 hora de colación de cargo del trabajador, según lo acordado entre las partes.</p>" +
+        "<p><strong>CUARTO — Remuneración:</strong> El empleador pagará al trabajador una remuneración mensual de <strong>" + fmt(r.sueldo_pactado) + "</strong>, que será liquidada y pagada por períodos vencidos, en forma proporcional a los días trabajados.</p>" +
+        "<p><strong>QUINTO — Vigencia:</strong> El presente contrato tendrá " + (r.tipo==="indefinido" ? "duración indefinida" : "vigencia hasta el <strong>" + (r.fecha_fin||"—") + "</strong>") + ", con fecha de inicio <strong>" + (r.fecha_inicio||"—") + "</strong>.</p>" +
+        "<h3>Disposiciones Generales</h3>" +
+        "<p>El trabajador se compromete y obliga a cumplir las instrucciones impartidas por sus superiores, y a acatar las normas del Reglamento Interno de Orden, Higiene y Seguridad, cuando exista en la empresa.</p>" +
+        "<p>El presente contrato se rige por el Código del Trabajo de Chile y demás leyes y reglamentos vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.</p>" +
+        (r.observaciones ? "<p><strong>Observaciones:</strong> " + r.observaciones + "</p>" : "") +
+        "<p>El presente contrato se firma en dos ejemplares del mismo tenor, declarando el trabajador haber recibido un ejemplar de dicho instrumento.</p>" +
+        "<div class='firma-box'>" +
+          "<div class='firma'><div class='firma-line'>Firma del Empleador<br><strong>" + empNomC + "</strong><br>RUT: " + empRutC + "</div></div>" +
+          "<div class='firma'><div class='firma-line'>Firma del Trabajador<br><strong>" + (r.nombre||"—") + "</strong><br>RUT: " + (r.rut||"—") + "</div></div>" +
+        "</div>" +
+        "</body></html>";
       const w=window.open('','_blank'); w.document.write(html); w.document.close();
       setTimeout(()=>w.print(),600);
     };
@@ -9179,7 +9224,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         const totalImp  = base + gratif + bonoa + h50 + h100;
         const totalNoImp= col + mov + viat;
         const totalHab  = totalImp + totalNoImp;
-        const afpPct    = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[r.afp?.toLowerCase()]||0.1145;
+        const afpPct    = {capital:0.1144,cuprum:0.1144,habitat:0.1127,modelo:0.1058,planvital:0.1116,provida:0.1145,uno:0.1046}[r.afp?.toLowerCase()]||0.1144;
         const descAfp   = Math.round(totalImp * afpPct);
         const descSalud = Math.round(totalImp * 0.07);
         const totalDesc = descAfp + descSalud + otros;
@@ -9246,6 +9291,14 @@ Si necesita clave, edita el cliente y agrega una.`;
         if (cfg.tope_gratif) document.getElementById("cfg-tope-grat").value = cfg.tope_gratif;
         if (cfg.seg_cesantia) document.getElementById("cfg-seg-ces").value = cfg.seg_cesantia;
         if (cfg.iva_pct) document.getElementById("cfg-iva").value = cfg.iva_pct;
+        if (cfg.tope_afp) document.getElementById("cfg-tope-afp").value = cfg.tope_afp;
+        if (cfg.afp_capital) document.getElementById("cfg-afp-capital").value = cfg.afp_capital;
+        if (cfg.afp_cuprum) document.getElementById("cfg-afp-cuprum").value = cfg.afp_cuprum;
+        if (cfg.afp_habitat) document.getElementById("cfg-afp-habitat").value = cfg.afp_habitat;
+        if (cfg.afp_planvital) document.getElementById("cfg-afp-planvital").value = cfg.afp_planvital;
+        if (cfg.afp_provida) document.getElementById("cfg-afp-provida").value = cfg.afp_provida;
+        if (cfg.afp_modelo) document.getElementById("cfg-afp-modelo").value = cfg.afp_modelo;
+        if (cfg.afp_uno) document.getElementById("cfg-afp-uno").value = cfg.afp_uno;
         // Planes
         if (cfg.plan_demo_precio !== undefined) document.getElementById("cfg-precio-demo").value = cfg.plan_demo_precio;
         if (cfg.plan_demo_desc) document.getElementById("cfg-desc-demo").value = cfg.plan_demo_desc;
@@ -9287,12 +9340,20 @@ Si necesita clave, edita el cliente y agrega una.`;
       const msg = document.getElementById("cfg-valores-msg");
       try {
         await db.collection("sistema_config").doc("principal").set({
-          imm: parseFloat(document.getElementById("cfg-imm").value)||510966,
-          uf: parseFloat(document.getElementById("cfg-uf").value)||38500,
+          imm: parseFloat(document.getElementById("cfg-imm").value)||539000,
+          uf: parseFloat(document.getElementById("cfg-uf").value)||40610,
           tope_uf: parseFloat(document.getElementById("cfg-tope-uf").value)||78,
-          tope_gratif: parseFloat(document.getElementById("cfg-tope-grat").value)||202196,
+          tope_gratif: parseFloat(document.getElementById("cfg-tope-grat").value)||213396,
           seg_cesantia: parseFloat(document.getElementById("cfg-seg-ces").value)||0.6,
           iva_pct: parseFloat(document.getElementById("cfg-iva").value)||19,
+          tope_afp: parseFloat(document.getElementById("cfg-tope-afp")?.value)||3654962,
+          afp_capital: parseFloat(document.getElementById("cfg-afp-capital")?.value)||11.44,
+          afp_cuprum: parseFloat(document.getElementById("cfg-afp-cuprum")?.value)||11.44,
+          afp_habitat: parseFloat(document.getElementById("cfg-afp-habitat")?.value)||11.27,
+          afp_planvital: parseFloat(document.getElementById("cfg-afp-planvital")?.value)||11.16,
+          afp_provida: parseFloat(document.getElementById("cfg-afp-provida")?.value)||11.45,
+          afp_modelo: parseFloat(document.getElementById("cfg-afp-modelo")?.value)||10.58,
+          afp_uno: parseFloat(document.getElementById("cfg-afp-uno")?.value)||10.46,
           actualizado: firebase.firestore.FieldValue.serverTimestamp()
         }, {merge: true});
         msg.style.color = "var(--c-accent)";
@@ -9340,6 +9401,248 @@ Si necesita clave, edita el cliente y agrega una.`;
 
     // Cargar config al abrir el tab de sistema
     document.querySelector("[data-cfg='cfg-sistema']")?.addEventListener("click", cargarConfigSistema);
+
+    // ═══════════════════════════════════════════════════════════
+    // RRHH — FINIQUITOS completo
+    // ═══════════════════════════════════════════════════════════
+    async function renderRRHH_Finiquitos(zone, empId) {
+      zone.innerHTML =
+        btnPrimary("btn-add-fin","+ Nuevo Finiquito","📋") +
+        tableWrap("tbl-fin","Finiquitos Registrados","Historial de términos de contrato",
+          ["RUT","Trabajador","Cargo","Causal","Art.","Fecha Término","Líquido","Acciones"]) +
+        modalHtml("modal-fin","Generar Finiquito", `
+          <div style="overflow-y:auto;max-height:70vh;">
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:6px 10px;margin-bottom:12px;font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;">👤 Trabajador</div>
+            ${formField("Seleccionar Trabajador", `<select id="fin-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona —</option></select>`)}
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:6px 10px;margin:12px 0;font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;">⚖️ Causal de Término (Código del Trabajo)</div>
+            ${formField("Causal Legal", sel("fin-causal",[
+              {v:"art159_1",l:"Art. 159 N°1 — Mutuo acuerdo"},
+              {v:"art159_2",l:"Art. 159 N°2 — Renuncia voluntaria"},
+              {v:"art159_3",l:"Art. 159 N°3 — Muerte del trabajador"},
+              {v:"art159_4",l:"Art. 159 N°4 — Vencimiento plazo fijo"},
+              {v:"art159_5",l:"Art. 159 N°5 — Conclusión obra o faena"},
+              {v:"art160_1",l:"Art. 160 N°1 — Falta de probidad"},
+              {v:"art160_3",l:"Art. 160 N°3 — No concurrencia sin causa"},
+              {v:"art160_7",l:"Art. 160 N°7 — Incumplimiento grave"},
+              {v:"art161",l:"Art. 161 — Necesidades de la empresa"}
+            ]))}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Fecha Término Contrato", inp("fin-fecha-termino","date",""))}</div>
+              <div>${formField("Fecha Pago Finiquito", inp("fin-fecha-pago","date",""))}</div>
+            </div>
+            <div style="background:rgba(46,168,79,0.08);border-left:3px solid var(--c-accent);padding:6px 10px;margin:12px 0;font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;">💰 Montos del Finiquito</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Indemnización por años ($)", inp("fin-indemn","number","0"))}</div>
+              <div>${formField("Indemnización sustitutiva ($)", inp("fin-indemn-sust","number","0"))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Feriado proporcional ($)", inp("fin-feriado","number","0"))}</div>
+              <div>${formField("Remuneración días trabajados ($)", inp("fin-rem-dias","number","0"))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Gratificación proporcional ($)", inp("fin-gratif-prop","number","0"))}</div>
+              <div>${formField("Otros montos ($)", inp("fin-otros","number","0"))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Descuentos previsionales ($)", inp("fin-desc-prev","number","0"))}</div>
+              <div>${formField("Otros descuentos ($)", inp("fin-desc-otros","number","0"))}</div>
+            </div>
+            ${formField("Observaciones / Motivo", inp("fin-obs","text",""))}
+            <input type="hidden" id="fin-docid">
+            <button id="btn-save-fin" class="btn-entrar" style="width:100%;margin-top:10px;">💾 Guardar Finiquito</button>
+          </div>
+        `);
+
+      // Cargar trabajadores en el select
+      if (empId) {
+        const empSnap = await db.collection("empleados").where("entityId","==",empId).get();
+        const selEl = document.getElementById("fin-emp");
+        empSnap.forEach(d => {
+          const o = document.createElement("option");
+          o.value = d.id;
+          o.textContent = d.data().rut + " — " + d.data().nombre;
+          selEl.appendChild(o);
+        });
+      }
+
+      document.getElementById("btn-add-fin").onclick = () => {
+        ["fin-fecha-termino","fin-fecha-pago","fin-obs","fin-docid"].forEach(id => {
+          const el = document.getElementById(id); if(el) el.value = "";
+        });
+        ["fin-indemn","fin-indemn-sust","fin-feriado","fin-rem-dias","fin-gratif-prop","fin-otros","fin-desc-prev","fin-desc-otros"].forEach(id => {
+          const el = document.getElementById(id); if(el) el.value = 0;
+        });
+        document.getElementById("modal-fin").style.display = "flex";
+      };
+
+      document.getElementById("btn-save-fin").onclick = async () => {
+        if (!empId) { alert("Sin entidad activa"); return; }
+        const empDocId = document.getElementById("fin-emp").value;
+        if (!empDocId) { alert("Selecciona un trabajador"); return; }
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const trabajador = empDoc.data();
+        const causal = document.getElementById("fin-causal").value;
+        const causalLabels = {
+          art159_1:"Art. 159 N°1 — Mutuo acuerdo",art159_2:"Art. 159 N°2 — Renuncia voluntaria",
+          art159_3:"Art. 159 N°3 — Muerte del trabajador",art159_4:"Art. 159 N°4 — Vencimiento plazo fijo",
+          art159_5:"Art. 159 N°5 — Conclusión obra o faena",art160_1:"Art. 160 N°1 — Falta de probidad",
+          art160_3:"Art. 160 N°3 — No concurrencia",art160_7:"Art. 160 N°7 — Incumplimiento grave",
+          art161:"Art. 161 — Necesidades de la empresa"
+        };
+        const indemn    = parseFloat(document.getElementById("fin-indemn").value)||0;
+        const indemnS   = parseFloat(document.getElementById("fin-indemn-sust").value)||0;
+        const feriado   = parseFloat(document.getElementById("fin-feriado").value)||0;
+        const remDias   = parseFloat(document.getElementById("fin-rem-dias").value)||0;
+        const gratifP   = parseFloat(document.getElementById("fin-gratif-prop").value)||0;
+        const otros     = parseFloat(document.getElementById("fin-otros").value)||0;
+        const descPrev  = parseFloat(document.getElementById("fin-desc-prev").value)||0;
+        const descOtros = parseFloat(document.getElementById("fin-desc-otros").value)||0;
+        const totalBruto = indemn + indemnS + feriado + remDias + gratifP + otros;
+        const totalDescuentos = descPrev + descOtros;
+        const liquidoPagar = totalBruto - totalDescuentos;
+        const docId = document.getElementById("fin-docid").value;
+        const data = {
+          entityId: empId, empleado_id: empDocId,
+          rut: trabajador?.rut||"", nombre: trabajador?.nombre||"",
+          cargo: trabajador?.cargo||"",
+          fecha_ingreso: trabajador?.fecha_ingreso||"",
+          fecha_termino: document.getElementById("fin-fecha-termino").value,
+          fecha_pago: document.getElementById("fin-fecha-pago").value,
+          causal, causal_descripcion: causalLabels[causal]||causal,
+          articulo: causal.replace("art","Art. ").replace("_"," N°"),
+          indemn_anios: indemn, indemn_sustitutiva: indemnS,
+          feriado_proporcional: feriado, remuneracion_dias: remDias,
+          gratificacion_proporcional: gratifP, otros_montos: otros,
+          desc_previsionales: descPrev, desc_otros: descOtros,
+          total_bruto: totalBruto, total_descuentos: totalDescuentos,
+          liquido_pagar: liquidoPagar,
+          observaciones: document.getElementById("fin-obs").value.trim(),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        const ref = db.collection("finiquitos");
+        if (docId) await ref.doc(docId).update(data);
+        else await ref.add({...data, creado: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById("modal-fin").style.display = "none";
+        renderRRHH_Finiquitos(zone, empId);
+      };
+
+      // Cargar tabla
+      if (!empId) return;
+      const snap = await db.collection("finiquitos").where("entityId","==",empId).get();
+      const tb = document.getElementById("tbl-fin-tbody");
+      if (snap.empty) { tb.innerHTML = emptyRow(8, "Sin finiquitos registrados."); return; }
+      const docs = [];
+      snap.forEach(d => docs.push({id:d.id,...d.data()}));
+      docs.sort((a,b) => (b.fecha_termino||"").localeCompare(a.fecha_termino||""));
+      tb.innerHTML = "";
+      docs.forEach(r => {
+        tb.innerHTML += "<tr>" +
+          "<td style='font-family:monospace;font-size:11px'>" + (r.rut||"—") + "</td>" +
+          "<td><strong>" + (r.nombre||"—") + "</strong></td>" +
+          "<td style='font-size:11px'>" + (r.cargo||"—") + "</td>" +
+          "<td style='font-size:10px'>" + (r.causal_descripcion||"—") + "</td>" +
+          "<td style='font-size:11px;font-weight:700'>" + (r.articulo||"—") + "</td>" +
+          "<td>" + (r.fecha_termino||"—") + "</td>" +
+          "<td style='font-weight:800;color:var(--c-accent)'>" + formatMonto(r.liquido_pagar) + "</td>" +
+          "<td style='white-space:nowrap'>" +
+            "<button onclick='imprimirFiniquitoById(\"" + r.id + "\")' style='background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;' title='PDF'>🖨️</button>" +
+            "<button onclick='editarFiniquito(\"" + r.id + "\",\"" + empId + "\")' style='background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;' title='Editar'>✏️</button>" +
+            "<button onclick='deleteFiniquito(\"" + r.id + "\",\"" + empId + "\")' style='background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;' title='Eliminar'>🗑</button>" +
+          "</td></tr>";
+      });
+    }
+
+    window.editarFiniquito = async (docId, empId) => {
+      const d = await db.collection("finiquitos").doc(docId).get();
+      if (!d.exists) return;
+      const r = d.data();
+      document.getElementById("fin-docid").value = docId;
+      document.getElementById("fin-emp").value = r.empleado_id||"";
+      document.getElementById("fin-causal").value = r.causal||"art159_2";
+      document.getElementById("fin-fecha-termino").value = r.fecha_termino||"";
+      document.getElementById("fin-fecha-pago").value = r.fecha_pago||"";
+      document.getElementById("fin-indemn").value = r.indemn_anios||0;
+      document.getElementById("fin-indemn-sust").value = r.indemn_sustitutiva||0;
+      document.getElementById("fin-feriado").value = r.feriado_proporcional||0;
+      document.getElementById("fin-rem-dias").value = r.remuneracion_dias||0;
+      document.getElementById("fin-gratif-prop").value = r.gratificacion_proporcional||0;
+      document.getElementById("fin-otros").value = r.otros_montos||0;
+      document.getElementById("fin-desc-prev").value = r.desc_previsionales||0;
+      document.getElementById("fin-desc-otros").value = r.desc_otros||0;
+      document.getElementById("fin-obs").value = r.observaciones||"";
+      document.getElementById("modal-fin").style.display = "flex";
+    };
+
+    // ── COMPROBANTE VACACIONES/PERMISO ──
+    window.imprimirComprobante = async (docId) => {
+      const d = await db.collection("vacaciones").doc(docId).get();
+      if (!d.exists) { alert("No se encontró el registro"); return; }
+      const r = d.data();
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
+      const logoH = empresa.logo_url
+        ? "<img src='" + empresa.logo_url + "' style='height:45px;object-fit:contain;' onerror='this.remove()'>"
+        : "<div style='width:45px;height:45px;background:#1A7A3C;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900'>" + (empresa.nombre||"E").charAt(0) + "</div>";
+      const tipos = {vacaciones:"VACACIONES LEGALES",permiso_sin_goce:"PERMISO SIN GOCE DE SUELDO",permiso_con_goce:"PERMISO CON GOCE DE SUELDO",licencia:"LICENCIA MÉDICA",otro:"PERMISO ESPECIAL"};
+      const tipoDoc = tipos[r.tipo] || (r.tipo||"PERMISO").toUpperCase();
+      const estadoCls = r.estado === "aprobada" ? "color:#1A7A3C;font-weight:700" : r.estado === "rechazada" ? "color:#dc2626;font-weight:700" : "color:#d97706;font-weight:700";
+      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Comprobante " + tipoDoc + "</title>" +
+        "<style>body{font-family:Arial,sans-serif;font-size:12px;padding:36px;max-width:750px;margin:0 auto;color:#1a1a1a}" +
+        ".hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:20px}" +
+        "h1{text-align:center;font-size:15px;color:#1A7A3C;text-transform:uppercase;letter-spacing:1px}" +
+        ".grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}" +
+        ".box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:12px}" +
+        ".box label{font-size:10px;font-weight:700;color:#666;text-transform:uppercase;display:block;margin-bottom:3px}" +
+        ".box .val{font-size:13px;font-weight:700}" +
+        ".firma-box{display:flex;justify-content:space-around;margin-top:60px}" +
+        ".firma{text-align:center;width:42%}.firma-line{border-top:1px solid #333;padding-top:6px;font-size:10px;color:#555;margin-top:50px}" +
+        "@media print{body{padding:16px}@page{size:A4;margin:12mm}}</style></head><body>" +
+        "<div class='hdr'>" + logoH +
+          "<div style='flex:1;text-align:center'><h1>Comprobante de " + tipoDoc + "</h1></div>" +
+          "<div style='font-size:10px;color:#666;text-align:right'>" + new Date().toLocaleDateString("es-CL") + "</div>" +
+        "</div>" +
+        "<p><strong>Empresa:</strong> " + (empresa.nombre||"—") + " | RUT: " + (empresa.rut||"—") + "</p>" +
+        "<div class='grid'>" +
+          "<div class='box'><label>RUT Trabajador</label><div class='val'>" + (r.rut||"—") + "</div></div>" +
+          "<div class='box'><label>Nombre Trabajador</label><div class='val'>" + (r.nombre||"—") + "</div></div>" +
+          "<div class='box'><label>Tipo de Permiso</label><div class='val'>" + tipoDoc + "</div></div>" +
+          "<div class='box'><label>Estado</label><div class='val' style='" + estadoCls + "'>" + (r.estado||"—").toUpperCase() + "</div></div>" +
+          "<div class='box'><label>Fecha Inicio</label><div class='val'>" + (r.desde||"—") + "</div></div>" +
+          "<div class='box'><label>Fecha Término</label><div class='val'>" + (r.hasta||"—") + "</div></div>" +
+          "<div class='box'><label>Días Solicitados</label><div class='val'>" + (r.dias_solicitados||"—") + " días</div></div>" +
+          "<div class='box'><label>Observación</label><div class='val' style='font-size:11px;font-weight:400'>" + (r.observacion||"Sin observaciones") + "</div></div>" +
+        "</div>" +
+        "<p style='margin-top:16px;font-size:11px;color:#555;text-align:justify'>El presente comprobante certifica la " + tipoDoc.toLowerCase() + " del trabajador señalado, según lo establecido en el Código del Trabajo de Chile y en conformidad a las normas internas de la empresa.</p>" +
+        "<div class='firma-box'>" +
+          "<div class='firma'><div class='firma-line'>Firma del Trabajador<br><strong>" + (r.nombre||"—") + "</strong><br>RUT: " + (r.rut||"—") + "</div></div>" +
+          "<div class='firma'><div class='firma-line'>Representante Legal<br><strong>" + (empresa.nombre||"Empresa") + "</strong><br>RUT: " + (empresa.rut||"—") + "</div></div>" +
+        "</div>" +
+        "</body></html>";
+      const w = window.open("","_blank");
+      w.document.write(html); w.document.close();
+      setTimeout(function(){ w.print(); }, 600);
+    };
+
+    // ── BOTÓN IMPRIMIR EN TABLA VACACIONES ──
+    // Agregar función para ver historial de días acumulados por trabajador
+    window.verHistorialVacaciones = async (empDocId, nombre, fechaIngreso) => {
+      if (!fechaIngreso) { alert("El trabajador no tiene fecha de ingreso registrada."); return; }
+      const ingreso = new Date(fechaIngreso);
+      const hoy = new Date();
+      const mesesTrabajados = (hoy.getFullYear() - ingreso.getFullYear()) * 12 + (hoy.getMonth() - ingreso.getMonth());
+      const diasAcumulados = Math.floor(mesesTrabajados * 1.25); // 15 días/año = 1.25/mes
+      // Contar días usados desde Firestore
+      const snap = await db.collection("vacaciones").where("empleado_id","==",empDocId).where("tipo","==","vacaciones").where("estado","==","aprobada").get();
+      let diasUsados = 0;
+      snap.forEach(d => diasUsados += d.data().dias_solicitados||0);
+      const diasPendientes = Math.max(0, diasAcumulados - diasUsados);
+      alert("📅 Historial de Vacaciones — " + nombre +
+        "\n\nFecha ingreso: " + fechaIngreso +
+        "\nMeses trabajados: " + mesesTrabajados +
+        "\nDías acumulados: " + diasAcumulados + " (15 días/año)" +
+        "\nDías utilizados: " + diasUsados +
+        "\nDías pendientes: " + diasPendientes +
+        "\n\n(1.25 días por mes trabajado según Art. 67 Código del Trabajo)");
+    };
 
   })();
   </script>
