@@ -1417,22 +1417,155 @@
 
       <!-- TAB: CONFIG SISTEMA -->
       <div id="sa-config" class="sa-section">
-        <div style="max-width:520px;">
-          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;">
-            <h3 style="font-size:14px;font-weight:700;margin-bottom:16px;">🔐 Configurar Superadmin</h3>
-            <p style="font-size:12px;color:var(--c-muted);margin-bottom:16px;">Este botón crea automáticamente tu documento de superadmin en Firestore con acceso total a todos los módulos.</p>
-            <button id="btn-init-superadmin" class="btn-entrar" style="width:100%">⚡ Inicializar mi cuenta como Superadmin</button>
-            <p id="sa-init-msg" style="margin-top:10px;font-size:12px;text-align:center;color:var(--c-accent);min-height:16px;"></p>
+        <div style="max-width:900px;">
+
+          <!-- TABS DE CONFIG -->
+          <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;">
+            <button class="cfg-tab btn-entrar" data-cfg="cfg-sistema" style="font-size:12px;padding:8px 16px;">⚙️ Sistema</button>
+            <button class="cfg-tab" data-cfg="cfg-valores" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--radius);cursor:pointer;">💰 Valores Legales</button>
+            <button class="cfg-tab" data-cfg="cfg-planes" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--radius);cursor:pointer;">📦 Planes y Precios</button>
+            <button class="cfg-tab" data-cfg="cfg-formatos" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--radius);cursor:pointer;">📄 Textos y Formatos</button>
+            <button class="cfg-tab" data-cfg="cfg-stats" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--radius);cursor:pointer;">📊 Estadísticas</button>
           </div>
-          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;">
-            <h3 style="font-size:14px;font-weight:700;margin-bottom:16px;">📊 Estadísticas del Sistema</h3>
-            <div id="sa-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="kpi-card"><div class="kpi-label">Total Clientes</div><div class="kpi-value" id="stat-clientes">—</div></div>
-              <div class="kpi-card"><div class="kpi-label">Entidades Propias</div><div class="kpi-value green" id="stat-entidades">—</div></div>
-              <div class="kpi-card"><div class="kpi-label">Demos Activas</div><div class="kpi-value warn" id="stat-demos">—</div></div>
-              <div class="kpi-card"><div class="kpi-label">Demos Vencidas</div><div class="kpi-value danger" id="stat-vencidas">—</div></div>
+
+          <!-- SECCIÓN: SISTEMA -->
+          <div id="cfg-sistema" class="cfg-section" style="display:block;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
+                <h3 style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--c-accent);">🔐 Cuenta Superadmin</h3>
+                <p style="font-size:12px;color:var(--c-muted);margin-bottom:12px;">Inicializa tu cuenta con acceso total al sistema.</p>
+                <button id="btn-init-superadmin" class="btn-entrar" style="width:100%">⚡ Inicializar Superadmin</button>
+                <p id="sa-init-msg" style="margin-top:8px;font-size:12px;text-align:center;color:var(--c-accent);min-height:14px;"></p>
+              </div>
+              <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
+                <h3 style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--c-accent);">🎨 Identidad del ERP</h3>
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Nombre del Sistema</label>
+                  <input id="cfg-nombre-erp" type="text" value="Martinez Services ERP" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Slogan / Descripción</label>
+                  <input id="cfg-slogan" type="text" value="Plataforma de gestión multiempresa" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">WhatsApp Soporte</label>
+                  <input id="cfg-whatsapp" type="text" value="+56974889039" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+                <button id="btn-save-identidad" class="btn-entrar" style="width:100%;margin-top:4px;">💾 Guardar</button>
+                <p id="cfg-identidad-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+              </div>
             </div>
           </div>
+
+          <!-- SECCIÓN: VALORES LEGALES -->
+          <div id="cfg-valores" class="cfg-section" style="display:none;">
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
+              <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--c-accent);">💰 Valores Legales Chile — Actualizables</h3>
+              <p style="font-size:12px;color:var(--c-muted);margin-bottom:16px;">Estos valores se usan en los cálculos de remuneraciones. Actualízalos cuando cambien las leyes o el SII informe nuevos valores.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">IMM vigente ($)</label>
+                  <input id="cfg-imm" type="number" value="510966" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Ingreso Mínimo Mensual 2025</div>
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Valor UF ($)</label>
+                  <input id="cfg-uf" type="number" value="38500" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Actualizar mensualmente</div>
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope imponible (UF)</label>
+                  <input id="cfg-tope-uf" type="number" value="78" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Tope legal vigente</div>
+                </div>
+                <div style="margin-top:12px;">
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope gratificación Art.47 ($)</label>
+                  <input id="cfg-tope-grat" type="number" value="202196" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">IMM × 4.75 / 12</div>
+                </div>
+                <div style="margin-top:12px;">
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Seguro Cesantía trabajador (%)</label>
+                  <input id="cfg-seg-ces" type="number" value="0.6" step="0.01" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">0.6% Indefinido / 3% Plazo Fijo</div>
+                </div>
+                <div style="margin-top:12px;">
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">IVA (%)</label>
+                  <input id="cfg-iva" type="number" value="19" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Porcentaje IVA Chile</div>
+                </div>
+              </div>
+              <button id="btn-save-valores" class="btn-entrar" style="margin-top:16px;width:100%;">💾 Guardar Valores Legales</button>
+              <p id="cfg-valores-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: PLANES Y PRECIOS -->
+          <div id="cfg-planes" class="cfg-section" style="display:none;">
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
+              <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--c-accent);">📦 Planes y Precios del Servicio</h3>
+              <p style="font-size:12px;color:var(--c-muted);margin-bottom:16px;">Define los precios y descripción de cada plan. Estos aparecerán en las cotizaciones que generes para tus clientes.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
+                  <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">🟡 Plan Demo</div>
+                  <input id="cfg-precio-demo" type="number" value="0" placeholder="Precio ($)" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;margin-bottom:6px;">
+                  <input id="cfg-desc-demo" type="text" value="7 días gratis, todos los módulos" placeholder="Descripción" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
+                  <div style="font-size:12px;font-weight:700;color:#0ea5e9;margin-bottom:10px;">🔵 Plan Básico</div>
+                  <input id="cfg-precio-basico" type="number" value="0" placeholder="Precio mensual ($)" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;margin-bottom:6px;">
+                  <input id="cfg-desc-basico" type="text" value="Módulos básicos de administración" placeholder="Descripción" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
+                  <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:10px;">🟣 Plan Completo</div>
+                  <input id="cfg-precio-completo" type="number" value="0" placeholder="Precio mensual ($)" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;margin-bottom:6px;">
+                  <input id="cfg-desc-completo" type="text" value="Todos los módulos habilitados" placeholder="Descripción" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
+                  <div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:10px;">⭐ Plan Premium</div>
+                  <input id="cfg-precio-premium" type="number" value="0" placeholder="Precio mensual ($)" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;margin-bottom:6px;">
+                  <input id="cfg-desc-premium" type="text" value="Todo incluido + soporte prioritario" placeholder="Descripción" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:var(--radius);outline:none;">
+                </div>
+              </div>
+              <button id="btn-save-planes" class="btn-entrar" style="margin-top:16px;width:100%;">💾 Guardar Planes y Precios</button>
+              <p id="cfg-planes-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: TEXTOS Y FORMATOS -->
+          <div id="cfg-formatos" class="cfg-section" style="display:none;">
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
+              <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--c-accent);">📄 Textos de Documentos</h3>
+              <p style="font-size:12px;color:var(--c-muted);margin-bottom:14px;">Personaliza los textos legales que aparecen en los documentos generados por el sistema.</p>
+              <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Texto pie de página — Liquidaciones</label>
+                <textarea id="cfg-texto-liq" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">Recibí conforme el alcance líquido de la presente liquidación, no teniendo cargo o cobro alguno que hacer por otro concepto.</textarea>
+              </div>
+              <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Texto legal — Contratos</label>
+                <textarea id="cfg-texto-cont" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente contrato se rige por el Código del Trabajo de Chile y demás leyes vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.</textarea>
+              </div>
+              <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Texto legal — Finiquitos</label>
+                <textarea id="cfg-texto-fin" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo. La firma del presente instrumento implica la aceptación de todas las estipulaciones contenidas en él.</textarea>
+              </div>
+              <button id="btn-save-formatos" class="btn-entrar" style="width:100%;">💾 Guardar Textos</button>
+              <p id="cfg-formatos-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: ESTADÍSTICAS -->
+          <div id="cfg-stats" class="cfg-section" style="display:none;">
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
+              <h3 style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--c-accent);">📊 Estadísticas del Sistema</h3>
+              <div id="sa-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="kpi-card"><div class="kpi-label">Total Clientes</div><div class="kpi-value" id="stat-clientes">—</div></div>
+                <div class="kpi-card"><div class="kpi-label">Entidades Propias</div><div class="kpi-value green" id="stat-entidades">—</div></div>
+                <div class="kpi-card"><div class="kpi-label">Demos Activas</div><div class="kpi-value warn" id="stat-demos">—</div></div>
+                <div class="kpi-card"><div class="kpi-label">Demos Vencidas</div><div class="kpi-value danger" id="stat-vencidas">—</div></div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -9067,6 +9200,146 @@ Si necesita clave, edita el cliente y agrega una.`;
         }, 800);
       };
     };
+
+    // ═══════════════════════════════════════════════════════════
+    // CONFIG SISTEMA — Lógica del panel de configuración
+    // ═══════════════════════════════════════════════════════════
+
+    // Navegación entre tabs de configuración
+    document.querySelectorAll(".cfg-tab").forEach(btn => {
+      btn.addEventListener("click", function() {
+        // Ocultar todas las secciones
+        document.querySelectorAll(".cfg-section").forEach(s => s.style.display = "none");
+        // Desactivar todos los tabs
+        document.querySelectorAll(".cfg-tab").forEach(t => {
+          t.style.background = "var(--c-surface)";
+          t.style.borderColor = "var(--c-border)";
+          t.style.color = "var(--c-text)";
+        });
+        // Mostrar la sección seleccionada
+        const target = this.dataset.cfg;
+        const section = document.getElementById(target);
+        if (section) section.style.display = "block";
+        // Activar tab seleccionado
+        this.style.background = "var(--c-accent)";
+        this.style.borderColor = "var(--c-accent)";
+        this.style.color = "#fff";
+        // Si es stats, cargar
+        if (target === "cfg-stats") loadSAStats();
+        // Si es valores o planes, cargar desde Firestore
+        if (target === "cfg-valores" || target === "cfg-planes" || target === "cfg-formatos") {
+          cargarConfigSistema();
+        }
+      });
+    });
+
+    // Cargar configuración guardada desde Firestore
+    async function cargarConfigSistema() {
+      try {
+        const doc = await db.collection("sistema_config").doc("principal").get();
+        if (!doc.exists) return;
+        const cfg = doc.data();
+        // Valores legales
+        if (cfg.imm) document.getElementById("cfg-imm").value = cfg.imm;
+        if (cfg.uf) document.getElementById("cfg-uf").value = cfg.uf;
+        if (cfg.tope_uf) document.getElementById("cfg-tope-uf").value = cfg.tope_uf;
+        if (cfg.tope_gratif) document.getElementById("cfg-tope-grat").value = cfg.tope_gratif;
+        if (cfg.seg_cesantia) document.getElementById("cfg-seg-ces").value = cfg.seg_cesantia;
+        if (cfg.iva_pct) document.getElementById("cfg-iva").value = cfg.iva_pct;
+        // Planes
+        if (cfg.plan_demo_precio !== undefined) document.getElementById("cfg-precio-demo").value = cfg.plan_demo_precio;
+        if (cfg.plan_demo_desc) document.getElementById("cfg-desc-demo").value = cfg.plan_demo_desc;
+        if (cfg.plan_basico_precio !== undefined) document.getElementById("cfg-precio-basico").value = cfg.plan_basico_precio;
+        if (cfg.plan_basico_desc) document.getElementById("cfg-desc-basico").value = cfg.plan_basico_desc;
+        if (cfg.plan_completo_precio !== undefined) document.getElementById("cfg-precio-completo").value = cfg.plan_completo_precio;
+        if (cfg.plan_completo_desc) document.getElementById("cfg-desc-completo").value = cfg.plan_completo_desc;
+        if (cfg.plan_premium_precio !== undefined) document.getElementById("cfg-precio-premium").value = cfg.plan_premium_precio;
+        if (cfg.plan_premium_desc) document.getElementById("cfg-desc-premium").value = cfg.plan_premium_desc;
+        // Textos
+        if (cfg.texto_liq) document.getElementById("cfg-texto-liq").value = cfg.texto_liq;
+        if (cfg.texto_cont) document.getElementById("cfg-texto-cont").value = cfg.texto_cont;
+        if (cfg.texto_fin) document.getElementById("cfg-texto-fin").value = cfg.texto_fin;
+        // Identidad
+        if (cfg.nombre_erp) document.getElementById("cfg-nombre-erp").value = cfg.nombre_erp;
+        if (cfg.slogan) document.getElementById("cfg-slogan").value = cfg.slogan;
+        if (cfg.whatsapp) document.getElementById("cfg-whatsapp").value = cfg.whatsapp;
+      } catch(e) { console.log("Config no encontrada, usando defaults"); }
+    }
+
+    // Guardar identidad
+    document.getElementById("btn-save-identidad").addEventListener("click", async () => {
+      const msg = document.getElementById("cfg-identidad-msg");
+      try {
+        await db.collection("sistema_config").doc("principal").set({
+          nombre_erp: document.getElementById("cfg-nombre-erp").value.trim(),
+          slogan: document.getElementById("cfg-slogan").value.trim(),
+          whatsapp: document.getElementById("cfg-whatsapp").value.trim(),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge: true});
+        msg.style.color = "var(--c-accent)";
+        msg.textContent = "✓ Identidad guardada";
+        setTimeout(() => msg.textContent = "", 2000);
+      } catch(e) { msg.style.color = "var(--c-danger)"; msg.textContent = "Error: " + e.message; }
+    });
+
+    // Guardar valores legales
+    document.getElementById("btn-save-valores").addEventListener("click", async () => {
+      const msg = document.getElementById("cfg-valores-msg");
+      try {
+        await db.collection("sistema_config").doc("principal").set({
+          imm: parseFloat(document.getElementById("cfg-imm").value)||510966,
+          uf: parseFloat(document.getElementById("cfg-uf").value)||38500,
+          tope_uf: parseFloat(document.getElementById("cfg-tope-uf").value)||78,
+          tope_gratif: parseFloat(document.getElementById("cfg-tope-grat").value)||202196,
+          seg_cesantia: parseFloat(document.getElementById("cfg-seg-ces").value)||0.6,
+          iva_pct: parseFloat(document.getElementById("cfg-iva").value)||19,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge: true});
+        msg.style.color = "var(--c-accent)";
+        msg.textContent = "✓ Valores legales guardados. Se aplicarán en los próximos cálculos.";
+        setTimeout(() => msg.textContent = "", 3000);
+      } catch(e) { msg.style.color = "var(--c-danger)"; msg.textContent = "Error: " + e.message; }
+    });
+
+    // Guardar planes y precios
+    document.getElementById("btn-save-planes").addEventListener("click", async () => {
+      const msg = document.getElementById("cfg-planes-msg");
+      try {
+        await db.collection("sistema_config").doc("principal").set({
+          plan_demo_precio: parseFloat(document.getElementById("cfg-precio-demo").value)||0,
+          plan_demo_desc: document.getElementById("cfg-desc-demo").value.trim(),
+          plan_basico_precio: parseFloat(document.getElementById("cfg-precio-basico").value)||0,
+          plan_basico_desc: document.getElementById("cfg-desc-basico").value.trim(),
+          plan_completo_precio: parseFloat(document.getElementById("cfg-precio-completo").value)||0,
+          plan_completo_desc: document.getElementById("cfg-desc-completo").value.trim(),
+          plan_premium_precio: parseFloat(document.getElementById("cfg-precio-premium").value)||0,
+          plan_premium_desc: document.getElementById("cfg-desc-premium").value.trim(),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge: true});
+        msg.style.color = "var(--c-accent)";
+        msg.textContent = "✓ Planes y precios guardados";
+        setTimeout(() => msg.textContent = "", 2000);
+      } catch(e) { msg.style.color = "var(--c-danger)"; msg.textContent = "Error: " + e.message; }
+    });
+
+    // Guardar textos de documentos
+    document.getElementById("btn-save-formatos").addEventListener("click", async () => {
+      const msg = document.getElementById("cfg-formatos-msg");
+      try {
+        await db.collection("sistema_config").doc("principal").set({
+          texto_liq: document.getElementById("cfg-texto-liq").value.trim(),
+          texto_cont: document.getElementById("cfg-texto-cont").value.trim(),
+          texto_fin: document.getElementById("cfg-texto-fin").value.trim(),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge: true});
+        msg.style.color = "var(--c-accent)";
+        msg.textContent = "✓ Textos guardados. Aparecerán en los próximos documentos.";
+        setTimeout(() => msg.textContent = "", 3000);
+      } catch(e) { msg.style.color = "var(--c-danger)"; msg.textContent = "Error: " + e.message; }
+    });
+
+    // Cargar config al abrir el tab de sistema
+    document.querySelector("[data-cfg='cfg-sistema']")?.addEventListener("click", cargarConfigSistema);
 
   })();
   </script>
