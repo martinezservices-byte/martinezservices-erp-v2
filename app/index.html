@@ -1689,8 +1689,18 @@
     function updateHeaderPlan() {
       const badge = document.getElementById("plan-badge");
       if (!badge) return;
-      const plan = STATE.tenantData?.plan || "—";
-      badge.textContent = `Plan ${plan}`;
+      // Solo mostrar "Superadmin" a la dueña real
+      if (isSuperadmin()) {
+        badge.textContent = "Plan Superadmin";
+        badge.style.background = "rgba(46,168,79,0.2)";
+        badge.style.color = "var(--c-accent)";
+      } else {
+        const plan = STATE.tenantData?.plan || "Demo";
+        const planLabel = {demo:"Demo", basico:"Básico", completo:"Completo", premium:"Premium"}[plan?.toLowerCase()] || plan;
+        badge.textContent = "Plan " + planLabel;
+        badge.style.background = "rgba(14,165,233,0.15)";
+        badge.style.color = "#0ea5e9";
+      }
     }
 
     async function loadEntities(uid) {
@@ -3540,7 +3550,7 @@ Clave: ${clavePortal}`);
       const snap = await db.collection("empleados").where("entityId","==",empId).orderBy("nombre").get();
       const tb = document.getElementById("tbl-emp-tbody");
       let total=0, activos=0, masa=0, conContrato=0;
-      if (snap.empty) { tb.innerHTML = emptyRow(8); }
+      if (snap.empty) { tb.innerHTML = emptyRow(8, "Sin trabajadores registrados. Haz clic en '+ Agregar Trabajador' para comenzar."); }
       else {
         tb.innerHTML = "";
         snap.forEach(d => {
@@ -8566,8 +8576,8 @@ Si necesita clave, edita el cliente y agrega una.`;
       const cargarHaberes = async () => {
         if (!empId) return;
         const filtro = document.getElementById("haber-filtro-tipo").value;
-        let query = db.collection("haberes_descuentos").where("entityId","==",empId).orderBy("codigo");
-        const snap = await query.get();
+        // Sin orderBy para evitar error de índice Firestore — ordenamos en memoria
+        const snap = await db.collection("haberes_descuentos").where("entityId","==",empId).get();
         const tb = document.getElementById("tbl-hab-tbody");
         if (snap.empty) {
           tb.innerHTML = emptyRow(9, "Sin conceptos registrados. Haz clic en 'Cargar Plan Estándar Chile' para comenzar.");
@@ -8575,8 +8585,12 @@ Si necesita clave, edita el cliente y agrega una.`;
         }
         tb.innerHTML = "";
         let total = 0;
-        snap.forEach(d => {
-          const r = d.data();
+        // Ordenar por código en memoria
+        const docs = [];
+        snap.forEach(d => docs.push({id:d.id, ...d.data()}));
+        docs.sort((a,b) => (a.codigo||"").localeCompare(b.codigo||"", undefined, {numeric:true}));
+        docs.forEach(r => {
+          const d = {id:r.id};
           if (filtro && r.tipo !== filtro) return;
           total++;
           const tipoCls = r.tipo === "haber" ? "green" : "danger";
@@ -8592,9 +8606,9 @@ Si necesita clave, edita el cliente y agrega una.`;
             "<td style='text-align:center'>" + (r.lre ? si : no) + "</td>" +
             "<td><span class='badge badge-" + (r.activo !== false ? "green" : "gray") + "'>" + (r.activo !== false ? "Activo" : "Inactivo") + "</span></td>" +
             "<td style='white-space:nowrap'>" +
-              "<button onclick='editHaber(\"" + d.id + "\")' style='background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;'>✏️</button>" +
-              "<button onclick='toggleHaber(\"" + d.id + "\"," + (r.activo !== false) + ",\"" + empId + "\")' style='background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;'>" + (r.activo !== false ? "⛔" : "✅") + "</button>" +
-              "<button onclick='deleteHaber(\"" + d.id + "\",\"" + empId + "\")' style='background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;'>🗑</button>" +
+              "<button onclick='editHaber(\"" + r.id + "\")' style='background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;'>✏️</button>" +
+              "<button onclick='toggleHaber(\"" + r.id + "\"," + (r.activo !== false) + ",\"" + empId + "\")' style='background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;'>" + (r.activo !== false ? "⛔" : "✅") + "</button>" +
+              "<button onclick='deleteHaber(\"" + r.id + "\",\"" + empId + "\")' style='background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;'>🗑</button>" +
             "</td>" +
             "</tr>";
         });
