@@ -1565,22 +1565,77 @@
           <!-- SECCIÓN: TEXTOS Y FORMATOS -->
           <div id="cfg-formatos" class="cfg-section" style="display:none;">
             <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
-              <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--c-accent);">📄 Textos de Documentos</h3>
-              <p style="font-size:12px;color:var(--c-muted);margin-bottom:14px;">Personaliza los textos legales que aparecen en los documentos generados por el sistema.</p>
-              <div style="margin-bottom:12px;">
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Texto pie de página — Liquidaciones</label>
-                <textarea id="cfg-texto-liq" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">Recibí conforme el alcance líquido de la presente liquidación, no teniendo cargo o cobro alguno que hacer por otro concepto.</textarea>
+              <h3 style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--c-accent);">📄 Configuración de Documentos Legales</h3>
+              <p style="font-size:12px;color:var(--c-muted);margin-bottom:16px;">Edita los textos, cláusulas y datos que aparecen en todos los documentos generados por el sistema.</p>
+
+              <!-- TABS DENTRO DE FORMATOS -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
+                <button onclick="cfgFmtTab('liq')" id="cfgfmt-liq" class="btn-entrar" style="font-size:11px;padding:7px 14px;">📑 Liquidaciones</button>
+                <button onclick="cfgFmtTab('cont')" id="cfgfmt-cont" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">📝 Contratos</button>
+                <button onclick="cfgFmtTab('vac')" id="cfgfmt-vac" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">🏖️ Vacaciones</button>
+                <button onclick="cfgFmtTab('perm')" id="cfgfmt-perm" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">📅 Permisos</button>
+                <button onclick="cfgFmtTab('custom')" id="cfgfmt-custom" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">➕ Nuevo Documento</button>
               </div>
-              <div style="margin-bottom:12px;">
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Texto legal — Contratos</label>
-                <textarea id="cfg-texto-cont" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente contrato se rige por el Código del Trabajo de Chile y demás leyes vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.</textarea>
+
+              <!-- LIQUIDACIONES -->
+              <div id="cfgfmt-sec-liq">
+                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Textos de la Liquidación de Sueldo</div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Cláusula de conformidad (firma trabajador)</label>
+                <textarea id="cfg-texto-liq" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">Recibí conforme el alcance líquido de la presente liquidación, no teniendo cargo o cobro alguno que hacer por otro concepto.</textarea></div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Pie de página / nota legal</label>
+                <textarea id="cfg-pie-liq" rows="2" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">Liquidación generada automáticamente por Martinez Services ERP. Valor UF y UTM según Previred del mes.</textarea></div>
               </div>
-              <div style="margin-bottom:12px;">
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Texto legal — Finiquitos</label>
-                <textarea id="cfg-texto-fin" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo. La firma del presente instrumento implica la aceptación de todas las estipulaciones contenidas en él.</textarea>
+
+              <!-- CONTRATOS -->
+              <div id="cfgfmt-sec-cont" style="display:none;">
+                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Cláusulas del Contrato Individual de Trabajo</div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Cláusula de Jornada (reemplaza el texto por defecto)</label>
+                <textarea id="cfg-clausula-jornada" rows="2" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">La jornada de trabajo será de 45 horas semanales, distribuidas de lunes a viernes de 08:00 a 18:00 hrs, con 1 hora de colación de cargo del trabajador.</textarea></div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Cláusula legal final</label>
+                <textarea id="cfg-texto-cont" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente contrato se rige por el Código del Trabajo de Chile y demás leyes vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.</textarea></div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Cláusulas adicionales opcionales (se agregan al final)</label>
+                <textarea id="cfg-clausulas-extra" rows="4" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;" placeholder="Ej: SEXTO — Confidencialidad: El trabajador se obliga a guardar reserva..."></textarea></div>
               </div>
-              <button id="btn-save-formatos" class="btn-entrar" style="width:100%;">💾 Guardar Textos</button>
-              <p id="cfg-formatos-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+
+              <!-- VACACIONES -->
+              <div id="cfgfmt-sec-vac" style="display:none;">
+                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Texto del Comprobante de Vacaciones</div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Encabezado legal</label>
+                <textarea id="cfg-texto-vac" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">Comprobante de vacaciones emitido de conformidad al Artículo 67 del Código del Trabajo de Chile. El trabajador tiene derecho a 15 días hábiles de vacaciones anuales, acumulando 1.25 días por mes trabajado.</textarea></div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Nota al pie</label>
+                <textarea id="cfg-pie-vac" rows="2" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">Solo se cuentan días hábiles (lunes a viernes, excluyendo feriados legales de Chile).</textarea></div>
+              </div>
+
+              <!-- PERMISOS -->
+              <div id="cfgfmt-sec-perm" style="display:none;">
+                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Texto del Comprobante de Permiso</div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Texto de autorización</label>
+                <textarea id="cfg-texto-perm" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">La empresa autoriza el permiso solicitado por el trabajador, de conformidad a lo acordado entre las partes y según las normas internas de la organización.</textarea></div>
+                <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Texto finiquito / anticipos (opcional)</label>
+                <textarea id="cfg-texto-fin" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo. La firma implica la aceptación de todas las estipulaciones contenidas en él.</textarea></div>
+              </div>
+
+              <!-- NUEVO DOCUMENTO PERSONALIZADO -->
+              <div id="cfgfmt-sec-custom" style="display:none;">
+                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Crear Nuevo Tipo de Documento Legal</div>
+                <p style="font-size:12px;color:var(--c-muted);margin-bottom:12px;">Define un documento personalizado (Anexo de Confidencialidad, Carta de Amonestación, Protocolo, etc.) que podrá generar en PDF desde las fichas del personal.</p>
+                <div id="lista-docs-custom" style="margin-bottom:14px;"></div>
+                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
+                  <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:12px;">➕ Agregar Nuevo Tipo de Documento</div>
+                  <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Nombre del documento</label>
+                  <input id="custom-doc-nombre" type="text" placeholder="Ej: Carta de Amonestación, Anexo Confidencialidad..." style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"></div>
+                  <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Contenido / cuerpo del documento</label>
+                  <div style="font-size:10px;color:var(--c-muted);margin-bottom:4px;">Variables disponibles: <code>{{nombre}}</code> <code>{{rut}}</code> <code>{{cargo}}</code> <code>{{empresa}}</code> <code>{{fecha}}</code> <code>{{ciudad}}</code></div>
+                  <textarea id="custom-doc-cuerpo" rows="8" placeholder="En {{ciudad}}, a {{fecha}}, la empresa {{empresa}} notifica a don/ña {{nombre}}, RUT {{rut}}, cargo {{cargo}}, lo siguiente:&#10;&#10;[ESCRIBE AQUÍ EL CUERPO DEL DOCUMENTO]&#10;&#10;Se firma en conformidad." style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea></div>
+                  <button id="btn-save-custom-doc" class="btn-entrar" style="width:100%;">💾 Guardar Tipo de Documento</button>
+                  <p id="custom-doc-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+                </div>
+              </div>
+
+              <div style="margin-top:16px;border-top:1px solid var(--c-border);padding-top:14px;">
+                <button id="btn-save-formatos" class="btn-entrar" style="width:100%;">💾 Guardar Configuración de Documentos</button>
+                <p id="cfg-formatos-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+              </div>
             </div>
           </div>
 
@@ -4749,6 +4804,7 @@ Clave: ${clavePortal}`);
           <td>
             <button onclick="aprobarVac('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">✓</button>
             <button onclick="rechazarVac('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">✗</button>
+            <button onclick="imprimirComprobanteVac('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;" title="Comprobante PDF">🖨️</button>
             <button onclick="deleteVac('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
           </td>
         </tr>`;
@@ -7230,8 +7286,8 @@ Si necesita clave, edita el cliente y agrega una.`;
     // Login propio → detecta empId automáticamente → datos reales
     // ═══════════════════════════════════════════════════════════════
 
-    // ── CSS DEL PORTAL ──
-    (function() {
+    // ── CSS DEL PORTAL — se inyecta cuando se necesita ──
+    function pc2InjectCSS() {
       if (document.getElementById("css-pc-v2")) return;
       const st = document.createElement("style");
       st.id = "css-pc-v2";
@@ -7335,7 +7391,6 @@ Si necesita clave, edita el cliente y agrega una.`;
         .pc2-sec { display:none; }
         .pc2-sec.on { display:block; }
         .pc2-empty { text-align:center; padding:24px 12px; color:#9ca3af; font-size:12px; }
-        /* MODAL bottom-sheet */
         .pc2-sheet-bg { position:fixed; inset:0; background:rgba(0,0,0,0.45);
           z-index:2000; display:flex; align-items:flex-end; justify-content:center; }
         .pc2-sheet { background:#fff; border-radius:20px 20px 0 0;
@@ -7351,129 +7406,133 @@ Si necesita clave, edita el cliente y agrega una.`;
           border:1px solid #e5e7eb; color:#111; font-size:14px;
           padding:11px 12px; border-radius:10px; outline:none; margin-bottom:10px; }
         .pc2-msg { font-size:11px; text-align:center; min-height:14px; color:#dc2626; }
+        @keyframes pc2spin { to { transform:rotate(360deg); } }
         @media(max-width:480px){.pc2-wrap,.pc2-bottom-nav{max-width:100%;}}
       `;
       document.head.appendChild(st);
-    })();
+    }
 
     // ── FUNCIÓN PRINCIPAL DEL PORTAL ──
     async function renderPortalTrabajador(zone, user) {
+      pc2InjectCSS(); // inyectar CSS siempre
+
       // Ocultar sidebar/header del ERP
       const sidebar = document.getElementById("module-sidebar");
       if (sidebar) sidebar.style.display = "none";
       const mc = document.getElementById("module-content");
       if (mc) { mc.style.padding = "0"; mc.style.background = "#f4f6f8"; mc.style.overflow = "auto"; }
 
-      // Mostrar pantalla de carga
+      // Pantalla de carga
       zone.innerHTML = `<div style="min-height:100vh;background:#1b4332;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;">
-        <div style="width:42px;height:42px;border:4px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="width:40px;height:40px;border:4px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:pc2spin 0.8s linear infinite;"></div>
         <div style="color:#fff;font-size:13px;font-weight:700;">Cargando tu portal…</div>
-        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
       </div>`;
 
-      // ── Buscar ficha por correo (campo correo_portal o correo) ──
-      let empSnap = await db.collection("empleados")
-        .where("correo_portal","==", user.email.toLowerCase()).limit(1).get();
-      if (empSnap.empty) {
-        empSnap = await db.collection("empleados")
-          .where("correo","==", user.email.toLowerCase()).limit(1).get();
-      }
-
-      if (empSnap.empty) {
-        zone.innerHTML = `<div style="min-height:100vh;background:#1b4332;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;">
-          <div style="font-size:52px;margin-bottom:16px">🔒</div>
-          <h2 style="color:#fff;font-size:18px;margin-bottom:8px">Correo no vinculado</h2>
-          <p style="color:rgba(255,255,255,0.7);font-size:13px;max-width:300px;line-height:1.6">
-            Tu correo <strong style="color:#fff">${user.email}</strong> no está asignado a ninguna ficha.<br>
-            Contacta al área de RRHH para que activen tu acceso.
-          </p>
-          <button onclick="auth.signOut()" style="margin-top:28px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:13px;font-weight:700;padding:12px 28px;border-radius:24px;cursor:pointer;">Cerrar Sesión</button>
-        </div>`;
-        return;
-      }
-
-      const empDoc   = empSnap.docs[0];
-      const empDocId = empDoc.id;
-      const emp      = empDoc.data();
-      const empId    = emp.entityId || "";
-      const fmt      = n => "$" + Math.round(n||0).toLocaleString("es-CL");
-      const fmtF     = s => s ? new Date(s+"T12:00:00").toLocaleDateString("es-CL",{day:"2-digit",month:"2-digit",year:"numeric"}) : "—";
-
-      // Actualizar último acceso
-      db.collection("empleados").doc(empDocId)
-        .update({ ultimo_acceso_portal: new Date().toLocaleString("es-CL") }).catch(()=>{});
-
-      // ── Nombre empresa ──
-      let empresaNombre = "";
       try {
-        const eDoc = await db.collection("empresas").doc(empId).get();
-        if (eDoc.exists) empresaNombre = eDoc.data().nombre || "";
-        if (!empresaNombre) {
-          const cDoc = await db.collection("condominios").doc(empId).get();
-          if (cDoc.exists) empresaNombre = cDoc.data().nombre || "";
+        // ── Buscar ficha por correo ──
+        let empSnap = await db.collection("empleados")
+          .where("correo_portal","==", user.email.toLowerCase()).limit(1).get();
+        if (empSnap.empty) {
+          empSnap = await db.collection("empleados")
+            .where("correo","==", user.email.toLowerCase()).limit(1).get();
         }
-      } catch(e) {}
-      if (!empresaNombre) empresaNombre = empId;
 
-      // ── Cargar todos los datos en paralelo ──
-      const [remSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
-        db.collection("remuneraciones").where("empleado_id","==",empDocId)
-          .orderBy("periodo","desc").limit(12).get(),
-        db.collection("vacaciones").where("empleado_id","==",empDocId)
-          .orderBy("creado","desc").limit(20).get(),
-        db.collection("permisos").where("empleado_id","==",empDocId)
-          .orderBy("creado","desc").limit(10).get(),
-        db.collection("anticipos").where("empleado_id","==",empDocId)
-          .orderBy("creado","desc").limit(10).get(),
-      ]);
+        if (empSnap.empty) {
+          zone.innerHTML = `<div style="min-height:100vh;background:#1b4332;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;">
+            <div style="font-size:52px;margin-bottom:16px">🔒</div>
+            <h2 style="color:#fff;font-size:18px;margin-bottom:8px">Correo no vinculado</h2>
+            <p style="color:rgba(255,255,255,0.7);font-size:13px;max-width:300px;line-height:1.6">
+              Tu correo <strong style="color:#fff">${user.email}</strong> no está asignado a ninguna ficha.<br>Contacta al área de RRHH.
+            </p>
+            <button onclick="auth.signOut()" style="margin-top:28px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:13px;font-weight:700;padding:12px 28px;border-radius:24px;cursor:pointer;">Cerrar Sesión</button>
+          </div>`;
+          return;
+        }
 
-      // ── Calcular días de vacaciones ──
-      let diasAcum = 0, diasUsados = 0;
-      if (emp.fecha_ingreso) {
-        const hoy = new Date();
-        const ing = new Date(emp.fecha_ingreso + "T12:00:00");
-        const mesesTrab = Math.max(0, (hoy.getFullYear()-ing.getFullYear())*12 + (hoy.getMonth()-ing.getMonth()));
-        diasAcum = Math.floor(mesesTrab * 1.25);
-      }
-      vacSnap.forEach(d => {
-        const r = d.data();
-        if ((r.tipo==="vacaciones"||r.tipo==="Vacaciones Legales") && r.estado==="aprobada")
-          diasUsados += (r.dias_solicitados||0);
-      });
-      const diasDisp = Math.max(0, diasAcum - diasUsados);
+        const empDoc   = empSnap.docs[0];
+        const empDocId = empDoc.id;
+        const emp      = empDoc.data();
+        const empId    = emp.entityId || "";
+        const fmt      = n => "$" + Math.round(n||0).toLocaleString("es-CL");
+        const fmtF     = s => {
+          if (!s) return "—";
+          try { return new Date(s+"T12:00:00").toLocaleDateString("es-CL",{day:"2-digit",month:"2-digit",year:"numeric"}); } catch(e){ return s; }
+        };
 
-      // ── Última liquidación ──
-      const ultimaLiq = remSnap.empty ? null : remSnap.docs[0].data();
-      const mesActual = new Date().toLocaleDateString("es-CL",{month:"long",year:"numeric"});
-      const inicial   = (emp.nombre||"?").charAt(0).toUpperCase();
+        // Actualizar último acceso (sin await para no bloquear)
+        db.collection("empleados").doc(empDocId)
+          .update({ ultimo_acceso_portal: new Date().toLocaleString("es-CL") }).catch(()=>{});
 
-      // ── Armar listas HTML ──
+        // ── Nombre empresa ──
+        let empresaNombre = empId;
+        try {
+          const eDoc = await db.collection("empresas").doc(empId).get();
+          if (eDoc.exists) empresaNombre = eDoc.data().nombre || empId;
+          else {
+            const cDoc = await db.collection("condominios").doc(empId).get();
+            if (cDoc.exists) empresaNombre = cDoc.data().nombre || empId;
+          }
+        } catch(e) {}
 
-      // Liquidaciones (inicio — últimas 2)
-      let liqsInicioHtml = "";
-      if (remSnap.empty) {
-        liqsInicioHtml = `<div class="pc2-empty">Sin liquidaciones registradas</div>`;
-      } else {
-        remSnap.docs.slice(0,2).forEach(d => {
+        // ── Cargar datos SIN orderBy para evitar errores de índice ──
+        const [remSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
+          db.collection("remuneraciones").where("empleado_id","==",empDocId).limit(12).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("vacaciones").where("empleado_id","==",empDocId).limit(20).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("permisos").where("empleado_id","==",empDocId).limit(10).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("anticipos").where("empleado_id","==",empDocId).limit(10).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+        ]);
+
+        // ── Calcular días de vacaciones ──
+        let diasAcum = 0, diasUsados = 0;
+        if (emp.fecha_ingreso) {
+          try {
+            const hoy = new Date();
+            const ing = new Date(emp.fecha_ingreso + "T12:00:00");
+            const mesesTrab = Math.max(0, (hoy.getFullYear()-ing.getFullYear())*12 + (hoy.getMonth()-ing.getMonth()));
+            diasAcum = Math.floor(mesesTrab * 1.25);
+          } catch(e) {}
+        }
+        vacSnap.forEach(d => {
           const r = d.data();
-          liqsInicioHtml += `<div class="pc2-liq-row">
+          if ((r.tipo==="vacaciones"||r.tipo==="Vacaciones Legales") && r.estado==="aprobada")
+            diasUsados += (r.dias_solicitados||0);
+        });
+        const diasDisp = Math.max(0, diasAcum - diasUsados);
+
+        // ── Ordenar liquidaciones por periodo desc ──
+        const remDocs = [];
+        remSnap.forEach(d => remDocs.push({id:d.id,...d.data()}));
+        remDocs.sort((a,b)=>(b.periodo||"").localeCompare(a.periodo||""));
+        const ultimaLiq = remDocs.length ? remDocs[0] : null;
+        const mesActual = new Date().toLocaleDateString("es-CL",{month:"long",year:"numeric"});
+        const inicial   = (emp.nombre||"?").charAt(0).toUpperCase();
+
+        // ── Ordenar vacaciones/permisos/anticipos por fecha desc ──
+        const vacDocs=[], permDocs=[], anticDocs=[];
+        vacSnap.forEach(d=>vacDocs.push({id:d.id,...d.data()}));
+        permSnap.forEach(d=>permDocs.push({id:d.id,...d.data()}));
+        anticSnap.forEach(d=>anticDocs.push({id:d.id,...d.data()}));
+        vacDocs.sort((a,b)=>(b.desde||"").localeCompare(a.desde||""));
+        permDocs.sort((a,b)=>(b.desde||"").localeCompare(a.desde||""));
+        anticDocs.sort((a,b)=>((b.creado?.seconds||0)-(a.creado?.seconds||0)));
+
+        // ── HTML helpers ──
+        const badgeCls = e => e==="aprobada"?"pc2-badge-ok":e==="rechazada"?"pc2-badge-rech":"pc2-badge-pend";
+
+        // Liquidaciones inicio (últimas 2)
+        let liqsInicioHtml = remDocs.length ? remDocs.slice(0,2).map(r=>`
+          <div class="pc2-liq-row">
             <div><div class="pc2-liq-per">${r.periodo||"—"}</div>
             <div class="pc2-liq-sub">${r.cargo||emp.cargo||"—"}</div></div>
             <div style="text-align:right">
               <div class="pc2-liq-val">${fmt(r.liquido_pagar)}</div>
               <span class="pc2-badge-ok">Pagada</span>
-            </div></div>`;
-        });
-      }
+            </div></div>`).join("")
+          : `<div class="pc2-empty">Sin liquidaciones registradas</div>`;
 
-      // Liquidaciones (sección completa)
-      let liqsHtml = "";
-      if (remSnap.empty) {
-        liqsHtml = `<div class="pc2-empty">Sin liquidaciones registradas aún</div>`;
-      } else {
-        remSnap.forEach(d => {
-          const r = d.data();
-          liqsHtml += `<div class="pc2-liq-row">
+        // Liquidaciones completas
+        let liqsHtml = remDocs.length ? remDocs.map(r=>`
+          <div class="pc2-liq-row">
             <div>
               <div class="pc2-liq-per">${r.periodo||"—"}</div>
               <div class="pc2-liq-sub">Haberes: ${fmt(r.total_haberes)} · Desc: ${fmt(r.total_descuentos)}</div>
@@ -7482,254 +7541,214 @@ Si necesita clave, edita el cliente y agrega una.`;
               <div class="pc2-liq-val">${fmt(r.liquido_pagar)}</div>
               <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:3px">
                 <span class="pc2-badge-ok">Pagada</span>
-                <button onclick="pc2ImprimirLiq('${d.id}','${empDocId}','${empId}')"
+                <button onclick="pc2ImprimirLiq('${r.id}','${empDocId}','${empId}')"
                   style="background:#f0fdf4;border:1px solid #bbf7d0;color:#1b4332;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;cursor:pointer;">📄 PDF</button>
               </div>
-            </div></div>`;
-        });
-      }
+            </div></div>`).join("")
+          : `<div class="pc2-empty">Sin liquidaciones registradas aún</div>`;
 
-      // Vacaciones historial
-      let vacsHtml = "";
-      const vacsArr = []; vacSnap.forEach(d => vacsArr.push({id:d.id,...d.data()}));
-      if (!vacsArr.length) {
-        vacsHtml = `<div class="pc2-empty">Sin solicitudes previas</div>`;
-      } else {
-        vacsArr.slice(0,5).forEach(r => {
-          const bc = r.estado==="aprobada"?"pc2-badge-ok":r.estado==="rechazada"?"pc2-badge-rech":"pc2-badge-pend";
-          vacsHtml += `<div class="pc2-sol-card">
+        // Vacaciones
+        let vacsHtml = vacDocs.length ? vacDocs.slice(0,6).map(r=>`
+          <div class="pc2-sol-card">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <div><div class="pc2-sol-titulo">Vacaciones · ${r.dias_solicitados||0} días hábiles</div>
+              <div><div class="pc2-sol-titulo">🏖️ ${r.dias_solicitados||0} días hábiles</div>
               <div class="pc2-sol-fecha">${fmtF(r.desde)} → ${fmtF(r.hasta)}</div></div>
-              <span class="${bc}">${r.estado||"pendiente"}</span>
-            </div></div>`;
-        });
-      }
+              <span class="${badgeCls(r.estado)}">${r.estado||"pendiente"}</span>
+            </div></div>`).join("")
+          : `<div class="pc2-empty">Sin solicitudes previas</div>`;
 
-      // Permisos
-      let permHtml = "";
-      const permArr = []; permSnap.forEach(d => permArr.push({id:d.id,...d.data()}));
-      if (!permArr.length) {
-        permHtml = `<div class="pc2-empty">Sin solicitudes previas</div>`;
-      } else {
-        permArr.slice(0,5).forEach(r => {
-          const bc = r.estado==="aprobada"?"pc2-badge-ok":r.estado==="rechazada"?"pc2-badge-rech":"pc2-badge-pend";
-          permHtml += `<div class="pc2-sol-card">
+        // Permisos
+        let permHtml = permDocs.length ? permDocs.slice(0,6).map(r=>`
+          <div class="pc2-sol-card">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div><div class="pc2-sol-titulo">${r.tipo||"Permiso"}</div>
               <div class="pc2-sol-fecha">${fmtF(r.desde)} → ${fmtF(r.hasta)}${r.motivo?" · "+r.motivo:""}</div></div>
-              <span class="${bc}">${r.estado||"pendiente"}</span>
-            </div></div>`;
-        });
-      }
+              <span class="${badgeCls(r.estado)}">${r.estado||"pendiente"}</span>
+            </div></div>`).join("")
+          : `<div class="pc2-empty">Sin solicitudes previas</div>`;
 
-      // Anticipos
-      let anticHtml = "";
-      const anticArr = []; anticSnap.forEach(d => anticArr.push({id:d.id,...d.data()}));
-      if (!anticArr.length) {
-        anticHtml = `<div class="pc2-empty">Sin solicitudes previas</div>`;
-      } else {
-        anticArr.slice(0,5).forEach(r => {
-          const bc = r.estado==="aprobada"?"pc2-badge-ok":r.estado==="rechazada"?"pc2-badge-rech":"pc2-badge-pend";
-          anticHtml += `<div class="pc2-sol-card">
+        // Anticipos
+        let anticHtml = anticDocs.length ? anticDocs.slice(0,6).map(r=>`
+          <div class="pc2-sol-card">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div><div class="pc2-sol-titulo">${fmt(r.monto||0)}</div>
               <div class="pc2-sol-fecha">${r.motivo||"Sin motivo"}</div></div>
-              <span class="${bc}">${r.estado||"pendiente"}</span>
-            </div></div>`;
-        });
+              <span class="${badgeCls(r.estado)}">${r.estado||"pendiente"}</span>
+            </div></div>`).join("")
+          : `<div class="pc2-empty">Sin solicitudes previas</div>`;
+
+        // Perfil
+        const perfilRows = [
+          ["RUT", emp.rut], ["Cargo", emp.cargo],
+          ["Fecha ingreso", fmtF(emp.fecha_ingreso)], ["Tipo contrato", emp.tipo_contrato],
+          ["Sueldo base", fmt(emp.sueldo_base)], ["AFP", emp.afp], ["Salud", emp.salud],
+          ["Dirección", emp.direccion], ["Teléfono", emp.telefono], ["Correo", emp.correo||user.email],
+        ].filter(f=>f[1]).map(([k,v])=>
+          `<div class="pc2-perfil-row"><span class="pc2-pl">${k}</span><span class="pc2-pv">${v}</span></div>`
+        ).join("") || `<div class="pc2-empty">Sin datos en la ficha</div>`;
+
+        // ── RENDER ──
+        zone.innerHTML = `
+        <div class="pc2-wrap" id="pc2-app">
+          <div class="pc2-header">
+            <div class="pc2-header-row">
+              <div>
+                <div class="pc2-empresa">${empresaNombre}</div>
+                <div class="pc2-nombre">${emp.nombre||"—"}</div>
+                <div class="pc2-rol">Colaborador</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                <div class="pc2-avatar">${inicial}</div>
+                <button class="pc2-salir" onclick="auth.signOut()">Salir</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pc2-body">
+
+            <!-- INICIO -->
+            <div id="pc2-sec-inicio" class="pc2-sec on">
+              <div class="pc2-card">
+                <div class="pc2-card-hdr">
+                  <span class="pc2-card-title">💰 Mi Sueldo</span>
+                  <button class="pc2-ver-todo" onclick="pc2Nav('liquidaciones')">Ver historial ›</button>
+                </div>
+                <div class="pc2-sueldo-grid">
+                  <div class="pc2-sueldo-box">
+                    <div class="pc2-sueldo-val">${ultimaLiq ? fmt(ultimaLiq.liquido_pagar) : "$0"}</div>
+                    <div class="pc2-sueldo-lbl">Sueldo Líquido</div>
+                  </div>
+                  <div class="pc2-sueldo-box">
+                    <div class="pc2-sueldo-val">${ultimaLiq ? fmt(ultimaLiq.total_haberes) : "$0"}</div>
+                    <div class="pc2-sueldo-lbl">Sueldo Bruto</div>
+                  </div>
+                </div>
+                <div class="pc2-sueldo-mes">${ultimaLiq ? "Período: "+ultimaLiq.periodo : mesActual}</div>
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-icon-grid">
+                  <button class="pc2-icon-btn" onclick="pc2Nav('liquidaciones')"><span class="pc2-icon-ico">📑</span><span class="pc2-icon-lbl">Liquidaciones</span></button>
+                  <button class="pc2-icon-btn" onclick="pc2Nav('vacaciones')"><span class="pc2-icon-ico">🏖️</span><span class="pc2-icon-lbl">Vacaciones</span></button>
+                  <button class="pc2-icon-btn" onclick="pc2Nav('permisos')"><span class="pc2-icon-ico">📅</span><span class="pc2-icon-lbl">Permisos</span></button>
+                  <button class="pc2-icon-btn" onclick="pc2Nav('perfil')"><span class="pc2-icon-ico">👤</span><span class="pc2-icon-lbl">Mi Perfil</span></button>
+                </div>
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-card-hdr">
+                  <span class="pc2-card-title">📋 Últimas Liquidaciones</span>
+                  <button class="pc2-ver-todo" onclick="pc2Nav('liquidaciones')">Ver todo ›</button>
+                </div>
+                ${liqsInicioHtml}
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:10px">🏖️ Mis Vacaciones</div>
+                ${emp.fecha_ingreso
+                  ? `<div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="font-size:13px;color:#6b7280">Días disponibles</span>
+                      <span style="font-size:24px;font-weight:900;color:#1b4332">${diasDisp}</span>
+                    </div>`
+                  : `<div class="pc2-empty">Sin fecha de ingreso registrada</div>`}
+              </div>
+            </div>
+
+            <!-- LIQUIDACIONES -->
+            <div id="pc2-sec-liquidaciones" class="pc2-sec">
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:14px">📑 Mis Liquidaciones de Sueldo</div>
+                ${liqsHtml}
+              </div>
+            </div>
+
+            <!-- VACACIONES -->
+            <div id="pc2-sec-vacaciones" class="pc2-sec">
+              <div class="pc2-card">
+                <div class="pc2-vac-big">
+                  <div class="pc2-vac-num">${diasDisp}</div>
+                  <div class="pc2-vac-sub">Días disponibles</div>
+                </div>
+                <div class="pc2-detail-row"><span class="pc2-dl">Días legales anuales</span><span class="pc2-dv">15</span></div>
+                <div class="pc2-detail-row"><span class="pc2-dl">Acumulados (1.25 × mes)</span><span class="pc2-dv">${diasAcum}</span></div>
+                <div class="pc2-detail-row"><span class="pc2-dl">Días usados</span><span class="pc2-dv warn">${diasUsados}</span></div>
+                <div class="pc2-detail-row pc2-sep">
+                  <span style="font-weight:800;color:#374151">Días disponibles</span>
+                  <span class="pc2-dv good">${diasDisp}</span>
+                </div>
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:10px">✉️ Solicitar Vacaciones</div>
+                <button class="pc2-btn-main" onclick="pc2FormVac('${empDocId}','${empId}')">+ Nueva Solicitud</button>
+                <span class="pc2-sol-label">SOLICITUDES PREVIAS</span>
+                ${vacsHtml}
+              </div>
+            </div>
+
+            <!-- PERMISOS -->
+            <div id="pc2-sec-permisos" class="pc2-sec">
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:10px">📅 Permisos Administrativos</div>
+                <button class="pc2-btn-main" onclick="pc2FormPerm('${empDocId}','${empId}')">+ Nueva Solicitud</button>
+                <span class="pc2-sol-label">SOLICITUDES PREVIAS</span>
+                ${permHtml}
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:10px">💵 Solicitar Anticipo de Sueldo</div>
+                <button class="pc2-btn-main" onclick="pc2FormAnticipo('${empDocId}','${empId}')">+ Solicitar Anticipo</button>
+                <span class="pc2-sol-label">SOLICITUDES PREVIAS</span>
+                ${anticHtml}
+              </div>
+            </div>
+
+            <!-- PERFIL -->
+            <div id="pc2-sec-perfil" class="pc2-sec">
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:14px">👤 Mi Perfil</div>
+                ${perfilRows}
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:10px">📜 Documentos</div>
+                <button class="pc2-cert-row" onclick="pc2Certificado('${empDocId}','${empId}')">
+                  <span class="pc2-cert-ico">📋</span>
+                  <span><div class="pc2-cert-tit">Certificado de Antigüedad</div>
+                  <div class="pc2-cert-sub">PDF oficial con datos de empresa</div></span>
+                </button>
+                <button class="pc2-btn-sec" onclick="imprimirFichaEmpleado('${empDocId}')">🖨️ Imprimir Mi Ficha Completa</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- BOTTOM NAV -->
+          <nav class="pc2-bottom-nav" id="pc2-nav">
+            <button class="pc2-bn on" id="pc2-bn-inicio" onclick="pc2Nav('inicio')">
+              <span class="pc2-bn-ico">🏠</span><span class="pc2-bn-lbl">Inicio</span>
+            </button>
+            <button class="pc2-bn" id="pc2-bn-liquidaciones" onclick="pc2Nav('liquidaciones')">
+              <span class="pc2-bn-ico">📑</span><span class="pc2-bn-lbl">Liquidaciones</span>
+            </button>
+            <button class="pc2-bn" id="pc2-bn-vacaciones" onclick="pc2Nav('vacaciones')">
+              <span class="pc2-bn-ico">🏖️</span><span class="pc2-bn-lbl">Vacaciones</span>
+            </button>
+            <button class="pc2-bn" id="pc2-bn-permisos" onclick="pc2Nav('permisos')">
+              <span class="pc2-bn-ico">📅</span><span class="pc2-bn-lbl">Permisos</span>
+            </button>
+            <button class="pc2-bn" id="pc2-bn-perfil" onclick="pc2Nav('perfil')">
+              <span class="pc2-bn-ico">👤</span><span class="pc2-bn-lbl">Mi Perfil</span>
+            </button>
+          </nav>
+          <div id="pc2-modal"></div>
+        </div>`;
+
+      } catch(err) {
+        // Si hay cualquier error, mostrar mensaje claro en vez de spinner eterno
+        console.error("Portal error:", err);
+        zone.innerHTML = `<div style="min-height:100vh;background:#1b4332;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+          <h2 style="color:#fff;font-size:16px;margin-bottom:8px">Error al cargar el portal</h2>
+          <p style="color:rgba(255,255,255,0.7);font-size:12px;max-width:320px;line-height:1.6">${err.message||"Error desconocido"}</p>
+          <button onclick="location.reload()" style="margin-top:20px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:13px;font-weight:700;padding:12px 28px;border-radius:24px;cursor:pointer;">🔄 Reintentar</button>
+          <button onclick="auth.signOut()" style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;">Cerrar Sesión</button>
+        </div>`;
       }
-
-      // ── Perfil rows ──
-      const perfilRows = [
-        ["RUT", emp.rut], ["Cargo", emp.cargo],
-        ["Fecha ingreso", fmtF(emp.fecha_ingreso)], ["Tipo contrato", emp.tipo_contrato],
-        ["Sueldo base", fmt(emp.sueldo_base)], ["AFP", emp.afp], ["Salud", emp.salud],
-        ["Dirección", emp.direccion], ["Teléfono", emp.telefono], ["Correo", emp.correo||user.email],
-      ].filter(f => f[1]).map(([k,v]) =>
-        `<div class="pc2-perfil-row"><span class="pc2-pl">${k}</span><span class="pc2-pv">${v}</span></div>`
-      ).join("");
-
-      // ── RENDER PRINCIPAL ──
-      zone.innerHTML = `
-      <div class="pc2-wrap" id="pc2-app">
-
-        <div class="pc2-header">
-          <div class="pc2-header-row">
-            <div>
-              <div class="pc2-empresa">${empresaNombre}</div>
-              <div class="pc2-nombre">${emp.nombre||"—"}</div>
-              <div class="pc2-rol">Colaborador</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-              <div class="pc2-avatar">${inicial}</div>
-              <button class="pc2-salir" onclick="auth.signOut()">Salir</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="pc2-body">
-
-          <!-- ══ SECCIÓN: INICIO ══ -->
-          <div id="pc2-sec-inicio" class="pc2-sec on">
-
-            <div class="pc2-card">
-              <div class="pc2-card-hdr">
-                <span class="pc2-card-title">💰 Mi Sueldo</span>
-                <button class="pc2-ver-todo" onclick="pc2Nav('liquidaciones')">Ver historial ›</button>
-              </div>
-              <div class="pc2-sueldo-grid">
-                <div class="pc2-sueldo-box">
-                  <div class="pc2-sueldo-val">${ultimaLiq ? fmt(ultimaLiq.liquido_pagar) : "$0"}</div>
-                  <div class="pc2-sueldo-lbl">Sueldo Líquido</div>
-                </div>
-                <div class="pc2-sueldo-box">
-                  <div class="pc2-sueldo-val">${ultimaLiq ? fmt(ultimaLiq.total_haberes) : "$0"}</div>
-                  <div class="pc2-sueldo-lbl">Sueldo Bruto</div>
-                </div>
-              </div>
-              <div class="pc2-sueldo-mes">${ultimaLiq ? "Período: " + ultimaLiq.periodo : mesActual}</div>
-            </div>
-
-            <div class="pc2-card">
-              <div class="pc2-icon-grid">
-                <button class="pc2-icon-btn" onclick="pc2Nav('liquidaciones')">
-                  <span class="pc2-icon-ico">📑</span><span class="pc2-icon-lbl">Liquidaciones</span>
-                </button>
-                <button class="pc2-icon-btn" onclick="pc2Nav('vacaciones')">
-                  <span class="pc2-icon-ico">🏖️</span><span class="pc2-icon-lbl">Vacaciones</span>
-                </button>
-                <button class="pc2-icon-btn" onclick="pc2Nav('permisos')">
-                  <span class="pc2-icon-ico">📅</span><span class="pc2-icon-lbl">Permisos</span>
-                </button>
-                <button class="pc2-icon-btn" onclick="pc2Nav('perfil')">
-                  <span class="pc2-icon-ico">👤</span><span class="pc2-icon-lbl">Mi Perfil</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="pc2-card">
-              <div class="pc2-card-hdr">
-                <span class="pc2-card-title">📋 Últimas Liquidaciones</span>
-                <button class="pc2-ver-todo" onclick="pc2Nav('liquidaciones')">Ver todo ›</button>
-              </div>
-              ${liqsInicioHtml}
-            </div>
-
-            <div class="pc2-card">
-              <div class="pc2-card-title" style="margin-bottom:10px">🏖️ Mis Vacaciones</div>
-              ${emp.fecha_ingreso
-                ? `<div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-size:13px;color:#6b7280">Días disponibles</span>
-                    <span style="font-size:24px;font-weight:900;color:#1b4332">${diasDisp}</span>
-                  </div>`
-                : `<div class="pc2-empty">Sin fecha de ingreso registrada</div>`}
-            </div>
-
-          </div><!-- /inicio -->
-
-          <!-- ══ SECCIÓN: LIQUIDACIONES ══ -->
-          <div id="pc2-sec-liquidaciones" class="pc2-sec">
-            <div class="pc2-card">
-              <div class="pc2-card-title" style="margin-bottom:14px">📑 Mis Liquidaciones de Sueldo</div>
-              ${liqsHtml}
-            </div>
-          </div>
-
-          <!-- ══ SECCIÓN: VACACIONES ══ -->
-          <div id="pc2-sec-vacaciones" class="pc2-sec">
-            <div class="pc2-card">
-              <div class="pc2-vac-big">
-                <div class="pc2-vac-num">${diasDisp}</div>
-                <div class="pc2-vac-sub">Días disponibles</div>
-              </div>
-              <div class="pc2-detail-row">
-                <span class="pc2-dl">Días legales anuales</span>
-                <span class="pc2-dv">15</span>
-              </div>
-              <div class="pc2-detail-row">
-                <span class="pc2-dl">Acumulados (1.25 × mes)</span>
-                <span class="pc2-dv">${diasAcum}</span>
-              </div>
-              <div class="pc2-detail-row">
-                <span class="pc2-dl">Días usados</span>
-                <span class="pc2-dv warn">${diasUsados}</span>
-              </div>
-              <div class="pc2-detail-row pc2-sep">
-                <span style="font-weight:800;color:#374151">Días disponibles</span>
-                <span class="pc2-dv good">${diasDisp}</span>
-              </div>
-            </div>
-
-            <div class="pc2-card">
-              <div class="pc2-card-title" style="margin-bottom:10px">✉️ Solicitar Vacaciones</div>
-              <button class="pc2-btn-main" onclick="pc2FormVac('${empDocId}','${empId}')">+ Nueva Solicitud</button>
-              <span class="pc2-sol-label">SOLICITUDES PREVIAS</span>
-              ${vacsHtml}
-            </div>
-          </div>
-
-          <!-- ══ SECCIÓN: PERMISOS ══ -->
-          <div id="pc2-sec-permisos" class="pc2-sec">
-
-            <div class="pc2-card">
-              <div class="pc2-card-title" style="margin-bottom:10px">📅 Permisos Administrativos</div>
-              <button class="pc2-btn-main" onclick="pc2FormPerm('${empDocId}','${empId}')">+ Nueva Solicitud</button>
-              <span class="pc2-sol-label">SOLICITUDES PREVIAS</span>
-              ${permHtml}
-            </div>
-
-            <div class="pc2-card">
-              <div class="pc2-card-title" style="margin-bottom:10px">💵 Solicitar Anticipo de Sueldo</div>
-              <button class="pc2-btn-main" onclick="pc2FormAnticipo('${empDocId}','${empId}')">+ Solicitar Anticipo</button>
-              <span class="pc2-sol-label">SOLICITUDES PREVIAS</span>
-              ${anticHtml}
-            </div>
-
-          </div>
-
-          <!-- ══ SECCIÓN: MI PERFIL ══ -->
-          <div id="pc2-sec-perfil" class="pc2-sec">
-            <div class="pc2-card">
-              <div class="pc2-card-title" style="margin-bottom:14px">👤 Mi Perfil</div>
-              ${perfilRows || `<div class="pc2-empty">Sin datos en la ficha</div>`}
-            </div>
-            <div class="pc2-card">
-              <div class="pc2-card-title" style="margin-bottom:10px">📜 Documentos</div>
-              <button class="pc2-cert-row" onclick="pc2Certificado('${empDocId}','${empId}')">
-                <span class="pc2-cert-ico">📋</span>
-                <span><div class="pc2-cert-tit">Certificado de Antigüedad</div>
-                <div class="pc2-cert-sub">PDF oficial con datos de empresa</div></span>
-              </button>
-              <button class="pc2-btn-sec" onclick="imprimirFichaEmpleado('${empDocId}')">🖨️ Imprimir Mi Ficha Completa</button>
-            </div>
-          </div>
-
-        </div><!-- /body -->
-
-        <!-- BOTTOM NAV -->
-        <nav class="pc2-bottom-nav" id="pc2-nav">
-          <button class="pc2-bn on" id="pc2-bn-inicio" onclick="pc2Nav('inicio')">
-            <span class="pc2-bn-ico">🏠</span><span class="pc2-bn-lbl">Inicio</span>
-          </button>
-          <button class="pc2-bn" id="pc2-bn-liquidaciones" onclick="pc2Nav('liquidaciones')">
-            <span class="pc2-bn-ico">📑</span><span class="pc2-bn-lbl">Liquidaciones</span>
-          </button>
-          <button class="pc2-bn" id="pc2-bn-vacaciones" onclick="pc2Nav('vacaciones')">
-            <span class="pc2-bn-ico">🏖️</span><span class="pc2-bn-lbl">Vacaciones</span>
-          </button>
-          <button class="pc2-bn" id="pc2-bn-permisos" onclick="pc2Nav('permisos')">
-            <span class="pc2-bn-ico">📅</span><span class="pc2-bn-lbl">Permisos</span>
-          </button>
-          <button class="pc2-bn" id="pc2-bn-perfil" onclick="pc2Nav('perfil')">
-            <span class="pc2-bn-ico">👤</span><span class="pc2-bn-lbl">Mi Perfil</span>
-          </button>
-        </nav>
-
-        <div id="pc2-modal"></div>
-
-      </div><!-- /pc2-app -->
-      `;
     } // fin renderPortalTrabajador
 
     // ── Navegación bottom bar ──
@@ -8246,60 +8265,201 @@ Si necesita clave, edita el cliente y agrega una.`;
       if (!d.exists) return;
       const r = d.data();
       const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
-      const fmt = n => '$'+Math.round(n||0).toLocaleString('es-CL');
+      let cfgTextos = {};
+      try { const cd = await db.collection("sistema_config").doc("formatos").get(); if(cd.exists) cfgTextos=cd.data(); } catch(e){}
+      const textoJornada = cfgTextos.clausula_jornada || "La jornada de trabajo será de 45 horas semanales, distribuidas de lunes a viernes de 08:00 a 18:00 hrs, con 1 hora de colación de cargo del trabajador.";
+      const textoCont   = cfgTextos.texto_cont || "El presente contrato se rige por el Código del Trabajo de Chile y demás leyes vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.";
+      const clausulasExtra = cfgTextos.clausulas_extra ? `<h3>Cláusulas Adicionales</h3><p>${cfgTextos.clausulas_extra.replace(/\n/g,"<br>")}</p>` : "";
+      const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
       const tipos = {indefinido:"Indefinido",plazo_fijo:"Plazo Fijo",obra_faena:"Obra o Faena",honorarios:"Honorarios",anexo:"Anexo de Contrato"};
+      const tipoLabel = tipos[r.tipo]||r.tipo||"Indefinido";
       const logoH = empresa.logo_url
-        ? "<img src='" + empresa.logo_url + "' style='height:50px;object-fit:contain;' onerror='this.remove()'>"
-        : "<div style='width:50px;height:50px;background:#1A7A3C;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900'>" + (empresa.nombre||"E").charAt(0) + "</div>";
-      const empNomC = empresa.nombre||"Martinez Services SPA";
-      const empRutC = empresa.rut||"76.782.954-K";
-      const empDirC = empresa.direccion||"Alto Hospicio, Chile";
-      const empCiudC = empresa.ciudad||"Alto Hospicio";
-      const empRepC = empresa.rep_legal_nombre||"Representante Legal";
-      const empRepRutC = empresa.rep_legal_rut||"";
-      const tipoLabel2 = tipos[r.tipo]||r.tipo||"Indefinido";
-      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Contrato " + r.nombre + "</title>" +
-        "<style>body{font-family:'Times New Roman',serif;font-size:12px;padding:40px;max-width:820px;margin:0 auto;line-height:1.8;color:#1a1a1a}" +
-        ".hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:20px}" +
-        "h1{text-align:center;font-size:16px;color:#1A7A3C;text-transform:uppercase;letter-spacing:2px;margin:0 0 4px}" +
-        "h2{text-align:center;font-size:13px;color:#555;margin:0 0 20px;font-weight:normal}" +
-        "h3{color:#1A7A3C;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1.5px solid #1A7A3C;padding-bottom:3px;margin-top:20px;letter-spacing:.5px}" +
-        "p{margin:8px 0;text-align:justify}" +
-        ".firma-box{display:flex;justify-content:space-around;margin-top:70px}" +
-        ".firma{text-align:center;width:42%}.firma-line{border-top:1px solid #333;padding-top:6px;font-size:10px;color:#555;margin-top:50px}" +
-        "@media print{body{padding:16px}@page{size:A4;margin:12mm}}</style></head><body>" +
-        "<div class='hdr'>" + logoH +
-          "<div style='flex:1;text-align:center'>" +
-            "<h1>Contrato Individual de Trabajo</h1>" +
-            "<h2>Tipo: " + tipoLabel2 + "</h2>" +
-          "</div>" +
-          "<div style='text-align:right;font-size:10px;color:#666'>" + empCiudC + ", " + new Date().toLocaleDateString("es-CL") + "</div>" +
-        "</div>" +
-        "<h3>Partes Contratantes</h3>" +
-        "<p>En <strong>" + empCiudC + "</strong>, a <strong>" + new Date().toLocaleDateString("es-CL") + "</strong>, entre:</p>" +
-        "<p><strong>EMPLEADOR:</strong> " + empNomC + ", RUT " + empRutC + ", representada(o) por don/ña <strong>" + empRepC + "</strong>" + (empRepRutC ? ", RUT " + empRepRutC : "") + ", con domicilio en " + empDirC + ", en adelante <em>'el empleador'</em>.</p>" +
-        "<p><strong>TRABAJADOR:</strong> don/ña <strong>" + (r.nombre||"—") + "</strong>, RUT <strong>" + (r.rut||"—") + "</strong>, en adelante <em>'el trabajador'</em>.</p>" +
-        "<p>Se ha convenido el siguiente contrato de trabajo:</p>" +
-        "<h3>Condiciones del Contrato</h3>" +
-        "<p><strong>PRIMERO — Cargo o función:</strong> El trabajador se obliga a desempeñar el cargo de <strong>" + (r.cargo||"—") + "</strong> en " + empNomC + ".</p>" +
-        "<p><strong>SEGUNDO — Lugar de trabajo:</strong> Los servicios se prestarán en " + empDirC + ", sin perjuicio de la facultad del empleador de alterar, por causa justificada, el sitio o recinto, conforme al Art. 12 del Código del Trabajo.</p>" +
-        "<p><strong>TERCERO — Jornada de trabajo:</strong> La jornada de trabajo será de <strong>45 horas semanales</strong>, distribuidas de lunes a viernes de 08:00 a 18:00 hrs, con 1 hora de colación de cargo del trabajador, según lo acordado entre las partes.</p>" +
-        "<p><strong>CUARTO — Remuneración:</strong> El empleador pagará al trabajador una remuneración mensual de <strong>" + fmt(r.sueldo_pactado) + "</strong>, que será liquidada y pagada por períodos vencidos, en forma proporcional a los días trabajados.</p>" +
-        "<p><strong>QUINTO — Vigencia:</strong> El presente contrato tendrá " + (r.tipo==="indefinido" ? "duración indefinida" : "vigencia hasta el <strong>" + (r.fecha_fin||"—") + "</strong>") + ", con fecha de inicio <strong>" + (r.fecha_inicio||"—") + "</strong>.</p>" +
-        "<h3>Disposiciones Generales</h3>" +
-        "<p>El trabajador se compromete y obliga a cumplir las instrucciones impartidas por sus superiores, y a acatar las normas del Reglamento Interno de Orden, Higiene y Seguridad, cuando exista en la empresa.</p>" +
-        "<p>El presente contrato se rige por el Código del Trabajo de Chile y demás leyes y reglamentos vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.</p>" +
-        (r.observaciones ? "<p><strong>Observaciones:</strong> " + r.observaciones + "</p>" : "") +
-        "<p>El presente contrato se firma en dos ejemplares del mismo tenor, declarando el trabajador haber recibido un ejemplar de dicho instrumento.</p>" +
-        "<div class='firma-box'>" +
-          "<div class='firma'><div class='firma-line'>Firma del Empleador<br><strong>" + empNomC + "</strong><br>RUT: " + empRutC + "</div></div>" +
-          "<div class='firma'><div class='firma-line'>Firma del Trabajador<br><strong>" + (r.nombre||"—") + "</strong><br>RUT: " + (r.rut||"—") + "</div></div>" +
-        "</div>" +
-        "</body></html>";
-      const w=window.open('','_blank'); w.document.write(html); w.document.close();
-      setTimeout(()=>w.print(),600);
+        ? `<img src="${empresa.logo_url}" style="height:50px;object-fit:contain;" onerror="this.remove()">`
+        : `<div style="width:50px;height:50px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">${(empresa.nombre||"E").charAt(0)}</div>`;
+      const ciudad = empresa.ciudad||"Alto Hospicio";
+      const hoy = new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Contrato — ${r.nombre||""}</title>
+        <style>
+          *{box-sizing:border-box;margin:0;padding:0}
+          body{font-family:"Times New Roman",Times,serif;font-size:12px;padding:44px;max-width:820px;margin:0 auto;line-height:1.9;color:#1a1a1a}
+          .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b4332;padding-bottom:14px;margin-bottom:22px}
+          .hdr-center{flex:1;text-align:center;padding:0 20px}
+          h1{font-size:15px;font-weight:800;color:#1b4332;text-transform:uppercase;letter-spacing:2px;margin-bottom:3px}
+          h2{font-size:12px;font-weight:400;color:#555;font-style:italic}
+          h3{font-size:11.5px;font-weight:800;color:#1b4332;text-transform:uppercase;letter-spacing:.8px;border-bottom:1.5px solid #1b4332;padding-bottom:3px;margin:20px 0 10px}
+          p{margin-bottom:10px;text-align:justify}
+          .firma-box{display:flex;justify-content:space-around;margin-top:70px}
+          .firma{text-align:center;width:42%}
+          .firma-line{border-top:1px solid #444;padding-top:6px;font-size:10px;color:#555;margin-top:52px}
+          @media print{@page{size:A4;margin:15mm}body{padding:0}}
+        </style></head><body>
+
+        <div class="hdr">
+          ${logoH}
+          <div class="hdr-center">
+            <h1>Contrato Individual de Trabajo</h1>
+            <h2>Modalidad: ${tipoLabel}</h2>
+          </div>
+          <div style="text-align:right;font-size:10px;color:#666">${ciudad}<br>${hoy}</div>
+        </div>
+
+        <h3>Partes Contratantes</h3>
+        <p>En <strong>${ciudad}</strong>, a <strong>${hoy}</strong>, entre:</p>
+        <p><strong>EMPLEADOR:</strong> ${empresa.nombre||"—"}, RUT ${empresa.rut||"—"}${empresa.rep_legal_nombre?`, representada(o) por don/ña <strong>${empresa.rep_legal_nombre}</strong>${empresa.rep_legal_rut?", RUT "+empresa.rep_legal_rut:""}`:""}, con domicilio en ${empresa.direccion||"—"}, en adelante <em>"el Empleador"</em>.</p>
+        <p><strong>TRABAJADOR/A:</strong> don/ña <strong>${r.nombre||"—"}</strong>, RUT <strong>${r.rut||"—"}</strong>, en adelante <em>"el Trabajador"</em>.</p>
+        <p>Ambas partes, mayores de edad y de libre disposición, han convenido el siguiente Contrato Individual de Trabajo:</p>
+
+        <h3>Condiciones Pactadas</h3>
+        <p><strong>PRIMERO — Cargo y Funciones:</strong> El Trabajador se obliga a desempeñar el cargo de <strong>${r.cargo||r.nombre||"—"}</strong>, realizando las tareas propias del cargo y aquellas otras que razonablemente le encomiende el Empleador.</p>
+        <p><strong>SEGUNDO — Lugar de Trabajo:</strong> Los servicios se prestarán en <strong>${empresa.direccion||ciudad}</strong>, sin perjuicio de la facultad del Empleador de alterar, por causa justificada, el sitio o recinto, conforme al Art. 12 del Código del Trabajo.</p>
+        <p><strong>TERCERO — Jornada de Trabajo:</strong> ${textoJornada}</p>
+        <p><strong>CUARTO — Remuneración:</strong> El Empleador pagará al Trabajador una remuneración mensual de <strong>${fmt(r.sueldo_pactado)}</strong> (${numALetras(r.sueldo_pactado||0)} pesos), liquidada y pagada por períodos vencidos en proporción a los días trabajados, de conformidad al Art. 54 y siguientes del Código del Trabajo.</p>
+        <p><strong>QUINTO — Vigencia:</strong> El presente contrato tendrá vigencia desde el <strong>${r.fecha_inicio||"—"}</strong>${r.tipo==="indefinido"?" con duración indefinida":", hasta el <strong>"+(r.fecha_fin||"—")+"</strong>"}.</p>
+
+        <h3>Disposiciones Generales</h3>
+        <p>${textoCont}</p>
+        <p>El Trabajador declara conocer y aceptar el Reglamento Interno de Orden, Higiene y Seguridad de la empresa, comprometiéndose a cumplir las normas en él contenidas.</p>
+        <p>El presente contrato se firma en dos ejemplares del mismo tenor y fecha, declarando el Trabajador haber recibido un ejemplar en este acto.</p>
+        ${r.observaciones?`<p><strong>Observaciones:</strong> ${r.observaciones}</p>`:""}
+        ${clausulasExtra}
+
+        <div class="firma-box">
+          <div class="firma"><div class="firma-line">Firma del Empleador<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
+          <div class="firma"><div class="firma-line">Firma del Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div></div>
+        </div>
+        </body></html>`;
+      const w = window.open("","_blank"); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 600);
     };
 
+    // ── PDF Comprobante de Vacaciones ──
+    window.imprimirComprobanteVac = async (docId) => {
+      const d = await db.collection("vacaciones").doc(docId).get();
+      if (!d.exists) { alert("No se encontró la solicitud"); return; }
+      const r = d.data();
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
+      let cfgTextos = {};
+      try { const cd = await db.collection("sistema_config").doc("formatos").get(); if(cd.exists) cfgTextos=cd.data(); } catch(e){}
+      const textoVac = cfgTextos.texto_vac || "Comprobante emitido de conformidad al Art. 67 del Código del Trabajo de Chile. El trabajador tiene derecho a 15 días hábiles anuales, acumulando 1.25 días por mes trabajado.";
+      const pieVac   = cfgTextos.pie_vac   || "Solo se cuentan días hábiles (lunes a viernes, excluyendo feriados legales de Chile).";
+      const logoH = empresa.logo_url ? `<img src="${empresa.logo_url}" style="height:45px;object-fit:contain;" onerror="this.remove()">` : "";
+      const hoy = new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+      const tipos = {vacaciones:"Vacaciones Legales",permiso_sin_goce:"Permiso sin Goce de Sueldo",permiso_con_goce:"Permiso con Goce de Sueldo",licencia:"Licencia Médica",otro:"Otro"};
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante Vacaciones</title>
+        <style>body{font-family:Arial,sans-serif;font-size:12px;padding:40px;max-width:700px;margin:0 auto;line-height:1.8}
+        .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #1b4332;padding-bottom:12px;margin-bottom:18px}
+        h1{font-size:15px;font-weight:800;color:#1b4332;text-transform:uppercase;letter-spacing:1px}
+        .box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 18px;margin-bottom:14px}
+        .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+        .row:last-child{border:none} .lbl{color:#555} .val{font-weight:700}
+        .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+        .badge-apro{background:#d1fae5;color:#065f46} .badge-pend{background:#fef3c7;color:#92400e}
+        .firma-row{display:flex;gap:40px;margin-top:50px}
+        .firma{text-align:center;width:200px}
+        .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:44px;font-size:10px;color:#555}
+        @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
+
+        <div class="hdr">
+          <div><h1>Comprobante de Vacaciones</h1><p style="font-size:11px;color:#555">${empresa.nombre||"—"} · RUT: ${empresa.rut||"—"}</p></div>
+          ${logoH}
+        </div>
+
+        <div class="box">
+          <div class="row"><span class="lbl">Trabajador/a</span><span class="val">${r.nombre||"—"}</span></div>
+          <div class="row"><span class="lbl">RUT</span><span class="val">${r.rut||"—"}</span></div>
+          <div class="row"><span class="lbl">Tipo de Solicitud</span><span class="val">${tipos[r.tipo]||r.tipo||"—"}</span></div>
+          <div class="row"><span class="lbl">Fecha Inicio</span><span class="val">${r.desde||"—"}</span></div>
+          <div class="row"><span class="lbl">Fecha Término</span><span class="val">${r.hasta||"—"}</span></div>
+          <div class="row"><span class="lbl">Días Hábiles</span><span class="val" style="color:#1b4332;font-size:14px">${r.dias_solicitados||0}</span></div>
+          <div class="row"><span class="lbl">Estado</span><span class="val"><span class="badge ${r.estado==="aprobada"?"badge-apro":"badge-pend"}">${r.estado||"pendiente"}</span></span></div>
+          ${r.observacion?`<div class="row"><span class="lbl">Observación</span><span class="val">${r.observacion}</span></div>`:""}
+        </div>
+
+        <p style="font-size:11px;color:#555;line-height:1.6">${textoVac}</p>
+        <p style="font-size:10px;color:#9ca3af;margin-top:6px">${pieVac}</p>
+
+        <div class="firma-row">
+          <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${r.nombre||"—"}</strong></div></div>
+          <div class="firma"><div class="firma-line">Jefatura / RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
+        </div>
+        <p style="font-size:8px;color:#9ca3af;text-align:center;margin-top:20px">Emitido: ${hoy} · Martinez Services ERP</p>
+        </body></html>`;
+      const w = window.open("","_blank"); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 600);
+    };
+
+    // ── PDF Comprobante de Permiso / Anticipo ──
+    window.imprimirComprobantePerm = async (docId, coleccion) => {
+      coleccion = coleccion||"permisos";
+      const d = await db.collection(coleccion).doc(docId).get();
+      if (!d.exists) { alert("No se encontró el registro"); return; }
+      const r = d.data();
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
+      let cfgTextos = {};
+      try { const cd = await db.collection("sistema_config").doc("formatos").get(); if(cd.exists) cfgTextos=cd.data(); } catch(e){}
+      const textoPerm = cfgTextos.texto_perm || "La empresa autoriza el permiso solicitado por el trabajador, de conformidad a lo acordado entre las partes y según las normas internas de la organización.";
+      const logoH = empresa.logo_url ? `<img src="${empresa.logo_url}" style="height:45px;object-fit:contain;" onerror="this.remove()">` : "";
+      const hoy = new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+      const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
+      const esAnticipo = coleccion==="anticipos";
+      const tiposTrad = {con_goce:"Con Goce de Sueldo",sin_goce:"Sin Goce de Sueldo",medico:"Médico / Licencia"};
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante ${esAnticipo?"Anticipo":"Permiso"}</title>
+        <style>body{font-family:Arial,sans-serif;font-size:12px;padding:40px;max-width:700px;margin:0 auto;line-height:1.8}
+        .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #1b4332;padding-bottom:12px;margin-bottom:18px}
+        h1{font-size:15px;font-weight:800;color:#1b4332;text-transform:uppercase;letter-spacing:1px}
+        .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 18px;margin-bottom:14px}
+        .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+        .row:last-child{border:none} .lbl{color:#555} .val{font-weight:700}
+        .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+        .badge-apro{background:#d1fae5;color:#065f46} .badge-pend{background:#fef3c7;color:#92400e}
+        .firma-row{display:flex;gap:40px;margin-top:50px}
+        .firma{text-align:center;width:200px}
+        .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:44px;font-size:10px;color:#555}
+        @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
+
+        <div class="hdr">
+          <div><h1>${esAnticipo?"Comprobante de Anticipo de Sueldo":"Comprobante de Permiso Administrativo"}</h1>
+          <p style="font-size:11px;color:#555">${empresa.nombre||"—"} · RUT: ${empresa.rut||"—"}</p></div>
+          ${logoH}
+        </div>
+
+        <div class="box">
+          <div class="row"><span class="lbl">Trabajador/a</span><span class="val">${r.nombre||"—"}</span></div>
+          <div class="row"><span class="lbl">RUT</span><span class="val">${r.rut||"—"}</span></div>
+          ${esAnticipo
+            ? `<div class="row"><span class="lbl">Monto Solicitado</span><span class="val" style="color:#1b4332;font-size:14px">${fmt(r.monto)}</span></div>`
+            : `<div class="row"><span class="lbl">Tipo de Permiso</span><span class="val">${tiposTrad[r.tipo]||r.tipo||"—"}</span></div>
+               <div class="row"><span class="lbl">Desde</span><span class="val">${r.desde||"—"}</span></div>
+               <div class="row"><span class="lbl">Hasta</span><span class="val">${r.hasta||"—"}</span></div>
+               <div class="row"><span class="lbl">Días</span><span class="val">${r.dias_solicitados||0}</span></div>`}
+          ${r.motivo?`<div class="row"><span class="lbl">Motivo</span><span class="val">${r.motivo}</span></div>`:""}
+          <div class="row"><span class="lbl">Estado</span><span class="val"><span class="badge ${r.estado==="aprobada"?"badge-apro":"badge-pend"}">${r.estado||"pendiente"}</span></span></div>
+        </div>
+
+        <p style="font-size:11px;color:#555;line-height:1.6">${textoPerm}</p>
+
+        <div class="firma-row">
+          <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${r.nombre||"—"}</strong></div></div>
+          <div class="firma"><div class="firma-line">Autorizado por RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
+        </div>
+        <p style="font-size:8px;color:#9ca3af;text-align:center;margin-top:20px">Emitido: ${hoy} · Martinez Services ERP</p>
+        </body></html>`;
+      const w = window.open("","_blank"); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 600);
+    };
+
+    // ── Helper: número a letras (para contratos) ──
+    function numALetras(n) {
+      if (!n||n<=0) return "cero";
+      const un=["","un","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiún","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+      const dec=["","","veinti","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
+      const cent=["","cien","doscientos","trescientos","cuatrocientos","quinientos","seiscientos","setecientos","ochocientos","novecientos"];
+      n=Math.round(n); if(n>=1000000) return Math.floor(n/1000000)+" millones "+(n%1000000>0?numALetras(n%1000000):"");
+      if(n>=1000){const m=Math.floor(n/1000);return (m===1?"mil":numALetras(m)+" mil")+(n%1000>0?" "+numALetras(n%1000):"");}
+      if(n>=100){const c=Math.floor(n/100);return (c===1&&n===100?"cien":cent[c])+(n%100>0?" "+numALetras(n%100):"");}
+      if(n>=30){const d=Math.floor(n/10);return dec[d]+(n%10>0?" y "+un[n%10]:"");}
+      return un[n]||"";
+    }
     // ═══════════════════════════════════════════════════════════
     // SPRINT B — ÁREA 2 RESIDENTES: Botón Pagar en Línea + Gráficos
     // ═══════════════════════════════════════════════════════════
@@ -9722,62 +9882,161 @@ Si necesita clave, edita el cliente y agrega una.`;
       if (!d.exists) { alert("No se encontró la liquidación"); return; }
       const r = d.data();
       const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
-      const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
-      const filaH = (label, val) => "<div style='display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px'><span>" + label + "</span><span>" + val + "</span></div>";
-      const filaD = (label, val) => val ? "<div style='display:flex;justify-content:space-between;padding:4px 0;font-size:12px'><span>" + label + "</span><span style='color:#e53e3e'>-" + fmt(val) + "</span></div>" : "";
-      let haberes = filaH("Sueldo Base", fmt(r.sueldo_base)) +
-        filaH("Gratificación Legal", fmt(r.gratificacion));
-      if (r.bono_asistencia) haberes += filaH("Bono Asistencia", fmt(r.bono_asistencia));
-      if (r.horas_extra_50) haberes += filaH("Horas Extra 50%", fmt(r.horas_extra_50));
-      if (r.horas_extra_100) haberes += filaH("Horas Extra 100%", fmt(r.horas_extra_100));
-      if (r.asig_colacion) haberes += filaH("Colación (no impon.)", fmt(r.asig_colacion));
-      if (r.asig_movilizacion) haberes += filaH("Movilización (no impon.)", fmt(r.asig_movilizacion));
-      if (r.viaticos) haberes += filaH("Viáticos (no impon.)", fmt(r.viaticos));
-      let descuentos = filaD("AFP " + (r.afp||""), r.desc_afp) +
-        filaD("Salud 7%", r.desc_salud) +
-        filaD("Impuesto Único", r.impuesto_unico) +
-        filaD("Otros descuentos", r.otros_descuentos);
-      const html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Liquidacion</title>" +
-        "<style>body{font-family:Arial,sans-serif;font-size:12px;padding:30px;max-width:700px;margin:0 auto}" +
-        ".hdr{display:flex;justify-content:space-between;border-bottom:3px solid #1A7A3C;padding-bottom:12px;margin-bottom:16px}" +
-        "h2{color:#1A7A3C;font-size:16px;margin:0}.sub{font-size:11px;color:#555}" +
-        ".grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}" +
-        ".box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:12px}" +
-        ".box h4{font-size:11px;font-weight:700;color:#1A7A3C;text-transform:uppercase;margin-bottom:8px;border-left:3px solid #1A7A3C;padding-left:6px}" +
-        ".total{background:#1A7A3C;color:#fff;padding:14px;border-radius:6px;text-align:center}" +
-        ".monto{font-size:26px;font-weight:900;margin-top:4px}" +
-        ".firma{display:flex;justify-content:space-between;margin-top:36px}" +
-        ".fl{text-align:center;width:44%}.fl-line{border-top:1px solid #333;padding-top:5px;font-size:10px;color:#555}" +
-        "@media print{body{padding:16px}}</style></head><body>" +
-        "<div class='hdr'>" +
-          "<div><h2>" + (empresa.nombre||"Martinez Services SPA") + "</h2>" +
-          "<div class='sub'>RUT: " + (empresa.rut||"—") + " | Liquidación de Sueldo | Período: " + (r.periodo||"—") + "</div></div>" +
-          "<div style='text-align:right'><div class='sub'>Emitido: " + new Date().toLocaleDateString("es-CL") + "</div></div>" +
-        "</div>" +
-        "<div class='grid'>" +
-          "<div class='box'><h4>Datos del Trabajador</h4>" +
-            filaH("RUT", r.rut||"—") + filaH("Nombre", r.nombre||"—") +
-            filaH("Cargo", r.cargo||"—") + filaH("AFP", r.afp||"—") +
-            filaH("Salud", r.salud||"—") +
-          "</div>" +
-          "<div class='box'><h4>Haberes</h4>" + haberes +
-            "<div style='display:flex;justify-content:space-between;padding:5px 0;font-weight:700;border-top:2px solid #ddd;margin-top:4px;font-size:12px'><span>Total Haberes</span><span style='color:#1A7A3C'>" + fmt(r.total_haberes) + "</span></div>" +
-          "</div>" +
-          "<div class='box'><h4>Descuentos</h4>" + descuentos +
-            "<div style='display:flex;justify-content:space-between;padding:5px 0;font-weight:700;border-top:2px solid #ddd;margin-top:4px;font-size:12px'><span>Total Descuentos</span><span style='color:#e53e3e'>-" + fmt(r.total_descuentos) + "</span></div>" +
-          "</div>" +
-          "<div style='display:flex;align-items:center;justify-content:center'>" +
-            "<div class='total' style='width:100%'><div>LÍQUIDO A PAGAR</div><div class='monto'>" + fmt(r.liquido_pagar) + "</div></div>" +
-          "</div>" +
-        "</div>" +
-        "<div class='firma'>" +
-          "<div class='fl'><div class='fl-line'>Firma Trabajador<br>" + (r.nombre||"—") + "</div></div>" +
-          "<div class='fl'><div class='fl-line'>Representante Legal<br>" + (empresa.nombre||"Empresa") + "</div></div>" +
-        "</div></body></html>";
+      // Cargar config de textos desde Firestore
+      let cfgTextos = {};
+      try {
+        const cfgDoc = await db.collection("sistema_config").doc("formatos").get();
+        if (cfgDoc.exists) cfgTextos = cfgDoc.data();
+      } catch(e){}
+      const textoLiq  = cfgTextos.texto_liq  || "Recibí conforme el alcance líquido de la presente liquidación, no teniendo cargo o cobro alguno que hacer por otro concepto.";
+      const pieLiq    = cfgTextos.pie_liq    || "Liquidación generada por Martinez Services ERP.";
+      const fmt  = n  => "$"+Math.round(n||0).toLocaleString("es-CL");
+      const fmtN = n  => Math.round(n||0).toLocaleString("es-CL");
+      const logoH = empresa.logo_url
+        ? `<img src="${empresa.logo_url}" style="height:55px;object-fit:contain;" onerror="this.remove()">`
+        : `<div style="width:55px;height:55px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900">${(empresa.nombre||"E").charAt(0)}</div>`;
+      const [yy,mm] = (r.periodo||"-").split("-");
+      const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+      const periodoTexto = (yy&&mm) ? `${meses[parseInt(mm)-1]} de ${yy}` : (r.periodo||"—");
+      // Calcular AFC trabajador
+      const afc = Math.round((r.total_imponible||0)*(r.tipo_contrato==="plazo_fijo"?0.03:0.006));
+      const descLegales = (r.desc_afp||0)+(r.desc_salud||0)+afc+(r.impuesto_unico||0);
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <title>Liquidación ${r.periodo||""} — ${r.nombre||""}</title>
+        <style>
+          *{box-sizing:border-box;margin:0;padding:0}
+          body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a1a;padding:28px;max-width:800px;margin:0 auto}
+          .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #1b4332;padding-bottom:12px;margin-bottom:18px}
+          .hdr-tit{font-size:16px;font-weight:800;color:#1b4332;margin-bottom:3px}
+          .hdr-sub{font-size:11px;color:#555}
+          .dos-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+          .info-box{border-left:3px solid #1b4332;padding:10px 14px;background:#f0fdf4;border-radius:0 6px 6px 0}
+          .info-box-tit{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#1b4332;margin-bottom:8px}
+          .info-row{display:flex;justify-content:space-between;padding:2px 0;font-size:10.5px;border-bottom:1px solid rgba(0,0,0,0.04)}
+          .info-row:last-child{border:none}
+          .info-lbl{color:#555} .info-val{font-weight:700;text-align:right}
+          .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+          .kpi{background:#f9f9f9;border:1px solid #e5e7eb;border-radius:6px;padding:8px;text-align:center}
+          .kpi-v{font-size:15px;font-weight:800;color:#1b4332}
+          .kpi-l{font-size:8.5px;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-top:1px}
+          .kpi2-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+          .kpi2{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:8px;text-align:center}
+          .kpi2-v{font-size:14px;font-weight:800;color:#1b4332}
+          .kpi2-l{font-size:8.5px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-top:1px}
+          .hab-desc{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+          table{width:100%;border-collapse:collapse}
+          table th{background:#1b4332;color:#fff;padding:6px 8px;text-align:left;font-size:9.5px;font-weight:700}
+          table td{padding:5px 8px;border-bottom:1px solid #f0f0f0;font-size:10.5px}
+          table td:last-child{text-align:right;font-weight:600}
+          tr.subtot td{background:#f0fdf4;font-weight:800;border-top:1.5px solid #86efac}
+          tr.subtot td:last-child{color:#1b4332}
+          tr.nogimp td{color:#0ea5e9}
+          .alcance{background:#1b4332;color:#fff;border-radius:8px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+          .alcance-lbl{font-size:13px;font-weight:700}
+          .alcance-val{font-size:24px;font-weight:900}
+          .cert-caja{display:flex;align-items:flex-start;gap:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin-bottom:16px}
+          .cert-txt{font-size:10px;color:#374151;line-height:1.6}
+          .firma-row{display:flex;gap:40px;margin-top:14px}
+          .firma{text-align:center;width:200px}
+          .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:44px;font-size:9px;color:#555}
+          .pie{font-size:8px;color:#9ca3af;text-align:center;margin-top:14px;border-top:1px solid #e5e7eb;padding-top:8px}
+          @media print{@page{size:A4;margin:14mm}body{padding:0}}
+        </style></head><body>
+
+        <div class="hdr">
+          <div>
+            <div class="hdr-tit">Liquidación de Remuneraciones</div>
+            <div class="hdr-sub">Mes: ${periodoTexto}</div>
+          </div>
+          ${logoH}
+        </div>
+
+        <div class="dos-col">
+          <div class="info-box">
+            <div class="info-box-tit">Datos del Trabajador</div>
+            <div class="info-row"><span class="info-lbl">Nombre</span><span class="info-val">${r.nombre||"—"}</span></div>
+            <div class="info-row"><span class="info-lbl">RUT</span><span class="info-val">${r.rut||"—"}</span></div>
+            <div class="info-row"><span class="info-lbl">Cargo</span><span class="info-val">${r.cargo||"—"}</span></div>
+            <div class="info-row"><span class="info-lbl">Tipo Contrato</span><span class="info-val">${r.tipo_contrato||"Indefinido"}</span></div>
+            <div class="info-row"><span class="info-lbl">AFP</span><span class="info-val">${r.afp||"—"}</span></div>
+            <div class="info-row"><span class="info-lbl">Salud</span><span class="info-val">${r.salud||"—"}</span></div>
+            ${r.fecha_ingreso?`<div class="info-row"><span class="info-lbl">Ingreso</span><span class="info-val">${r.fecha_ingreso}</span></div>`:""}
+          </div>
+          <div class="info-box" style="border-left-color:#0ea5e9;background:#f0f9ff">
+            <div class="info-box-tit" style="color:#0369a1">Información Empresa</div>
+            <div class="info-row"><span class="info-lbl">Razón Social</span><span class="info-val">${empresa.nombre||"—"}</span></div>
+            <div class="info-row"><span class="info-lbl">RUT Empresa</span><span class="info-val">${empresa.rut||"—"}</span></div>
+            <div class="info-row"><span class="info-lbl">Dirección</span><span class="info-val">${empresa.direccion||"—"}</span></div>
+            ${empresa.ciudad?`<div class="info-row"><span class="info-lbl">Ciudad</span><span class="info-val">${empresa.ciudad}</span></div>`:""}
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi-v">${fmtN(r.dias_trabajados||30)}</div><div class="kpi-l">Días Trabajados</div></div>
+          <div class="kpi"><div class="kpi-v">${fmtN(r.dias_licencia||0)}</div><div class="kpi-l">Días Licencia</div></div>
+          <div class="kpi"><div class="kpi-v">${fmtN(r.dias_ausencia||0)}</div><div class="kpi-l">Días Ausencia</div></div>
+          <div class="kpi"><div class="kpi-v">${fmtN(r.horas_extra_50_hrs||0)} / ${fmtN(r.horas_extra_100_hrs||0)}</div><div class="kpi-l">HE 50% / 100%</div></div>
+        </div>
+        <div class="kpi2-row">
+          <div class="kpi2"><div class="kpi2-v">${fmt(r.total_imponible)}</div><div class="kpi2-l">Tope Imponible</div></div>
+          <div class="kpi2"><div class="kpi2-v">${fmt(r.renta_liquida_imponible||r.total_imponible)}</div><div class="kpi2-l">Renta Tributable</div></div>
+        </div>
+
+        <div class="hab-desc">
+          <table>
+            <thead><tr><th>Haberes</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Sueldo Base</td><td>${fmt(r.sueldo_base)}</td></tr>
+              <tr><td>Gratificación Mensual</td><td>${fmt(r.gratificacion)}</td></tr>
+              ${r.bono_asistencia?`<tr><td>Bono Asistencia</td><td>${fmt(r.bono_asistencia)}</td></tr>`:""}
+              ${r.horas_extra_50?`<tr><td>Horas Extra 50%</td><td>${fmt(r.horas_extra_50)}</td></tr>`:""}
+              ${r.horas_extra_100?`<tr><td>Horas Extra 100%</td><td>${fmt(r.horas_extra_100)}</td></tr>`:""}
+              <tr class="subtot"><td><strong>TOTAL IMPONIBLE</strong></td><td>${fmt(r.total_imponible)}</td></tr>
+              <tr><td style="padding-top:8px;font-size:9px;color:#9ca3af;border:none" colspan="2">HABERES NO IMPONIBLES</td></tr>
+              ${r.asig_colacion?`<tr class="nogimp"><td>Colación</td><td>${fmt(r.asig_colacion)}</td></tr>`:""}
+              ${r.asig_movilizacion?`<tr class="nogimp"><td>Movilización</td><td>${fmt(r.asig_movilizacion)}</td></tr>`:""}
+              ${r.viaticos?`<tr class="nogimp"><td>Viáticos</td><td>${fmt(r.viaticos)}</td></tr>`:""}
+              <tr class="subtot" style="border-top:1.5px solid #bae6fd"><td style="color:#0369a1"><strong>TOTAL NO IMPONIBLE</strong></td><td style="color:#0369a1">${fmt(r.total_no_imponible)}</td></tr>
+              <tr style="background:#ecfdf5"><td><strong>TOTAL HABERES</strong></td><td><strong>${fmt(r.total_haberes)}</strong></td></tr>
+            </tbody>
+          </table>
+          <table>
+            <thead><tr><th>Descuentos</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>${r.afp||"AFP"} (${(((r.desc_afp||0)/(r.total_imponible||1))*100).toFixed(2)}%<br><span style="font-size:9px;color:#9ca3af">Renta Imp: ${fmt(r.total_imponible)}</span>)</td><td>${fmt(r.desc_afp)}</td></tr>
+              <tr><td>Salud 7% (${r.salud||"Fonasa"})</td><td>${fmt(r.desc_salud)}</td></tr>
+              <tr><td>Seguro Cesantía Trabajador</td><td>${fmt(afc)}</td></tr>
+              ${r.impuesto_unico?`<tr><td>Impuesto Único<br><span style="font-size:9px;color:#9ca3af">Renta Trib: ${fmt(r.renta_liquida_imponible||r.total_imponible)}</span></td><td>${fmt(r.impuesto_unico)}</td></tr>`:""}
+              <tr class="subtot"><td><strong>TOTAL DESC. LEGALES</strong></td><td>${fmt(descLegales)}</td></tr>
+              ${r.otros_descuentos?`<tr><td colspan="2" style="padding-top:8px;font-size:9px;color:#9ca3af;border:none">OTROS DESCUENTOS</td></tr><tr><td>Otros descuentos</td><td>${fmt(r.otros_descuentos)}</td></tr><tr class="subtot"><td><strong>TOTAL OTROS DESC.</strong></td><td>${fmt(r.otros_descuentos)}</td></tr>`:""}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alcance">
+          <span class="alcance-lbl">ALCANCE LÍQUIDO:</span>
+          <span class="alcance-val">${fmt(r.liquido_pagar)}</span>
+        </div>
+
+        <div class="cert-caja">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="flex-shrink:0;margin-top:2px">
+            <circle cx="16" cy="16" r="15" stroke="#1b4332" stroke-width="2"/>
+            <path d="M9 16l5 5 9-10" stroke="#1b4332" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="cert-txt">${textoLiq}</div>
+          <div style="text-align:center;font-size:9px;color:#6b7280;min-width:60px">Vº Bº.</div>
+        </div>
+
+        <div class="firma-row">
+          <div class="firma"><div class="firma-line">Firma Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div></div>
+          <div class="firma"><div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
+        </div>
+
+        <div class="pie">${pieLiq} · Emitido: ${new Date().toLocaleDateString("es-CL",{day:"2-digit",month:"long",year:"numeric"})}</div>
+        </body></html>`;
       const w = window.open("","_blank");
-      w.document.write(html);
-      w.document.close();
-      setTimeout(function(){ w.print(); }, 600);
+      w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 700);
     };
 
     window.eliminarLiq = async (docId, empId) => {
@@ -10824,20 +11083,157 @@ Si necesita clave, edita el cliente y agrega una.`;
     });
 
     // Guardar textos de documentos
-    document.getElementById("btn-save-formatos").addEventListener("click", async () => {
+    // ── Tabs del panel de formatos ──
+    window.cfgFmtTab = (tab) => {
+      ["liq","cont","vac","perm","custom"].forEach(t => {
+        const sec = document.getElementById("cfgfmt-sec-"+t);
+        const btn = document.getElementById("cfgfmt-"+t);
+        if (!sec||!btn) return;
+        const activo = t===tab;
+        sec.style.display = activo ? "block" : "none";
+        btn.style.background = activo ? "var(--c-accent)" : "var(--c-bg)";
+        btn.style.color      = activo ? "#fff" : "var(--c-text)";
+        btn.style.borderColor= activo ? "var(--c-accent)" : "var(--c-border)";
+      });
+    };
+
+    // ── Cargar textos guardados al abrir la sección de formatos ──
+    async function cargarTextosFormatos() {
+      try {
+        const doc = await db.collection("sistema_config").doc("formatos").get();
+        if (!doc.exists) return;
+        const d = doc.data();
+        const set = (id, v) => { const el = document.getElementById(id); if(el&&v) el.value=v; };
+        set("cfg-texto-liq",      d.texto_liq);
+        set("cfg-pie-liq",        d.pie_liq);
+        set("cfg-clausula-jornada", d.clausula_jornada);
+        set("cfg-texto-cont",     d.texto_cont);
+        set("cfg-clausulas-extra",d.clausulas_extra);
+        set("cfg-texto-vac",      d.texto_vac);
+        set("cfg-pie-vac",        d.pie_vac);
+        set("cfg-texto-perm",     d.texto_perm);
+        set("cfg-texto-fin",      d.texto_fin);
+        // Cargar documentos custom
+        await cargarDocsCustom();
+      } catch(e) {}
+    }
+
+    // ── Listar documentos custom ──
+    async function cargarDocsCustom() {
+      const cont = document.getElementById("lista-docs-custom");
+      if (!cont) return;
+      try {
+        const snap = await db.collection("sistema_config").doc("formatos").get();
+        const docs = (snap.exists && snap.data().docs_custom) || [];
+        if (!docs.length) { cont.innerHTML = `<div style="font-size:12px;color:var(--c-muted);margin-bottom:10px;">Sin documentos personalizados aún.</div>`; return; }
+        cont.innerHTML = docs.map((doc, i) => `
+          <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;font-weight:700">📄 ${doc.nombre}</span>
+            <div style="display:flex;gap:6px;">
+              <button onclick="generarDocCustom(${i})" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ Generar PDF</button>
+              <button onclick="eliminarDocCustom(${i})" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🗑</button>
+            </div>
+          </div>`).join("");
+      } catch(e){}
+    }
+
+    // ── Guardar documento custom ──
+    document.getElementById("btn-save-custom-doc")?.addEventListener("click", async () => {
+      const nombre = document.getElementById("custom-doc-nombre")?.value.trim();
+      const cuerpo = document.getElementById("custom-doc-cuerpo")?.value.trim();
+      const msg    = document.getElementById("custom-doc-msg");
+      if (!nombre||!cuerpo) { if(msg){msg.style.color="var(--c-danger)";msg.textContent="Completa nombre y contenido.";} return; }
+      try {
+        const ref  = db.collection("sistema_config").doc("formatos");
+        const snap = await ref.get();
+        const docs = (snap.exists && snap.data().docs_custom) || [];
+        docs.push({ nombre, cuerpo, creado: new Date().toISOString() });
+        await ref.set({ docs_custom: docs }, { merge: true });
+        if(msg){msg.style.color="var(--c-accent)";msg.textContent="✓ Documento guardado.";}
+        document.getElementById("custom-doc-nombre").value="";
+        document.getElementById("custom-doc-cuerpo").value="";
+        await cargarDocsCustom();
+        setTimeout(()=>{ if(msg) msg.textContent=""; }, 3000);
+      } catch(e) { if(msg){msg.style.color="var(--c-danger)";msg.textContent="Error: "+e.message;} }
+    });
+
+    // ── Eliminar documento custom ──
+    window.eliminarDocCustom = async (idx) => {
+      if (!confirm("¿Eliminar este tipo de documento?")) return;
+      const ref  = db.collection("sistema_config").doc("formatos");
+      const snap = await ref.get();
+      const docs = (snap.exists && snap.data().docs_custom) || [];
+      docs.splice(idx,1);
+      await ref.set({ docs_custom: docs }, { merge: true });
+      await cargarDocsCustom();
+    };
+
+    // ── Generar PDF desde documento custom ──
+    window.generarDocCustom = async (idx) => {
+      const snap = await db.collection("sistema_config").doc("formatos").get();
+      const docs = (snap.exists && snap.data().docs_custom) || [];
+      const doc  = docs[idx]; if(!doc) return;
+      // Pedir RUT o nombre del trabajador
+      const rut = prompt("RUT del trabajador (para rellenar variables):");
+      if (!rut) return;
+      let empData = { nombre:"—", rut, cargo:"—" };
+      try {
+        const es = await db.collection("empleados").where("rut","==",rut.trim()).limit(1).get();
+        if (!es.empty) empData = es.docs[0].data();
+      } catch(e){}
+      const empresa = await getEmpresaActiva(empData.entityId||STATE.activeEntityId||"");
+      const hoy = new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+      const ciudad = empresa.ciudad||"Alto Hospicio";
+      const cuerpoFinal = doc.cuerpo
+        .replace(/{{nombre}}/g, empData.nombre||"—")
+        .replace(/{{rut}}/g,    empData.rut||rut)
+        .replace(/{{cargo}}/g,  empData.cargo||"—")
+        .replace(/{{empresa}}/g, empresa.nombre||"—")
+        .replace(/{{fecha}}/g,  hoy)
+        .replace(/{{ciudad}}/g, ciudad);
+      const logoH = empresa.logo_url ? `<img src="${empresa.logo_url}" style="height:45px;object-fit:contain;" onerror="this.remove()">` : "";
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${doc.nombre}</title>
+        <style>body{font-family:"Times New Roman",serif;font-size:12px;padding:44px;max-width:800px;margin:0 auto;line-height:1.9}
+        .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1b4332;padding-bottom:12px;margin-bottom:20px}
+        h1{font-size:14px;font-weight:800;color:#1b4332;text-align:center;text-transform:uppercase;letter-spacing:1.5px}
+        p{margin-bottom:10px;text-align:justify}
+        .firma-row{display:flex;gap:60px;margin-top:60px}
+        .firma{text-align:center;width:200px}
+        .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:50px;font-size:10px;color:#555}
+        @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
+        <div class="hdr">${logoH}<h1>${doc.nombre}</h1><div style="font-size:10px;color:#666;text-align:right">${ciudad}<br>${hoy}</div></div>
+        <p>${cuerpoFinal.replace(/\n/g,"</p><p>")}</p>
+        <div class="firma-row">
+          <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${empData.nombre||"—"}</strong><br>RUT: ${empData.rut||rut}</div></div>
+          <div class="firma"><div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong></div></div>
+        </div></body></html>`;
+      const w = window.open("","_blank"); w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(),600);
+    };
+
+    // ── Guardar todos los textos de formatos ──
+    document.getElementById("btn-save-formatos")?.addEventListener("click", async () => {
       const msg = document.getElementById("cfg-formatos-msg");
       try {
-        await db.collection("sistema_config").doc("principal").set({
-          texto_liq: document.getElementById("cfg-texto-liq").value.trim(),
-          texto_cont: document.getElementById("cfg-texto-cont").value.trim(),
-          texto_fin: document.getElementById("cfg-texto-fin").value.trim(),
+        await db.collection("sistema_config").doc("formatos").set({
+          texto_liq:        document.getElementById("cfg-texto-liq")?.value.trim()||"",
+          pie_liq:          document.getElementById("cfg-pie-liq")?.value.trim()||"",
+          clausula_jornada: document.getElementById("cfg-clausula-jornada")?.value.trim()||"",
+          texto_cont:       document.getElementById("cfg-texto-cont")?.value.trim()||"",
+          clausulas_extra:  document.getElementById("cfg-clausulas-extra")?.value.trim()||"",
+          texto_vac:        document.getElementById("cfg-texto-vac")?.value.trim()||"",
+          pie_vac:          document.getElementById("cfg-pie-vac")?.value.trim()||"",
+          texto_perm:       document.getElementById("cfg-texto-perm")?.value.trim()||"",
+          texto_fin:        document.getElementById("cfg-texto-fin")?.value.trim()||"",
           actualizado: firebase.firestore.FieldValue.serverTimestamp()
-        }, {merge: true});
-        msg.style.color = "var(--c-accent)";
-        msg.textContent = "✓ Textos guardados. Aparecerán en los próximos documentos.";
-        setTimeout(() => msg.textContent = "", 3000);
-      } catch(e) { msg.style.color = "var(--c-danger)"; msg.textContent = "Error: " + e.message; }
+        }, {merge:true});
+        if(msg){msg.style.color="var(--c-accent)";msg.textContent="✓ Configuración guardada. Los próximos PDFs usarán estos textos.";}
+        setTimeout(()=>{ if(msg) msg.textContent=""; }, 4000);
+      } catch(e) { if(msg){msg.style.color="var(--c-danger)";msg.textContent="Error: "+e.message;} }
     });
+
+    // Cargar textos al abrir la pestaña de formatos
+    document.querySelector("[data-cfg='cfg-formatos']")?.addEventListener("click", cargarTextosFormatos);
 
     // Cargar config al abrir el tab de sistema
     document.querySelector("[data-cfg='cfg-sistema']")?.addEventListener("click", cargarConfigSistema);
