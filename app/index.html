@@ -1757,6 +1757,7 @@
           { id: "asistencia",    icon: "🕐", label: "Reloj Control / Asistencia" },
           { id: "contratos",     icon: "📝", label: "Contratos y Anexos" },
           { id: "finiquitos",    icon: "📋", label: "Finiquitos" },
+          { id: "movimientos",   icon: "📊", label: "Movimientos del Personal" },
           { id: "vacaciones",    icon: "🏖️", label: "Vacaciones / Permisos" },
           { id: "portal",        icon: "👤", label: "Portal del Colaborador" },
         ],
@@ -3572,6 +3573,7 @@
         case "asistencia":     renderRRHH_Asistencia(zone, empId);     break;
         case "contratos":      renderRRHH_Contratos(zone, empId);      break;
         case "finiquitos":     renderRRHH_Finiquitos(zone, empId);     break;
+        case "movimientos":    renderRRHH_Movimientos(zone, empId);    break;
         case "vacaciones":     renderRRHH_Vacaciones(zone, empId);     break;
         case "portal":         renderRRHH_Portal(zone, empId);         break;
         default:               renderRRHH_Fichas(zone, empId);
@@ -4114,10 +4116,33 @@ Clave: ${clavePortal}`);
             tipoGratifEmp = cfgDoc?.config_rem?.tipo_gratificacion || "art47_mensual";
           } catch (e) {}
 
+          // ── LEER MOVIMIENTOS DEL PERSONAL para este período ──
+          // Estos vienen del módulo Movimientos + aprobaciones automáticas del portal
+          const movSnap = await db.collection("movimientos_personal")
+            .where("entityId","==",empId).where("periodo","==",periodo).get();
+          const movMap = {}; // empDocId → { dias_licencia, dias_ausencia, dias_vacaciones, bono_variable, anticipo, ... }
+          movSnap.forEach(d => {
+            const mv = d.data();
+            const eid = mv.empleado_id;
+            if (!movMap[eid]) movMap[eid] = { dias_trabajados:null, dias_licencia:0, dias_ausencia:0, dias_vacaciones:0, bono_variable:0, anticipo:0, comision:0, aguinaldo:0 };
+            const m = movMap[eid];
+            switch(mv.tipo) {
+              case "licencia":    m.dias_licencia   += mv.cantidad||0; break;
+              case "ausencia":    m.dias_ausencia   += mv.cantidad||0; break;
+              case "vacaciones":  m.dias_vacaciones += mv.cantidad||0; break;
+              case "bono":        m.bono_variable   += mv.monto||0; break;
+              case "comision":    m.comision        += mv.monto||0; break;
+              case "aguinaldo":   m.aguinaldo       += mv.monto||0; break;
+              case "anticipo":    m.anticipo        += mv.monto||0; break;
+            }
+          });
+
+          const diasMes = new Date(parseInt(periodo.split("-")[0]), parseInt(periodo.split("-")[1]), 0).getDate();
+
           empSnap.forEach(d => {
             const r = d.data();
             const base = r.sueldo_base||r.sueldo_pactado||0;
-            // Novedades del mes
+            // Novedades manuales del modal
             const col   = parseFloat(document.getElementById(`nv-col-${d.id}`)?.value)||0;
             const mov   = parseFloat(document.getElementById(`nv-mov-${d.id}`)?.value)||0;
             const bonoa = parseFloat(document.getElementById(`nv-bonoa-${d.id}`)?.value)||0;
@@ -4125,18 +4150,35 @@ Clave: ${clavePortal}`);
             const h100n = parseFloat(document.getElementById(`nv-h100-${d.id}`)?.value)||0;
             const viat  = parseFloat(document.getElementById(`nv-viat-${d.id}`)?.value)||0;
             const otros = parseFloat(document.getElementById(`nv-otros-${d.id}`)?.value)||0;
+
+            // ── Aplicar movimientos del personal ──
+            const mv2 = movMap[d.id] || {};
+            const diasLic  = mv2.dias_licencia  || 0;
+            const diasAus  = mv2.dias_ausencia  || 0;
+            const diasVac  = mv2.dias_vacaciones|| 0;
+            const diasAust = diasLic + diasAus + diasVac;
+            const diasTrab = Math.max(0, diasMes - diasAust);
+
+            // Proporcionar sueldo base si hay ausentismo
+            const propBase = diasAust > 0 ? Math.round(base * diasTrab / diasMes) : base;
+
             // Valor hora = sueldo/180 (mes 45 hrs semanales Chile)
             const valHora = base/180;
             const montoH50  = Math.round(valHora*1.5*h50n);
             const montoH100 = Math.round(valHora*2*h100n);
-            // Imponible devengado sin gratificación (base + bonos + HE)
-            const imponibleSinGratif = base + bonoa + montoH50 + montoH100;
-            // Art. 47: 25% del imponible devengado, tope dinámico (IMM × 4.75) / 12
+
+            // Bonos variables del módulo movimientos + del modal
+            const bonoVarMov = (mv2.bono_variable||0) + (mv2.comision||0) + (mv2.aguinaldo||0);
+            const anticipoMov = mv2.anticipo || 0;
+
+            // Imponible devengado sin gratificación
+            const imponibleSinGratif = propBase + bonoa + montoH50 + montoH100 + bonoVarMov;
             const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratifEmp, cfgProc.imm);
             const totalImpon = imponibleSinGratif + gratif;
             const totalNoImpon = col + mov + viat;
             const totalHaberes = totalImpon + totalNoImpon;
-            // Descuentos previsionales con topes legales diferenciados
+
+            // Descuentos previsionales con topes legales
             const baseAfp = calcBaseTopeAfp(totalImpon, cfgProc);
             const afpPct = getAfpPctTrabajador(r.afp, cfgProc);
             const descAfp = Math.round(baseAfp * afpPct);
@@ -4149,7 +4191,7 @@ Clave: ${clavePortal}`);
             }
             const rentaLiquida = totalImpon - descAfp - descSalud - descCesantia;
             const impuestoUnico = calcImpuestoUnicoSegundaCat(rentaLiquida, cfgProc.utm);
-            const totalDesc = descAfp + descSalud + descCesantia + impuestoUnico + otros;
+            const totalDesc = descAfp + descSalud + descCesantia + impuestoUnico + otros + anticipoMov;
             const liquido = Math.round(totalHaberes - totalDesc);
             totalH+=Math.round(totalHaberes); totalD+=totalDesc; totalL+=liquido;
 
@@ -4159,12 +4201,17 @@ Clave: ${clavePortal}`);
               rut:r.rut, nombre:r.nombre, cargo:r.cargo,
               tipo_contrato: r.tipo_contrato||"INDEFINIDO",
               afp:r.afp, salud:r.salud,
-              sueldo_base:base, gratificacion:Math.round(gratif),
+              sueldo_base:base, sueldo_base_proporcional:propBase,
+              gratificacion:Math.round(gratif),
               asig_colacion:col, asig_movilizacion:mov,
-              bono_asistencia:bonoa,
+              bono_asistencia:bonoa, bono_variable:bonoVarMov,
               horas_extra_50:montoH50, horas_extra_50_hrs:h50n,
               horas_extra_100:montoH100, horas_extra_100_hrs:h100n,
-              viaticos:viat, otros_descuentos:otros,
+              viaticos:viat,
+              // Ausentismo (para LRE/DT)
+              dias_trabajados:diasTrab, dias_licencia:diasLic,
+              dias_ausencia:diasAus, dias_vacaciones:diasVac,
+              otros_descuentos:otros + anticipoMov,
               total_imponible:Math.round(totalImpon),
               total_no_imponible:Math.round(totalNoImpon),
               total_haberes:Math.round(totalHaberes),
@@ -4176,6 +4223,13 @@ Clave: ${clavePortal}`);
               estado:"procesado",
               creado: firebase.firestore.FieldValue.serverTimestamp()
             }, {merge:true});
+
+            // Marcar movimientos como procesados
+            movSnap.forEach(mv3 => {
+              if (mv3.data().empleado_id === d.id) {
+                batch2.update(db.collection("movimientos_personal").doc(mv3.id), { procesado: true, periodo_liquidacion: periodo });
+              }
+            });
           });
 
           await batch2.commit();
@@ -4554,20 +4608,49 @@ Clave: ${clavePortal}`);
     // ── 5. CONTRATOS ──
     async function renderRRHH_Contratos(zone, empId) {
       zone.innerHTML =
-        btnPrimary("btn-add-cont","Nuevo Contrato / Anexo","📝") +
-        tableWrap("tbl-cont","Contratos y Anexos","Documentos contractuales vigentes e históricos",
-          ["RUT","Trabajador","Tipo","Inicio","Término","Sueldo","Estado","Acciones"]) +
-        modalHtml("modal-cont","Registrar Contrato", `
-          ${formField("Trabajador", `<select id="cont-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
-          ${formField("Tipo de Contrato", sel("cont-tipo",[{v:"indefinido",l:"Contrato Indefinido"},{v:"plazo_fijo",l:"Plazo Fijo"},{v:"obra_faena",l:"Obra o Faena"},{v:"honorarios",l:"Honorarios"},{v:"anexo",l:"Anexo de Contrato"}]))}
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-            <div>${formField("Fecha Inicio", inp("cont-inicio","date",""))}</div>
-            <div>${formField("Fecha Término", inp("cont-fin","date","(Dejar vacío si es indefinido)"))}</div>
+        `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button id="btn-add-cont" class="btn-entrar">📝 Nuevo Documento</button>
+          <div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.25);border-radius:var(--radius);padding:8px 14px;font-size:12px;color:#0ea5e9;display:flex;align-items:center;gap:6px;">
+            <span>ℹ️</span>
+            <span>Aquí registras <strong>contratos, renovaciones, anexos y cualquier documento legal</strong>. El PDF se genera automáticamente con los datos y las cláusulas de tu configuración.</span>
           </div>
-          ${formField("Sueldo Pactado ($)", inp("cont-sueldo","number","0"))}
-          ${formField("Observaciones", inp("cont-obs","text","Notas adicionales"))}
+        </div>` +
+        tableWrap("tbl-cont","Contratos, Anexos y Documentos","Historial de documentos contractuales",
+          ["RUT","Trabajador","Tipo","Inicio","Término","Sueldo","Estado","Acciones"]) +
+        modalHtml("modal-cont","📋 Registrar Documento Contractual", `
+          ${formField("Trabajador", `<select id="cont-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
+          ${formField("Tipo de Documento", `<select id="cont-tipo" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;" onchange="contTipoChange(this.value)">
+            <optgroup label="── Contratos de Trabajo ──">
+              <option value="indefinido">Contrato Indefinido (Art. 159 N°4)</option>
+              <option value="plazo_fijo">Contrato a Plazo Fijo (Art. 159 N°4)</option>
+              <option value="obra_faena">Contrato por Obra o Faena</option>
+              <option value="honorarios">Honorarios (Boleta)</option>
+              <option value="practica">Práctica Profesional</option>
+              <option value="part_time">Part-Time (jornada parcial)</option>
+            </optgroup>
+            <optgroup label="── Anexos y Modificaciones ──">
+              <option value="anexo_renovacion">Anexo de Renovación (prórroga)</option>
+              <option value="anexo_sueldo">Anexo de Modificación de Sueldo</option>
+              <option value="anexo_cargo">Anexo de Cambio de Cargo</option>
+              <option value="anexo_jornada">Anexo de Modificación de Jornada</option>
+              <option value="anexo_general">Anexo General</option>
+            </optgroup>
+            <optgroup label="── Otros Documentos ──">
+              <option value="finiquito">Finiquito</option>
+              <option value="carta_amonestacion">Carta de Amonestación</option>
+              <option value="acuerdo_confidencialidad">Acuerdo de Confidencialidad</option>
+              <option value="otro">Otro Documento</option>
+            </optgroup>
+          </select>`)}
+          <div id="cont-aviso-tipo" style="display:none;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:8px 12px;font-size:11px;color:#d97706;margin-bottom:8px;"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            <div>${formField("Fecha Inicio / Emisión", inp("cont-inicio","date",""))}</div>
+            <div>${formField("Fecha Término (vacío = indefinido)", inp("cont-fin","date",""))}</div>
+          </div>
+          ${formField("Sueldo / Monto Pactado ($)", inp("cont-sueldo","number","0"))}
+          ${formField("Observaciones / Cláusulas específicas", `<textarea id="cont-obs" rows="3" placeholder="Agrega cláusulas o detalles específicos de este documento..." style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>`)}
           <input type="hidden" id="cont-docid">
-          <button id="btn-save-cont" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Contrato</button>
+          <button id="btn-save-cont" class="btn-entrar" style="width:100%;margin-top:8px">💾 Guardar Documento</button>
         `);
 
       // Cargar empleados en el select
@@ -4578,8 +4661,11 @@ Clave: ${clavePortal}`);
       }
 
       document.getElementById("btn-add-cont").onclick = () => {
-        ["cont-inicio","cont-fin","cont-obs","cont-docid"].forEach(id => document.getElementById(id).value = "");
+        ["cont-inicio","cont-fin","cont-docid"].forEach(id => document.getElementById(id).value = "");
+        const obs = document.getElementById("cont-obs"); if(obs) obs.value="";
         document.getElementById("cont-sueldo").value = 0;
+        document.getElementById("cont-tipo").value = "indefinido";
+        contTipoChange("indefinido");
         document.getElementById("modal-cont").style.display = "flex";
       };
 
@@ -4625,28 +4711,79 @@ Clave: ${clavePortal}`);
       if (!empId) return;
       const snap = await db.collection("contratos").where("entityId","==",empId).get();
       const tb = document.getElementById("tbl-cont-tbody");
-      if (snap.empty) { tb.innerHTML = emptyRow(7); return; }
+      if (snap.empty) { tb.innerHTML = emptyRow(8); return; }
+      const TIPOS_LABEL = {
+        indefinido:"Contrato Indefinido", plazo_fijo:"Plazo Fijo",
+        obra_faena:"Obra o Faena", honorarios:"Honorarios", practica:"Práctica",
+        part_time:"Part-Time", anexo_renovacion:"Anexo Renovación",
+        anexo_sueldo:"Anexo Sueldo", anexo_cargo:"Anexo Cargo",
+        anexo_jornada:"Anexo Jornada", anexo_general:"Anexo General",
+        finiquito:"Finiquito", carta_amonestacion:"Carta Amonestación",
+        acuerdo_confidencialidad:"NDA", otro:"Otro"
+      };
       tb.innerHTML = "";
       snap.forEach(d => {
         const r = d.data();
         const eCls = {vigente:"green",vencido:"red",terminado:"gray"}[r.estado]||"gray";
+        const tipoLabel = TIPOS_LABEL[r.tipo]||r.tipo||"—";
+        const esAnexo = (r.tipo||"").startsWith("anexo");
+        const esOtro  = ["finiquito","carta_amonestacion","acuerdo_confidencialidad","otro"].includes(r.tipo);
         tb.innerHTML += `<tr>
           <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
           <td><strong>${r.nombre||"—"}</strong></td>
-          <td><span class="badge badge-gray" style="font-size:10px">${r.tipo||"—"}</span></td>
+          <td><span class="badge badge-${esAnexo?"warn":esOtro?"gray":"green"}" style="font-size:10px">${tipoLabel}</span></td>
           <td>${r.fecha_inicio||"—"}</td>
           <td>${r.fecha_fin||"Indefinido"}</td>
           <td style="font-weight:700">${formatMonto(r.sueldo_pactado)}</td>
           <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
           <td style="white-space:nowrap">
-              <button onclick="imprimirContratoPDF('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;" title="Ver PDF">🖨️</button>
-              <button onclick="deleteCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Eliminar">🗑</button>
-            </td>
+            <button onclick="imprimirContratoPDF('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
+            <button onclick="editarCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">✏️</button>
+            <button onclick="deleteCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
+          </td>
         </tr>`;
       });
     }
+
+    // ── Aviso contextual según tipo de documento ──
+    window.contTipoChange = (tipo) => {
+      const aviso = document.getElementById("cont-aviso-tipo");
+      if (!aviso) return;
+      const msgs = {
+        plazo_fijo: "⚠️ Plazo fijo: máximo 1 año (renovable hasta 2 años). Requiere fecha de término obligatoria.",
+        obra_faena: "ℹ️ Obra o faena: termina al completar la obra. Fecha de término aproximada.",
+        honorarios: "ℹ️ Honorarios: no genera relación laboral. Sin AFP ni AFC obligatorio.",
+        practica: "ℹ️ Práctica profesional: máximo 6 meses.",
+        anexo_renovacion: "📋 Prórroga del contrato a plazo fijo. Indica las nuevas fechas de vigencia.",
+        anexo_sueldo: "📋 Modifica la remuneración. La nueva cifra reemplaza a la anterior.",
+        anexo_cargo: "📋 Modifica las funciones del trabajador.",
+        finiquito: "⚠️ Término de relación laboral. Debe firmarse ante testigos o ministro de fe.",
+        carta_amonestacion: "📋 Sanción formal. Se archiva en carpeta del trabajador.",
+      };
+      const msg = msgs[tipo];
+      aviso.style.display = msg ? "block" : "none";
+      aviso.textContent = msg || "";
+    };
+
+    // ── Editar contrato existente ──
+    window.editarCont = async (docId, empId) => {
+      const d = await db.collection("contratos").doc(docId).get();
+      if (!d.exists) return;
+      const r = d.data();
+      const sel2 = document.getElementById("cont-emp");
+      if (sel2) sel2.value = r.empleado_id||"";
+      document.getElementById("cont-tipo").value = r.tipo||"indefinido";
+      document.getElementById("cont-inicio").value = r.fecha_inicio||"";
+      document.getElementById("cont-fin").value = r.fecha_fin||"";
+      document.getElementById("cont-sueldo").value = r.sueldo_pactado||0;
+      const obs = document.getElementById("cont-obs"); if(obs) obs.value = r.observaciones||"";
+      document.getElementById("cont-docid").value = docId;
+      contTipoChange(r.tipo||"indefinido");
+      document.getElementById("modal-cont").style.display = "flex";
+    };
+
     window.deleteCont = async (docId, empId) => {
-      if (!confirm("¿Eliminar este contrato?")) return;
+      if (!confirm("¿Eliminar este documento?")) return;
       await db.collection("contratos").doc(docId).delete();
       renderRRHH_Contratos(document.getElementById("module-dynamic-zone"), empId);
     };
@@ -4668,7 +4805,18 @@ Clave: ${clavePortal}`);
           ["RUT","Trabajador","Tipo","Desde","Hasta","Días","Estado","Acciones"]) +
         modalHtml("modal-vac","Registrar Solicitud", `
           ${formField("Trabajador", `<select id="vac-emp" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"><option value="">— Selecciona trabajador —</option></select>`)}
-          ${formField("Tipo", sel("vac-tipo",[{v:"vacaciones",l:"Vacaciones Legales"},{v:"permiso_sin_goce",l:"Permiso sin Goce de Sueldo"},{v:"permiso_con_goce",l:"Permiso con Goce de Sueldo"},{v:"licencia",l:"Licencia Médica"},{v:"otro",l:"Otro"}]))}
+          ${formField("Tipo", sel("vac-tipo",[
+            {v:"vacaciones",l:"🏖️ Vacaciones Legales"},
+            {v:"permiso_con_goce",l:"✅ Permiso con Goce de Sueldo"},
+            {v:"permiso_sin_goce",l:"⚠️ Permiso sin Goce de Sueldo"},
+            {v:"licencia",l:"🏥 Licencia Médica"},
+            {v:"fallecimiento",l:"🖤 Permiso por Fallecimiento (3 días)"},
+            {v:"matrimonio",l:"💍 Permiso por Matrimonio (5 días)"},
+            {v:"nacimiento",l:"👶 Permiso por Nacimiento (5 días)"},
+            {v:"examen_medico",l:"🩺 Permiso Examen Médico"},
+            {v:"tramite",l:"📋 Permiso por Trámite Personal"},
+            {v:"otro",l:"📝 Otro"}
+          ]))}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
             <div>${formField("Desde", inp("vac-desde","date",""))}</div>
             <div>${formField("Hasta", inp("vac-hasta","date",""))}</div>
@@ -7876,38 +8024,66 @@ Si necesita clave, edita el cliente y agrega una.`;
         <div class="pc2-sheet">
           <div class="pc2-sheet-title">📅 Solicitar Permiso</div>
           <label class="pc2-label">Tipo de Permiso</label>
-          <select id="pp-tipo" class="pc2-select">
-            <option value="con_goce">Con Goce de Sueldo</option>
-            <option value="sin_goce">Sin Goce de Sueldo</option>
-            <option value="medico">Médico / Licencia</option>
+          <select id="pp-tipo" class="pc2-select" onchange="pc2PermisoTipoChange(this.value)">
+            <option value="con_goce">Permiso con goce de sueldo</option>
+            <option value="sin_goce">Permiso sin goce de sueldo</option>
+            <option value="medico">Licencia médica</option>
+            <option value="fallecimiento">Permiso por fallecimiento</option>
+            <option value="matrimonio">Permiso por matrimonio</option>
+            <option value="nacimiento">Permiso por nacimiento</option>
+            <option value="examen_medico">Permiso por examen médico</option>
+            <option value="tramite">Permiso por trámite personal</option>
+            <option value="otro">Otro</option>
           </select>
+          <div id="pp-aviso" style="display:none;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:8px 12px;font-size:11px;color:#d97706;margin:6px 0;"></div>
           <label class="pc2-label">Fecha desde</label>
           <input type="date" id="pp-desde" class="pc2-input">
           <label class="pc2-label">Fecha hasta</label>
           <input type="date" id="pp-hasta" class="pc2-input">
-          <label class="pc2-label">Motivo</label>
-          <input type="text" id="pp-motivo" class="pc2-input" placeholder="Motivo del permiso">
+          <label class="pc2-label">Motivo / Descripción</label>
+          <input type="text" id="pp-motivo" class="pc2-input" placeholder="Describe el motivo del permiso">
           <button class="pc2-btn-main" id="pp-btn">Enviar Solicitud</button>
           <button class="pc2-btn-sec" onclick="document.getElementById('pc2-modal').innerHTML=''">Cancelar</button>
           <div class="pc2-msg" id="pp-msg"></div>
         </div></div>`);
+
+      // Mensajes informativos por tipo
+      window.pc2PermisoTipoChange = (tipo) => {
+        const av = document.getElementById("pp-aviso");
+        if (!av) return;
+        const info = {
+          fallecimiento: "⚡ Permiso legal: 3 días hábiles para familiar directo (cónyuge, hijos, padres). 1 día para hermanos.",
+          matrimonio:    "⚡ Permiso legal: 5 días hábiles por matrimonio o AUC (Art. 207 bis Código del Trabajo).",
+          nacimiento:    "⚡ Permiso legal: 5 días hábiles para el padre (fuero paternal). Presentar certificado de nacimiento.",
+          medico:        "ℹ️ La licencia médica debe ser presentada en formato físico al empleador dentro de 48 hrs de emisión.",
+          sin_goce:      "ℹ️ Permiso sin goce: los días no se pagan. Se descuentan proporcionalmente del sueldo mensual.",
+        };
+        av.style.display = info[tipo] ? "block" : "none";
+        av.textContent = info[tipo] || "";
+      };
+
       document.getElementById("pp-btn").onclick = async () => {
         const desde  = document.getElementById("pp-desde").value;
         const hasta  = document.getElementById("pp-hasta").value;
         const tipo   = document.getElementById("pp-tipo").value;
         const motivo = document.getElementById("pp-motivo").value.trim();
-        if (!desde) { document.getElementById("pp-msg").textContent="Indica la fecha"; return; }
+        if (!desde) { document.getElementById("pp-msg").textContent="Indica la fecha de inicio"; return; }
         const dias = desde&&hasta ? pc2DiasHabiles(desde,hasta) : 1;
         const btn = document.getElementById("pp-btn");
         btn.disabled=true; btn.textContent="Enviando…";
+        const tipoLabel = {con_goce:"Permiso con goce",sin_goce:"Permiso sin goce",medico:"Licencia médica",
+          fallecimiento:"Permiso por fallecimiento",matrimonio:"Permiso por matrimonio",
+          nacimiento:"Permiso por nacimiento",examen_medico:"Permiso médico",
+          tramite:"Permiso por trámite",otro:"Permiso"};
         await db.collection("permisos").add({
           entityId:empId, empleado_id:empDocId,
-          tipo, desde, hasta, dias_solicitados:dias, motivo,
+          tipo, tipo_label: tipoLabel[tipo]||tipo,
+          desde, hasta, dias_solicitados:dias, motivo,
           estado:"pendiente",
           creado: firebase.firestore.FieldValue.serverTimestamp()
         });
         document.getElementById("pc2-modal").innerHTML="";
-        alert("✅ Permiso solicitado. Pendiente de aprobación.");
+        alert("✅ Solicitud de "+( tipoLabel[tipo]||"permiso")+" enviada.\nQueda pendiente de aprobación por RRHH.");
         renderPortalTrabajador(document.getElementById("module-dynamic-zone"), firebase.auth().currentUser);
       };
     };
@@ -8301,8 +8477,20 @@ Si necesita clave, edita el cliente y agrega una.`;
       const textoCont   = cfgTextos.texto_cont || "El presente contrato se rige por el Código del Trabajo de Chile y demás leyes vigentes. Ambas partes declaran conocer y aceptar íntegramente sus cláusulas.";
       const clausulasExtra = cfgTextos.clausulas_extra ? `<h3>Cláusulas Adicionales</h3><p>${cfgTextos.clausulas_extra.replace(/\n/g,"<br>")}</p>` : "";
       const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
-      const tipos = {indefinido:"Indefinido",plazo_fijo:"Plazo Fijo",obra_faena:"Obra o Faena",honorarios:"Honorarios",anexo:"Anexo de Contrato"};
-      const tipoLabel = tipos[r.tipo]||r.tipo||"Indefinido";
+      const TIPOS_LABEL = {
+        indefinido:"Contrato Individual de Trabajo", plazo_fijo:"Contrato Individual de Trabajo a Plazo Fijo",
+        obra_faena:"Contrato por Obra o Faena Determinada", honorarios:"Contrato de Prestación de Servicios a Honorarios",
+        practica:"Contrato de Práctica Profesional", part_time:"Contrato Individual de Trabajo (Jornada Parcial)",
+        anexo_renovacion:"Anexo de Renovación de Contrato", anexo_sueldo:"Anexo de Modificación de Remuneración",
+        anexo_cargo:"Anexo de Modificación de Cargo y Funciones", anexo_jornada:"Anexo de Modificación de Jornada de Trabajo",
+        anexo_general:"Anexo de Contrato", finiquito:"Finiquito de Contrato de Trabajo",
+        carta_amonestacion:"Carta de Amonestación", acuerdo_confidencialidad:"Acuerdo de Confidencialidad",
+        otro:"Documento Contractual"
+      };
+      const tipoDoc = tipos[r.tipo]||r.tipo||"Indefinido";
+      const tituloPDF = TIPOS_LABEL[r.tipo]||"Contrato Individual de Trabajo";
+      const esAnexo = (r.tipo||"").startsWith("anexo");
+      const esOtro  = ["finiquito","carta_amonestacion","acuerdo_confidencialidad","otro"].includes(r.tipo);
       const logoH = empresa.logo_url
         ? `<img src="${empresa.logo_url}" style="height:50px;object-fit:contain;" onerror="this.remove()">`
         : `<div style="width:50px;height:50px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">${(empresa.nombre||"E").charAt(0)}</div>`;
@@ -8318,44 +8506,44 @@ Si necesita clave, edita el cliente y agrega una.`;
           h2{font-size:12px;font-weight:400;color:#555;font-style:italic}
           h3{font-size:11.5px;font-weight:800;color:#1b4332;text-transform:uppercase;letter-spacing:.8px;border-bottom:1.5px solid #1b4332;padding-bottom:3px;margin:20px 0 10px}
           p{margin-bottom:10px;text-align:justify}
-          .firma-box{display:flex;justify-content:space-around;margin-top:70px}
-          .firma{text-align:center;width:42%}
-          .firma-line{border-top:1px solid #444;padding-top:6px;font-size:10px;color:#555;margin-top:52px}
+          .firma-box{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px}
+          .firma{text-align:center;width:220px}
+          .firma-line{border-top:1.5px solid #333;padding-top:8px;font-size:10px;color:#333;margin-top:56px;line-height:1.5}
           @media print{@page{size:A4;margin:15mm}body{padding:0}}
         </style></head><body>
 
         <div class="hdr">
           ${logoH}
           <div class="hdr-center">
-            <h1>Contrato Individual de Trabajo</h1>
-            <h2>Modalidad: ${tipoLabel}</h2>
+            <h1>${tituloPDF}</h1>
+            <h2>Modalidad: ${tipoDoc}</h2>
           </div>
           <div style="text-align:right;font-size:10px;color:#666">${ciudad}<br>${hoy}</div>
         </div>
 
-        <h3>Partes Contratantes</h3>
-        <p>En <strong>${ciudad}</strong>, a <strong>${hoy}</strong>, entre:</p>
-        <p><strong>EMPLEADOR:</strong> ${empresa.nombre||"—"}, RUT ${empresa.rut||"—"}${empresa.rep_legal_nombre?`, representada(o) por don/ña <strong>${empresa.rep_legal_nombre}</strong>${empresa.rep_legal_rut?", RUT "+empresa.rep_legal_rut:""}`:""}, con domicilio en ${empresa.direccion||"—"}, en adelante <em>"el Empleador"</em>.</p>
-        <p><strong>TRABAJADOR/A:</strong> don/ña <strong>${r.nombre||"—"}</strong>, RUT <strong>${r.rut||"—"}</strong>, en adelante <em>"el Trabajador"</em>.</p>
-        <p>Ambas partes, mayores de edad y de libre disposición, han convenido el siguiente Contrato Individual de Trabajo:</p>
+        <h3>${esAnexo ? "Objeto del Anexo" : esOtro ? "Antecedentes" : "Partes Contratantes"}</h3>
+        <p>En <strong>${ciudad}</strong>, a <strong>${hoy}</strong>${esAnexo ? ", las partes suscriben el siguiente anexo modificatorio al Contrato de Trabajo:" : ", entre:"}</p>
+        ${!esAnexo ? `<p><strong>EMPLEADOR:</strong> ${empresa.nombre||"—"}, RUT ${empresa.rut||"—"}${empresa.rep_legal_nombre?", representado por "+empresa.rep_legal_nombre+(empresa.rep_legal_rut?", RUT "+empresa.rep_legal_rut:""):""}, con domicilio en ${empresa.direccion||"—"}, en adelante "el Empleador".</p>
+        <p><strong>TRABAJADOR/A:</strong> don/ña <strong>${r.nombre||"—"}</strong>, RUT <strong>${r.rut||"—"}</strong>, en adelante "el Trabajador".</p>
+        <p>Ambas partes han convenido el siguiente ${tituloPDF}:</p>` : `<p><strong>Empresa:</strong> ${empresa.nombre||"—"}, RUT ${empresa.rut||"—"}</p>
+        <p><strong>Trabajador/a:</strong> ${r.nombre||"—"}, RUT ${r.rut||"—"}</p>`}
 
-        <h3>Condiciones Pactadas</h3>
-        <p><strong>PRIMERO — Cargo y Funciones:</strong> El Trabajador se obliga a desempeñar el cargo de <strong>${r.cargo||r.nombre||"—"}</strong>, realizando las tareas propias del cargo y aquellas otras que razonablemente le encomiende el Empleador.</p>
-        <p><strong>SEGUNDO — Lugar de Trabajo:</strong> Los servicios se prestarán en <strong>${empresa.direccion||ciudad}</strong>, sin perjuicio de la facultad del Empleador de alterar, por causa justificada, el sitio o recinto, conforme al Art. 12 del Código del Trabajo.</p>
-        <p><strong>TERCERO — Jornada de Trabajo:</strong> ${textoJornada}</p>
-        <p><strong>CUARTO — Remuneración:</strong> El Empleador pagará al Trabajador una remuneración mensual de <strong>${fmt(r.sueldo_pactado)}</strong> (${numALetras(r.sueldo_pactado||0)} pesos), liquidada y pagada por períodos vencidos en proporción a los días trabajados, de conformidad al Art. 54 y siguientes del Código del Trabajo.</p>
-        <p><strong>QUINTO — Vigencia:</strong> El presente contrato tendrá vigencia desde el <strong>${r.fecha_inicio||"—"}</strong>${r.tipo==="indefinido"?" con duración indefinida":", hasta el <strong>"+(r.fecha_fin||"—")+"</strong>"}.</p>
+        <h3>${esAnexo ? "Modificaciones Acordadas" : "Condiciones Pactadas"}</h3>
+        ${!esAnexo && !esOtro ? `<p><strong>PRIMERO — Cargo:</strong> El Trabajador desempeñará el cargo de <strong>${r.cargo||"—"}</strong>.</p>
+        <p><strong>SEGUNDO — Lugar de Trabajo:</strong> Los servicios se prestarán en ${empresa.direccion||ciudad}.</p>
+        <p><strong>TERCERO — Jornada:</strong> ${textoJornada}</p>` : ""}
+        ${r.sueldo_pactado ? `<p><strong>${esAnexo ? "Remuneración modificada" : "CUARTO — Remuneración"}:</strong> ${fmt(r.sueldo_pactado)} (${numALetras(r.sueldo_pactado||0)} pesos), pagada mensualmente.</p>` : ""}
+        ${r.fecha_inicio ? `<p><strong>${esAnexo ? "Vigencia del Anexo" : "QUINTO — Vigencia"}:</strong> Desde el ${r.fecha_inicio}${r.fecha_fin ? " hasta el "+r.fecha_fin : " con duración indefinida"}.</p>` : ""}
+        ${r.observaciones ? `<p><strong>${esAnexo ? "Otras estipulaciones" : "Observaciones"}:</strong> ${r.observaciones}</p>` : ""}
 
         <h3>Disposiciones Generales</h3>
         <p>${textoCont}</p>
-        <p>El Trabajador declara conocer y aceptar el Reglamento Interno de Orden, Higiene y Seguridad de la empresa, comprometiéndose a cumplir las normas en él contenidas.</p>
-        <p>El presente contrato se firma en dos ejemplares del mismo tenor y fecha, declarando el Trabajador haber recibido un ejemplar en este acto.</p>
-        ${r.observaciones?`<p><strong>Observaciones:</strong> ${r.observaciones}</p>`:""}
+        <p>El presente documento se firma en dos ejemplares del mismo tenor y fecha, declarando el Trabajador haber recibido un ejemplar en este acto.</p>
         ${clausulasExtra}
 
         <div class="firma-box">
-          <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:38px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Firma del Empleador<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
           <div class="firma"><div class="firma-line">Firma del Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div></div>
+          <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:40px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
         </div>
         </body></html>`;
       const w = window.open("","_blank"); w.document.write(html); w.document.close();
@@ -8374,7 +8562,14 @@ Si necesita clave, edita el cliente y agrega una.`;
       const pieVac   = cfgTextos.pie_vac   || "Solo se cuentan días hábiles (lunes a viernes, excluyendo feriados legales de Chile).";
       const logoH = empresa.logo_url ? `<img src="${empresa.logo_url}" style="height:45px;object-fit:contain;" onerror="this.remove()">` : "";
       const hoy = new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
-      const tipos = {vacaciones:"Vacaciones Legales",permiso_sin_goce:"Permiso sin Goce de Sueldo",permiso_con_goce:"Permiso con Goce de Sueldo",licencia:"Licencia Médica",otro:"Otro"};
+      const tipos = {
+        vacaciones:"Vacaciones Legales", permiso_sin_goce:"Permiso sin Goce de Sueldo",
+        permiso_con_goce:"Permiso con Goce de Sueldo", licencia:"Licencia Médica",
+        fallecimiento:"Permiso por Fallecimiento", matrimonio:"Permiso por Matrimonio",
+        nacimiento:"Permiso por Nacimiento", examen_medico:"Permiso Examen Médico",
+        tramite:"Permiso por Trámite", con_goce:"Permiso con Goce",
+        sin_goce:"Permiso sin Goce", medico:"Licencia Médica", otro:"Otro"
+      };
       const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante Vacaciones</title>
         <style>body{font-family:Arial,sans-serif;font-size:12px;padding:40px;max-width:700px;margin:0 auto;line-height:1.8}
         .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #1b4332;padding-bottom:12px;margin-bottom:18px}
@@ -8384,9 +8579,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         .row:last-child{border:none} .lbl{color:#555} .val{font-weight:700}
         .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
         .badge-apro{background:#d1fae5;color:#065f46} .badge-pend{background:#fef3c7;color:#92400e}
-        .firma-row{display:flex;gap:40px;margin-top:50px}
-        .firma{text-align:center;width:200px}
-        .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:44px;font-size:10px;color:#555}
+        .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px}
+        .firma{text-align:center;width:220px}
+        .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
         @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
 
         <div class="hdr">
@@ -8442,9 +8637,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         .row:last-child{border:none} .lbl{color:#555} .val{font-weight:700}
         .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
         .badge-apro{background:#d1fae5;color:#065f46} .badge-pend{background:#fef3c7;color:#92400e}
-        .firma-row{display:flex;gap:40px;margin-top:50px}
-        .firma{text-align:center;width:200px}
-        .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:44px;font-size:10px;color:#555}
+        .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px}
+        .firma{text-align:center;width:220px}
+        .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
         @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
 
         <div class="hdr">
@@ -9638,7 +9833,139 @@ Si necesita clave, edita el cliente y agrega una.`;
       };
     };
 
-    // ── AGREGAR BOTÓN "MIS EMPRESAS" EN EL HEADER PARA CLIENTES (no superadmin) ──
+    // ── EDITAR ENTIDAD CLIENTE — formulario completo igual al SA Panel ──
+    window.editarEntidadCliente = async (docId, coleccion) => {
+      const d = await db.collection(coleccion).doc(docId).get();
+      if (!d.exists) { alert("No se encontró la entidad"); return; }
+      const r = d.data();
+      const modal = document.createElement("div");
+      modal.id = "modal-edit-ent-cli";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:5000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:600px;margin:auto;">
+          <div style="background:linear-gradient(135deg,var(--c-accent),#0ea5e9);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:15px;font-weight:800;color:#fff;">✏️ Editar ${r.nombre||"Entidad"}</div>
+            <button onclick="document.getElementById('modal-edit-ent-cli').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
+          </div>
+          <div style="padding:20px;max-height:80vh;overflow-y:auto;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Nombre / Razón Social *", `<input id="ec-nombre" value="${r.nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("RUT *", `<input id="ec-rut" value="${r.rut||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+            ${formField("Giro / Actividad", `<input id="ec-giro" value="${r.giro||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Dirección", `<input id="ec-dir" value="${r.direccion||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("Ciudad", `<input id="ec-ciudad" value="${r.ciudad||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Teléfono", `<input id="ec-tel" value="${r.telefono||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("Correo", `<input id="ec-correo" type="email" value="${r.correo||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div>${formField("Representante Legal", `<input id="ec-rep-nombre" value="${r.rep_legal_nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              <div>${formField("RUT Representante", `<input id="ec-rep-rut" value="${r.rep_legal_rut||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+            </div>
+
+            <div style="background:rgba(21,101,192,0.08);border:1px solid rgba(21,101,192,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:8px;">🏦 Datos Bancarios</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+                <div>${formField("Banco", `<input id="ec-banco" value="${r.banco||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+                <div>${formField("N° Cuenta", `<input id="ec-num-cuenta" value="${r.num_cuenta||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              </div>
+            </div>
+
+            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">🖼️ Logo de la Empresa</div>
+            <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:10px;margin-bottom:10px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:5px;">Subir imagen (PNG, JPG — máx. 2 MB)</label>
+              <input type="file" id="ec-logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
+                onchange="logoFileToBase64('ec-logo-file','ec-logo','ec-logo-preview')">
+              <div id="ec-logo-preview" style="${r.logo_url?'display:block':'display:none'};margin-bottom:6px;">
+                <img id="ec-logo-preview-img" src="${r.logo_url||''}" style="height:48px;border-radius:6px;border:1px solid var(--c-border);object-fit:contain;" onerror="this.parentElement.style.display='none'">
+              </div>
+              <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL —</div>
+              <input id="ec-logo" type="url" value="${r.logo_url||''}" placeholder="https://..."
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"
+                oninput="if(this.value){document.getElementById('ec-logo-preview-img').src=this.value;document.getElementById('ec-logo-preview').style.display='block';}">
+            </div>
+
+            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">✍️ Firma del Representante Legal</div>
+            <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:10px;margin-bottom:10px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:5px;">Subir imagen de firma (PNG — máx. 1 MB)</label>
+              <input type="file" id="ec-firma-file" accept="image/png,image/jpeg,image/webp"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
+                onchange="logoFileToBase64('ec-firma-file','ec-firma','ec-firma-preview')">
+              <div id="ec-firma-preview" style="${r.firma_url?'display:block':'display:none'};margin-bottom:6px;">
+                <img id="ec-firma-preview-img" src="${r.firma_url||''}" style="height:40px;border-radius:4px;border:1px solid var(--c-border);object-fit:contain;background:#fff;" onerror="this.parentElement.style.display='none'">
+              </div>
+              <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL —</div>
+              <input id="ec-firma" type="url" value="${r.firma_url||''}" placeholder="https://..."
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"
+                oninput="if(this.value){document.getElementById('ec-firma-preview-img').src=this.value;document.getElementById('ec-firma-preview').style.display='block';}">
+            </div>
+
+            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">⚙️ Configuración de Remuneraciones</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+                  <input type="checkbox" id="ec-gratif" ${r.config_rem?.paga_gratificacion!==false?'checked':''} style="accent-color:var(--c-accent)">Paga Gratificación Legal
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+                  <input type="checkbox" id="ec-colacion" ${r.config_rem?.paga_colacion?'checked':''} style="accent-color:var(--c-accent)">Paga Colación
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+                  <input type="checkbox" id="ec-movil" ${r.config_rem?.paga_movilizacion?'checked':''} style="accent-color:var(--c-accent)">Paga Movilización
+                </label>
+              </div>
+            </div>
+
+            <button id="btn-save-ec" class="btn-entrar" style="width:100%">💾 Guardar Cambios</button>
+            <p id="ec-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:14px;"></p>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      document.getElementById("btn-save-ec").onclick = async () => {
+        const nombre = document.getElementById("ec-nombre").value.trim();
+        if (!nombre) { document.getElementById("ec-msg").textContent="El nombre es obligatorio"; return; }
+        const btn = document.getElementById("btn-save-ec");
+        btn.disabled=true; btn.textContent="Guardando…";
+        try {
+          await db.collection(coleccion).doc(docId).update({
+            nombre,
+            rut:           document.getElementById("ec-rut").value.trim(),
+            giro:          document.getElementById("ec-giro").value.trim(),
+            direccion:     document.getElementById("ec-dir").value.trim(),
+            ciudad:        document.getElementById("ec-ciudad").value.trim(),
+            telefono:      document.getElementById("ec-tel").value.trim(),
+            correo:        document.getElementById("ec-correo").value.trim().toLowerCase(),
+            rep_legal_nombre: document.getElementById("ec-rep-nombre").value.trim(),
+            rep_legal_rut:    document.getElementById("ec-rep-rut").value.trim(),
+            banco:         document.getElementById("ec-banco").value.trim(),
+            num_cuenta:    document.getElementById("ec-num-cuenta").value.trim(),
+            logo_url:      document.getElementById("ec-logo").value.trim()||"",
+            firma_url:     document.getElementById("ec-firma").value.trim()||"",
+            config_rem: {
+              paga_gratificacion:  document.getElementById("ec-gratif").checked,
+              paga_colacion:       document.getElementById("ec-colacion").checked,
+              paga_movilizacion:   document.getElementById("ec-movil").checked,
+            },
+            actualizado: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          document.getElementById("ec-msg").style.color="var(--c-accent)";
+          document.getElementById("ec-msg").textContent="✓ Guardado correctamente.";
+          // Recargar lista si el modal de mis empresas sigue abierto
+          setTimeout(async () => {
+            document.getElementById("modal-edit-ent-cli").remove();
+            const me = document.getElementById("modal-mis-empresas");
+            if (me) { me.remove(); await abrirGestionEmpresasCliente(); }
+          }, 1200);
+        } catch(e) {
+          btn.disabled=false; btn.textContent="💾 Guardar Cambios";
+          document.getElementById("ec-msg").style.color="var(--c-danger)";
+          document.getElementById("ec-msg").textContent="Error: "+e.message;
+        }
+      };
+    };
     const _origUpdateHeaderPlan = updateHeaderPlan;
     updateHeaderPlan = function() {
       _origUpdateHeaderPlan();
@@ -9986,9 +10313,10 @@ Si necesita clave, edita el cliente y agrega una.`;
           .alcance-val{font-size:24px;font-weight:900}
           .cert-caja{display:flex;align-items:flex-start;gap:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin-bottom:16px}
           .cert-txt{font-size:10px;color:#374151;line-height:1.6}
-          .firma-row{display:flex;gap:40px;margin-top:14px}
-          .firma{text-align:center;width:200px}
-          .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:44px;font-size:9px;color:#555}
+          .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px}
+          .firma{text-align:center;width:220px}
+          .firma-img{height:40px;object-fit:contain;display:block;margin:0 auto 4px;}
+          .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
           .pie{font-size:8px;color:#9ca3af;text-align:center;margin-top:14px;border-top:1px solid #e5e7eb;padding-top:8px}
           .firma-img{height:38px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;}
           @media print{
@@ -10093,7 +10421,7 @@ Si necesita clave, edita el cliente y agrega una.`;
             <div class="firma-line">Firma Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div>
           </div>
           <div class="firma">
-            ${firmaH ? `<img src="${empresa.firma_url}" class="firma-img" onerror="this.remove()">` : ""}
+            ${empresa.firma_url ? `<img src="${empresa.firma_url}" class="firma-img" onerror="this.remove()">` : ""}
             <div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div>
           </div>
         </div>
@@ -11316,9 +11644,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1b4332;padding-bottom:12px;margin-bottom:20px}
         h1{font-size:14px;font-weight:800;color:#1b4332;text-align:center;text-transform:uppercase;letter-spacing:1.5px}
         p{margin-bottom:10px;text-align:justify}
-        .firma-row{display:flex;gap:60px;margin-top:60px}
-        .firma{text-align:center;width:200px}
-        .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:50px;font-size:10px;color:#555}
+        .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px}
+        .firma{text-align:center;width:220px}
+        .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
         @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
         <div class="hdr">${logoH}<h1>${doc.nombre}</h1><div style="font-size:10px;color:#666;text-align:right">${ciudad}<br>${hoy}</div></div>
         <p>${cuerpoFinal.replace(/\n/g,"</p><p>")}</p>
@@ -11360,6 +11688,418 @@ Si necesita clave, edita el cliente y agrega una.`;
     // ═══════════════════════════════════════════════════════════
     // RRHH — FINIQUITOS completo
     // ═══════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    // MÓDULO RRHH: MOVIMIENTOS DEL PERSONAL
+    // Centro de novedades mensuales → enlazado con remuneraciones
+    // ═══════════════════════════════════════════════════════════
+    async function renderRRHH_Movimientos(zone, empId) {
+      const hoy  = new Date().toISOString().slice(0,7);
+
+      zone.innerHTML = `
+        <!-- PESTAÑAS -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:2px solid var(--c-border);padding-bottom:12px;">
+          <button id="mov-tab-novedades" onclick="movTab('novedades')" class="btn-entrar" style="font-size:12px;padding:8px 16px;">📊 Novedades del Mes</button>
+          <button id="mov-tab-solicitudes" onclick="movTab('solicitudes')" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--radius);cursor:pointer;">🔔 Solicitudes Pendientes</button>
+          <button id="mov-tab-historial" onclick="movTab('historial')" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 16px;border-radius:var(--radius);cursor:pointer;">📋 Historial Movimientos</button>
+        </div>
+
+        <!-- SECCIÓN: NOVEDADES DEL MES -->
+        <div id="mov-sec-novedades">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Período</label>
+              <input id="mov-periodo" type="month" value="${hoy}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Trabajador</label>
+              <select id="mov-emp-sel" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;min-width:220px;">
+                <option value="">— Seleccionar trabajador —</option>
+              </select>
+            </div>
+            <button id="btn-cargar-mov" class="btn-entrar">Ver Movimientos</button>
+          </div>
+
+          <div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.25);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#0ea5e9;">
+            <strong>ℹ️ Centro de Novedades:</strong> Aquí registras todas las variables del mes que afectan el sueldo. Las solicitudes aprobadas del portal se agregan <strong>automáticamente</strong>. El proceso de remuneraciones las absorbe al ejecutarse.
+          </div>
+
+          <div id="mov-tabla-wrap">
+            ${tableWrap("tbl-mov","Movimientos del Personal","Novedades del período activo",
+              ["Trabajador","Tipo de Movimiento","Código DT","Cantidad / Monto","Período","Origen","Estado","Acciones"])}
+          </div>
+
+          <div id="mov-form-nuevo" style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:16px;margin-top:14px;">
+            <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:12px;">➕ Agregar Movimiento Manual</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;flex-wrap:wrap;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Tipo de Movimiento</label>
+                <select id="mov-tipo-nuevo" onchange="movTipoChange(this.value)" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:9px 10px;border-radius:var(--radius);outline:none;">
+                  <optgroup label="── Ausentismo (descuentan sueldo) ──">
+                    <option value="licencia">🏥 Licencia Médica (días)</option>
+                    <option value="ausencia">🚫 Inasistencia / Permiso sin goce (días)</option>
+                    <option value="vacaciones">🏖️ Vacaciones (días hábiles)</option>
+                  </optgroup>
+                  <optgroup label="── Haberes Variables (imponibles) ──">
+                    <option value="bono">💰 Bono Variable / Comisión ($)</option>
+                    <option value="aguinaldo">🎁 Aguinaldo ($)</option>
+                    <option value="horas_extra">⏰ Horas Extra adicionales (horas)</option>
+                  </optgroup>
+                  <optgroup label="── Descuentos ──">
+                    <option value="anticipo">💵 Anticipo / Préstamo ($)</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;" id="mov-cant-lbl">Días</label>
+                <input id="mov-cant-nuevo" type="number" min="0" placeholder="0" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 10px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Observación</label>
+                <input id="mov-obs-nuevo" type="text" placeholder="Ej: Licencia por COVID, nro folio XXXX" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 10px;border-radius:var(--radius);outline:none;">
+              </div>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:10px;justify-content:flex-end;">
+              <div id="mov-aviso" style="flex:1;font-size:11px;color:#d97706;align-self:center;"></div>
+              <button id="btn-guardar-mov" class="btn-entrar">💾 Agregar Movimiento</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: SOLICITUDES PENDIENTES -->
+        <div id="mov-sec-solicitudes" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;color:var(--c-text)">🔔 Solicitudes de Trabajadores Pendientes de Aprobación</div>
+            <button onclick="cargarSolicitudesPend('${empId}')" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:7px 12px;border-radius:var(--radius);cursor:pointer;">🔄 Actualizar</button>
+          </div>
+          <div id="mov-lista-solicitudes">
+            <div class="pc2-empty" style="color:var(--c-muted)">Cargando solicitudes…</div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: HISTORIAL -->
+        <div id="mov-sec-historial" style="display:none;">
+          <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:5px;">Período</label>
+              <input id="mov-hist-periodo" type="month" value="${hoy}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+            </div>
+            <button onclick="cargarHistorialMov('${empId}')" class="btn-entrar">Ver Historial</button>
+          </div>
+          <div id="mov-historial-wrap">
+            ${tableWrap("tbl-mov-hist","Historial de Movimientos","Todos los movimientos del período",
+              ["Trabajador","Tipo","Cantidad","Observación","Origen","Período","Estado","Procesado"])}
+          </div>
+        </div>`;
+
+      // ── Poblar select de trabajadores activos ──
+      if (empId) {
+        const actSnap = await db.collection("empleados")
+          .where("entityId","==",empId).where("estado","==","activo").get();
+        const sel = document.getElementById("mov-emp-sel");
+        actSnap.forEach(d => {
+          const o = document.createElement("option");
+          o.value = d.id;
+          o.textContent = d.data().nombre + " — " + d.data().rut;
+          sel.appendChild(o);
+        });
+      }
+
+      // ── Cargar movimientos al presionar botón ──
+      document.getElementById("btn-cargar-mov").onclick = async () => {
+        const periodo = document.getElementById("mov-periodo").value;
+        const empDocId = document.getElementById("mov-emp-sel").value;
+        const tb = document.getElementById("tbl-mov-tbody");
+        if (!periodo || !empId) { tb.innerHTML = emptyRow(8,"Selecciona período"); return; }
+        let q = db.collection("movimientos_personal").where("entityId","==",empId).where("periodo","==",periodo);
+        if (empDocId) q = q.where("empleado_id","==",empDocId);
+        const snap = await q.get();
+        if (snap.empty) { tb.innerHTML = emptyRow(8,"Sin movimientos para este período. Usa el formulario de abajo para agregar."); return; }
+        const COD_DT = { licencia:"1116", ausencia:"1115", vacaciones:"1117", bono:"2111", aguinaldo:"2110", horas_extra:"2102", anticipo:"3185" };
+        const TIPO_LABEL = { licencia:"🏥 Licencia Médica", ausencia:"🚫 Inasistencia/Permiso s/goce", vacaciones:"🏖️ Vacaciones", bono:"💰 Bono Variable", aguinaldo:"🎁 Aguinaldo", horas_extra:"⏰ Horas Extra", anticipo:"💵 Anticipo/Préstamo" };
+        tb.innerHTML = "";
+        snap.forEach(d => {
+          const r = d.data();
+          const tipoCls = ["licencia","ausencia","vacaciones"].includes(r.tipo) ? "warn" : r.tipo==="anticipo" ? "red" : "green";
+          tb.innerHTML += `<tr>
+            <td>${r.nombre_emp||"—"}</td>
+            <td><span class="badge badge-${tipoCls}" style="font-size:10px">${TIPO_LABEL[r.tipo]||r.tipo}</span></td>
+            <td style="font-family:var(--mono);font-size:11px;text-align:center">${COD_DT[r.tipo]||"—"}</td>
+            <td style="font-weight:700;text-align:right">${["bono","aguinaldo","anticipo"].includes(r.tipo) ? formatMonto(r.monto||0) : (r.cantidad||0)+" días"}</td>
+            <td>${r.periodo||"—"}</td>
+            <td><span class="badge badge-${r.origen==="portal"?"warn":"gray"}" style="font-size:10px">${r.origen==="portal"?"🔗 Portal":"✏️ Manual"}</span></td>
+            <td><span class="badge badge-${r.procesado?"green":"warn"}" style="font-size:10px">${r.procesado?"✅ Procesado":"⏳ Pendiente"}</span></td>
+            <td><button onclick="deleteMov('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;" ${r.procesado?"disabled":""}>🗑</button></td>
+          </tr>`;
+        });
+      };
+
+      // ── Guardar movimiento manual ──
+      document.getElementById("btn-guardar-mov").onclick = async () => {
+        const periodo  = document.getElementById("mov-periodo").value;
+        const empDocId = document.getElementById("mov-emp-sel").value;
+        const tipo     = document.getElementById("mov-tipo-nuevo").value;
+        const cant     = parseFloat(document.getElementById("mov-cant-nuevo").value)||0;
+        const obs      = document.getElementById("mov-obs-nuevo").value.trim();
+        if (!empDocId) { alert("Selecciona un trabajador"); return; }
+        if (!cant || cant<=0) { alert("Ingresa una cantidad válida"); return; }
+        // Obtener nombre del trabajador
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const nombre_emp = empDoc.exists ? empDoc.data().nombre : "—";
+        const esAusentismo = ["licencia","ausencia","vacaciones"].includes(tipo);
+        const esMonto = ["bono","aguinaldo","anticipo"].includes(tipo);
+        await db.collection("movimientos_personal").add({
+          entityId: empId, empleado_id: empDocId, nombre_emp,
+          tipo, periodo,
+          cantidad: esAusentismo ? cant : (tipo==="horas_extra" ? cant : 0),
+          monto: esMonto ? cant : 0,
+          observacion: obs, origen: "manual", procesado: false,
+          estado: "activo",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("mov-cant-nuevo").value = "";
+        document.getElementById("mov-obs-nuevo").value = "";
+        // Recargar tabla
+        document.getElementById("btn-cargar-mov").onclick();
+        const t = document.createElement("div");
+        t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1b4332;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;";
+        t.textContent = "✅ Movimiento registrado correctamente.";
+        document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+      };
+
+      // ── Cargar solicitudes pendientes automáticamente ──
+      await cargarSolicitudesPend(empId);
+    }
+
+    // ── Cambiar label de cantidad según tipo ──
+    window.movTipoChange = (tipo) => {
+      const lbl = document.getElementById("mov-cant-lbl");
+      const av  = document.getElementById("mov-aviso");
+      if (!lbl) return;
+      const esMonto = ["bono","aguinaldo","anticipo"].includes(tipo);
+      lbl.textContent = esMonto ? "Monto ($)" : tipo==="horas_extra" ? "Horas" : "Días";
+      const avisos = {
+        licencia: "⚠️ Descuenta proporcionalmente del sueldo base. Código LRE: 1116.",
+        ausencia: "⚠️ Descuenta proporcionalmente del sueldo base. Código LRE: 1115.",
+        vacaciones: "ℹ️ Solo días hábiles (L-V, sin feriados). Código LRE: 1117.",
+        bono: "✅ Haber imponible: gatilla AFP, salud e impuesto único. Código LRE: 2111.",
+        aguinaldo: "✅ Haber imponible. Código LRE: 2110.",
+        anticipo: "⚠️ Se descuenta del líquido. Código LRE: 3185.",
+      };
+      if (av) { av.textContent = avisos[tipo]||""; }
+    };
+
+    // ── Tabs de movimientos ──
+    window.movTab = (tab) => {
+      ["novedades","solicitudes","historial"].forEach(t => {
+        const sec = document.getElementById("mov-sec-"+t);
+        const btn = document.getElementById("mov-tab-"+t);
+        if (sec) sec.style.display = t===tab ? "block" : "none";
+        if (btn) {
+          btn.style.background = t===tab ? "var(--c-accent)" : "var(--c-surface)";
+          btn.style.color      = t===tab ? "#fff" : "var(--c-text)";
+          btn.style.borderColor= t===tab ? "var(--c-accent)" : "var(--c-border)";
+        }
+      });
+      if (tab==="historial") {
+        const empId2 = STATE.activeEntityId||document.getElementById("entity-dropdown")?.value;
+        cargarHistorialMov(empId2);
+      }
+    };
+
+    // ── Cargar historial ──
+    window.cargarHistorialMov = async (empId) => {
+      const periodo = document.getElementById("mov-hist-periodo")?.value;
+      const tb = document.getElementById("tbl-mov-hist-tbody");
+      if (!tb || !periodo || !empId) return;
+      const snap = await db.collection("movimientos_personal")
+        .where("entityId","==",empId).where("periodo","==",periodo).get();
+      if (snap.empty) { tb.innerHTML = emptyRow(8,"Sin movimientos para este período"); return; }
+      const TIPO_LABEL = { licencia:"Licencia Médica", ausencia:"Inasistencia", vacaciones:"Vacaciones", bono:"Bono Variable", aguinaldo:"Aguinaldo", horas_extra:"Horas Extra", anticipo:"Anticipo" };
+      tb.innerHTML = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const esMonto = ["bono","aguinaldo","anticipo"].includes(r.tipo);
+        tb.innerHTML += `<tr>
+          <td>${r.nombre_emp||"—"}</td>
+          <td>${TIPO_LABEL[r.tipo]||r.tipo}</td>
+          <td style="text-align:right">${esMonto ? formatMonto(r.monto) : (r.cantidad||0)+" días"}</td>
+          <td style="font-size:11px">${r.observacion||"—"}</td>
+          <td><span class="badge badge-${r.origen==="portal"?"warn":"gray"}" style="font-size:10px">${r.origen==="portal"?"Portal":"Manual"}</span></td>
+          <td>${r.periodo}</td>
+          <td><span class="badge badge-${r.estado==="activo"?"green":"gray"}" style="font-size:10px">${r.estado||"—"}</span></td>
+          <td><span class="badge badge-${r.procesado?"green":"warn"}" style="font-size:10px">${r.procesado?"✅ Sí":"⏳ No"}</span></td>
+        </tr>`;
+      });
+    };
+
+    window.deleteMov = async (docId, empId) => {
+      if (!confirm("¿Eliminar este movimiento?")) return;
+      await db.collection("movimientos_personal").doc(docId).delete();
+      document.getElementById("btn-cargar-mov")?.click();
+    };
+
+    // ── PANEL DE SOLICITUDES PENDIENTES (portal trabajador → jefa aprueba) ──
+    window.cargarSolicitudesPend = async (empId) => {
+      const cont = document.getElementById("mov-lista-solicitudes");
+      if (!cont) return;
+      cont.innerHTML = `<div style="color:var(--c-muted);font-size:12px;padding:12px">Cargando…</div>`;
+      try {
+        // Buscar en vacaciones y permisos con estado "pendiente" de esta entidad
+        const [vacPend, permPend, anticPend] = await Promise.all([
+          db.collection("vacaciones").where("entityId","==",empId).where("estado","==","pendiente").get().catch(()=>({docs:[],forEach:()=>{}})),
+          db.collection("permisos").where("entityId","==",empId).where("estado","==","pendiente").get().catch(()=>({docs:[],forEach:()=>{}})),
+          db.collection("anticipos").where("entityId","==",empId).where("estado","==","pendiente").get().catch(()=>({docs:[],forEach:()=>{}})),
+        ]);
+
+        const solicitudes = [];
+        vacPend.forEach(d => solicitudes.push({id:d.id, col:"vacaciones", ...d.data()}));
+        permPend.forEach(d => solicitudes.push({id:d.id, col:"permisos", ...d.data()}));
+        anticPend.forEach(d => solicitudes.push({id:d.id, col:"anticipos", ...d.data()}));
+
+        if (!solicitudes.length) {
+          cont.innerHTML = `<div style="text-align:center;padding:32px;color:var(--c-muted);font-size:13px;">✅ No hay solicitudes pendientes.<br><span style="font-size:11px">Las solicitudes del portal del colaborador aparecerán aquí.</span></div>`;
+          return;
+        }
+
+        // Obtener nombres de empleados
+        const empIds = [...new Set(solicitudes.map(s=>s.empleado_id).filter(Boolean))];
+        const empMap = {};
+        for (const eid of empIds) {
+          try { const d = await db.collection("empleados").doc(eid).get(); if(d.exists) empMap[eid]=d.data(); } catch(e){}
+        }
+
+        const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
+        const TIPO_LABEL = {
+          vacaciones:"🏖️ Vacaciones", con_goce:"✅ Permiso con goce", sin_goce:"⚠️ Permiso sin goce",
+          medico:"🏥 Licencia médica", fallecimiento:"🖤 Fallecimiento", matrimonio:"💍 Matrimonio",
+          nacimiento:"👶 Nacimiento", examen_medico:"🩺 Examen médico", tramite:"📋 Trámite", otro:"📝 Otro"
+        };
+
+        cont.innerHTML = `
+          <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:8px 14px;margin-bottom:12px;font-size:12px;color:#d97706;">
+            <strong>⏳ ${solicitudes.length} solicitud(es) pendiente(s)</strong> — Al aprobar, se genera automáticamente un movimiento del período correspondiente.
+          </div>
+          ${solicitudes.map(s => {
+            const emp = empMap[s.empleado_id]||{};
+            const esAnticipo = s.col==="anticipos";
+            const periodo = s.desde ? s.desde.slice(0,7) : new Date().toISOString().slice(0,7);
+            return `<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div>
+                <div style="font-size:13px;font-weight:800;margin-bottom:3px;">${emp.nombre||"—"} <span style="font-size:11px;color:var(--c-muted)">${emp.rut||""}</span></div>
+                <div style="font-size:12px;font-weight:700;color:var(--c-accent)">${TIPO_LABEL[s.tipo]||s.tipo||"Solicitud"}</div>
+                <div style="font-size:11px;color:var(--c-muted);margin-top:2px">
+                  ${esAnticipo ? "Monto: <strong>"+fmt(s.monto)+"</strong>" : "Desde: <strong>"+( s.desde||"—")+"</strong> Hasta: <strong>"+(s.hasta||"—")+"</strong> · "+( s.dias_solicitados||0)+" días hábiles"}
+                  ${s.motivo ? " · "+s.motivo : ""}
+                </div>
+                <div style="font-size:10px;color:var(--c-muted);margin-top:2px">Solicitado: ${s.creado?.toDate?.().toLocaleDateString("es-CL")||"—"}</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0;">
+                <button onclick="aprobarSolicitud('${s.id}','${s.col}','${s.empleado_id}','${s.tipo}','${empId}',${esAnticipo?s.monto||0:s.dias_solicitados||0},'${periodo}')"
+                  style="background:var(--c-accent);color:#fff;border:none;font-family:var(--font);font-size:12px;font-weight:700;padding:9px 18px;border-radius:var(--radius);cursor:pointer;">
+                  ✅ Aprobar
+                </button>
+                <button onclick="rechazarSolicitud('${s.id}','${s.col}','${s.empleado_id}','${empId}')"
+                  style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">
+                  ✗ Rechazar
+                </button>
+              </div>
+            </div>`;
+          }).join("")}`;
+      } catch(e) {
+        cont.innerHTML = `<div style="color:var(--c-danger);font-size:12px;padding:12px">Error al cargar: ${e.message}</div>`;
+      }
+    };
+
+    // ── APROBAR SOLICITUD → crea movimiento automático ──
+    window.aprobarSolicitud = async (solicitudId, coleccion, empDocId, tipo, empId, cantidad, periodo) => {
+      const btn = event.target;
+      btn.disabled=true; btn.textContent="Aprobando…";
+      try {
+        // Obtener datos del empleado
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const emp = empDoc.exists ? empDoc.data() : {};
+
+        // Mapa tipo solicitud → tipo movimiento
+        const tipoMovMap = {
+          vacaciones:"vacaciones", con_goce:"ausencia", sin_goce:"ausencia",
+          medico:"licencia", fallecimiento:"ausencia", matrimonio:"ausencia",
+          nacimiento:"ausencia", examen_medico:"ausencia", tramite:"ausencia", otro:"ausencia"
+        };
+        const tipoMov = tipoMovMap[tipo] || "ausencia";
+        const esAnticipo = coleccion==="anticipos";
+        const esMonto = esAnticipo;
+
+        // 1) Cambiar estado a "aprobada"
+        await db.collection(coleccion).doc(solicitudId).update({
+          estado: "aprobada",
+          aprobado_por: STATE.user?.email || "admin",
+          fecha_aprobacion: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2) Si es vacaciones → descontar días del saldo en la ficha
+        if (tipo === "vacaciones" && !esMonto) {
+          const diasUsadosAct = (emp.dias_vacaciones_usados||0) + Number(cantidad);
+          await db.collection("empleados").doc(empDocId).update({
+            dias_vacaciones_usados: diasUsadosAct,
+            ultima_vacacion_aprobada: new Date().toISOString().slice(0,10)
+          });
+        }
+
+        // 3) Crear movimiento automático en movimientos_personal
+        const TIPO_LABEL = {
+          vacaciones:"Vacaciones", con_goce:"Permiso con Goce", sin_goce:"Permiso sin Goce",
+          medico:"Licencia Médica", fallecimiento:"Permiso Fallecimiento", matrimonio:"Permiso Matrimonio",
+          nacimiento:"Permiso Nacimiento", examen_medico:"Permiso Médico", tramite:"Permiso Trámite", otro:"Permiso"
+        };
+        await db.collection("movimientos_personal").add({
+          entityId: empId,
+          empleado_id: empDocId,
+          nombre_emp: emp.nombre || "—",
+          tipo: esAnticipo ? "anticipo" : tipoMov,
+          tipo_label: TIPO_LABEL[tipo]||tipo,
+          periodo: periodo,
+          cantidad: esMonto ? 0 : Number(cantidad),
+          monto: esMonto ? Number(cantidad) : 0,
+          observacion: "Aprobado automáticamente desde portal del colaborador",
+          origen: "portal",
+          solicitud_ref: solicitudId,
+          procesado: false,
+          estado: "activo",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Recargar lista
+        await cargarSolicitudesPend(empId);
+
+        // Toast
+        const toast = document.createElement("div");
+        toast.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1b4332;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);";
+        toast.textContent = `✅ Solicitud aprobada. Movimiento creado para período ${periodo}.`;
+        document.body.appendChild(toast); setTimeout(()=>toast.remove(), 4000);
+
+      } catch(e) {
+        btn.disabled=false; btn.textContent="✅ Aprobar";
+        alert("Error al aprobar: "+e.message);
+      }
+    };
+
+    // ── RECHAZAR SOLICITUD ──
+    window.rechazarSolicitud = async (solicitudId, coleccion, empDocId, empId) => {
+      const motivo = prompt("Motivo del rechazo (opcional):");
+      if (motivo === null) return; // cancelado
+      await db.collection(coleccion).doc(solicitudId).update({
+        estado: "rechazada",
+        motivo_rechazo: motivo||"Sin motivo especificado",
+        rechazado_por: STATE.user?.email||"admin",
+        fecha_rechazo: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await cargarSolicitudesPend(empId);
+      const toast = document.createElement("div");
+      toast.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;";
+      toast.textContent = "✗ Solicitud rechazada.";
+      document.body.appendChild(toast); setTimeout(()=>toast.remove(), 3000);
+    };
+
     async function renderRRHH_Finiquitos(zone, empId) {
       zone.innerHTML =
         btnPrimary("btn-add-fin","+ Nuevo Finiquito","📋") +
@@ -11548,8 +12288,8 @@ Si necesita clave, edita el cliente y agrega una.`;
         ".box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:12px}" +
         ".box label{font-size:10px;font-weight:700;color:#666;text-transform:uppercase;display:block;margin-bottom:3px}" +
         ".box .val{font-size:13px;font-weight:700}" +
-        ".firma-box{display:flex;justify-content:space-around;margin-top:60px}" +
-        ".firma{text-align:center;width:42%}.firma-line{border-top:1px solid #333;padding-top:6px;font-size:10px;color:#555;margin-top:50px}" +
+        ".firma-box{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px}" +
+        ".firma{text-align:center;width:220px}.firma-line{border-top:1.5px solid #333;padding-top:8px;font-size:10px;color:#333;margin-top:56px;line-height:1.5}" +
         "@media print{body{padding:16px}@page{size:A4;margin:12mm}}</style></head><body>" +
         "<div class='hdr'>" + logoH +
           "<div style='flex:1;text-align:center'><h1>Comprobante de " + tipoDoc + "</h1></div>" +
