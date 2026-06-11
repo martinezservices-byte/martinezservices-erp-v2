@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Martinez Services ERP — Software de Gestión Empresarial Chile</title>
+  <meta name="description" content="ERP chileno en la nube para condominios, empresas y PyMEs. Condominios, RRHH, Contabilidad, Facturación SII, Logística y más. Desde Alto Hospicio para todo Chile."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --verde:   #16a34a;
+      --verde-d: #15803d;
+      --verde-l: #dcfce7;
+      --azul:    #1e40af;
+      --azul-l:  #eff6ff;
+      --gris:    #f8fafc;
+      --borde:   #e2e8f0;
+      --texto:   #0f172a;
+      --muted:   #64748b;
+      --blanco:  #ffffff;
+      --sombra:  0 4px 24px rgba(0,0,0,0.08);
+      --sombra-lg: 0 12px 40px rgba(0,0,0,0.12);
+      --r: 12px;
+      --r-lg: 20px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; color: var(--texto); background: var(--blanco); overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+    img { max-width: 100%; }
+
+    /* NAV */
+    nav {
+      position: fixed; top:0; left:0; right:0; z-index:100;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--borde);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%; height: 68px;
+    }
+    .nav-logo { display:flex; align-items:center; gap:10px; }
+    .nav-logo-icon {
+      width:38px; height:38px; background:var(--verde); border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:900; font-size:16px; color:#fff; letter-spacing:-1px;
+    }
+    .nav-logo-text { font-weight:800; font-size:15px; color:var(--texto); }
+    .nav-logo-text span { color:var(--verde); }
+    .nav-links { display:flex; gap:28px; align-items:center; }
+    .nav-links a { font-size:14px; font-weight:500; color:var(--muted); transition:color .15s; }
+    .nav-links a:hover { color:var(--verde); }
+    .nav-cta {
+      background:var(--verde); color:#fff; padding:9px 20px;
+      border-radius:8px; font-size:13px; font-weight:700;
+      transition:background .15s;
+    }
+    .nav-cta:hover { background:var(--verde-d); color:#fff; }
+
+    /* HERO */
+    .hero {
+      padding: 140px 5% 100px;
+      background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 50%, #fafafa 100%);
+      min-height: 100vh;
+      display: flex; align-items: center;
+    }
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto; width:100%;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+    }
+    .hero-badge {
+      display:inline-flex; align-items:center; gap:7px;
+      background:var(--verde-l); color:var(--verde-d);
+      padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.5px; margin-bottom:20px;
+    }
+    .hero-badge span { width:7px; height:7px; border-radius:50%; background:var(--verde); display:inline-block; }
+    .hero h1 {
+      font-size: clamp(32px,4vw,52px); font-weight:900; line-height:1.1;
+      color:var(--texto); margin-bottom:20px;
+    }
+    .hero h1 em { color:var(--verde); font-style:normal; }
+    .hero p {
+      font-size:18px; color:var(--muted); line-height:1.7; margin-bottom:36px;
+    }
+    .hero-btns { display:flex; gap:14px; flex-wrap:wrap; }
+    .btn-hero-p {
+      background:var(--verde); color:#fff; padding:14px 28px;
+      border-radius:10px; font-size:15px; font-weight:700;
+      transition:all .15s; display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn-hero-p:hover { background:var(--verde-d); transform:translateY(-1px); box-shadow:0 8px 20px rgba(22,163,74,0.3); }
+    .btn-hero-s {
+      background:var(--blanco); color:var(--texto); padding:14px 28px;
+      border-radius:10px; font-size:15px; font-weight:600;
+      border:2px solid var(--borde); transition:all .15s;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn-hero-s:hover { border-color:var(--verde); color:var(--verde); }
+    .hero-trust {
+      margin-top:40px; display:flex; gap:24px; align-items:center; flex-wrap:wrap;
+    }
+    .hero-trust-item { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); }
+    .hero-trust-item span { color:var(--verde); font-weight:700; }
+    .hero-visual {
+      background: var(--blanco); border-radius:var(--r-lg);
+      box-shadow: var(--sombra-lg); border:1px solid var(--borde);
+      overflow:hidden;
+    }
+    .hero-visual-header {
+      background:linear-gradient(135deg,#0f172a,#1e293b);
+      padding:14px 18px; display:flex; align-items:center; gap:8px;
+    }
+    .dot-r { width:12px;height:12px;border-radius:50%;background:#ef4444; }
+    .dot-y { width:12px;height:12px;border-radius:50%;background:#f59e0b; }
+    .dot-g { width:12px;height:12px;border-radius:50%;background:#22c55e; }
+    .hero-visual-header span { color:#94a3b8; font-size:12px; margin-left:8px; }
+    .hero-visual-body { padding:20px; }
+    .dash-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+    .dash-kpi {
+      background:var(--gris); border-radius:8px; padding:12px;
+      border:1px solid var(--borde);
+    }
+    .dash-kpi-label { font-size:9px; color:var(--muted); text-transform:uppercase; font-weight:600; margin-bottom:4px; }
+    .dash-kpi-val { font-size:18px; font-weight:800; color:var(--texto); }
+    .dash-kpi-val.g { color:var(--verde); }
+    .dash-kpi-val.r { color:#ef4444; }
+    .dash-kpi-val.b { color:var(--azul); }
+    .dash-table { background:var(--gris); border-radius:8px; border:1px solid var(--borde); overflow:hidden; }
+    .dash-th { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:8px; padding:8px 12px; background:#f1f5f9; }
+    .dash-th span { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; }
+    .dash-tr { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:8px; padding:8px 12px; border-top:1px solid var(--borde); }
+    .dash-tr span { font-size:11px; color:var(--texto); }
+    .badge-g { background:#dcfce7; color:#15803d; padding:2px 7px; border-radius:4px; font-size:9px; font-weight:700; }
+    .badge-r { background:#fee2e2; color:#b91c1c; padding:2px 7px; border-radius:4px; font-size:9px; font-weight:700; }
+    .badge-y { background:#fef9c3; color:#92400e; padding:2px 7px; border-radius:4px; font-size:9px; font-weight:700; }
+
+    /* SECCIÓN GENÉRICA */
+    section { padding: 80px 5%; }
+    .section-center { text-align:center; max-width:700px; margin:0 auto 56px; }
+    .section-tag {
+      display:inline-block; background:var(--verde-l); color:var(--verde-d);
+      padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px;
+    }
+    .section-tag.azul { background:var(--azul-l); color:var(--azul); }
+    h2.section-title { font-size:clamp(26px,3vw,40px); font-weight:800; line-height:1.2; margin-bottom:14px; }
+    p.section-sub { font-size:17px; color:var(--muted); line-height:1.7; }
+    .max { max-width:1200px; margin:0 auto; }
+
+    /* MÓDULOS GRID */
+    .modulos-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px;
+    }
+    .mod-card {
+      background:var(--blanco); border:1px solid var(--borde); border-radius:var(--r);
+      padding:24px; transition:all .2s;
+    }
+    .mod-card:hover { border-color:var(--verde); box-shadow:var(--sombra); transform:translateY(-3px); }
+    .mod-icon {
+      width:48px; height:48px; border-radius:10px; background:var(--verde-l);
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; margin-bottom:14px;
+    }
+    .mod-card h3 { font-size:16px; font-weight:700; margin-bottom:8px; }
+    .mod-card p { font-size:13px; color:var(--muted); line-height:1.6; }
+    .mod-features { margin-top:12px; display:flex; flex-direction:column; gap:4px; }
+    .mod-feat { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
+    .mod-feat::before { content:"✓"; color:var(--verde); font-weight:700; flex-shrink:0; }
+
+    /* PLANES */
+    .planes-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px;
+    }
+    .plan-card {
+      background:var(--blanco); border:2px solid var(--borde);
+      border-radius:var(--r-lg); padding:28px; position:relative;
+      transition:all .2s;
+    }
+    .plan-card:hover { border-color:var(--verde); box-shadow:var(--sombra-lg); }
+    .plan-card.featured {
+      border-color:var(--verde); background:linear-gradient(135deg,#f0fdf4,#fff);
+    }
+    .plan-badge-top {
+      position:absolute; top:-13px; left:50%; transform:translateX(-50%);
+      background:var(--verde); color:#fff; padding:4px 16px;
+      border-radius:20px; font-size:11px; font-weight:800;
+      text-transform:uppercase; letter-spacing:.5px; white-space:nowrap;
+    }
+    .plan-nombre { font-size:14px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .plan-precio { font-size:36px; font-weight:900; color:var(--texto); margin-bottom:4px; line-height:1; }
+    .plan-precio sup { font-size:18px; font-weight:700; }
+    .plan-precio-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+    .plan-sep { height:1px; background:var(--borde); margin:16px 0; }
+    .plan-item { display:flex; align-items:flex-start; gap:8px; font-size:13px; margin-bottom:8px; }
+    .plan-item::before { content:"✓"; color:var(--verde); font-weight:700; flex-shrink:0; margin-top:1px; }
+    .plan-item.no::before { content:"✗"; color:#cbd5e1; }
+    .plan-item.no { color:#cbd5e1; }
+    .btn-plan {
+      display:block; width:100%; text-align:center; padding:12px;
+      border-radius:8px; font-weight:700; font-size:14px;
+      transition:all .15s; margin-top:20px; cursor:pointer;
+      border:none; font-family:'Inter',sans-serif;
+    }
+    .btn-plan-p { background:var(--verde); color:#fff; }
+    .btn-plan-p:hover { background:var(--verde-d); }
+    .btn-plan-s { background:var(--gris); color:var(--texto); border:2px solid var(--borde); }
+    .btn-plan-s:hover { border-color:var(--verde); color:var(--verde); }
+
+    /* STATS */
+    .stats-bg { background:linear-gradient(135deg,#0f172a,#1e3a5f); }
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:2px; }
+    .stat-item { padding:40px 24px; text-align:center; }
+    .stat-num { font-size:48px; font-weight:900; color:#fff; line-height:1; margin-bottom:8px; }
+    .stat-num span { color:#4ade80; }
+    .stat-label { font-size:14px; color:#94a3b8; }
+
+    /* BENEFICIOS */
+    .beneficios-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+    .benef-list { display:flex; flex-direction:column; gap:20px; }
+    .benef-item { display:flex; gap:16px; align-items:flex-start; }
+    .benef-icon {
+      width:44px; height:44px; border-radius:10px; background:var(--verde-l);
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; flex-shrink:0;
+    }
+    .benef-item h4 { font-size:15px; font-weight:700; margin-bottom:4px; }
+    .benef-item p { font-size:13px; color:var(--muted); line-height:1.6; }
+    .benef-visual {
+      background:var(--gris); border-radius:var(--r-lg);
+      border:1px solid var(--borde); padding:28px;
+    }
+    .comp-row { display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:8px; padding:10px 0; border-bottom:1px solid var(--borde); align-items:center; }
+    .comp-row:last-child { border-bottom:none; }
+    .comp-row span { font-size:12px; text-align:center; }
+    .comp-row .feat { font-size:12px; color:var(--texto); font-weight:500; text-align:left; }
+    .comp-header span { font-weight:800; font-size:11px; color:var(--muted); text-transform:uppercase; }
+    .comp-header .mss { color:var(--verde); }
+    .chk { color:var(--verde); font-size:16px; font-weight:700; }
+    .no-chk { color:#cbd5e1; font-size:14px; }
+    .parcial { color:#f59e0b; font-size:13px; }
+
+    /* TESTIMONIOS */
+    .test-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
+    .test-card {
+      background:var(--blanco); border:1px solid var(--borde); border-radius:var(--r);
+      padding:24px; transition:all .2s;
+    }
+    .test-card:hover { box-shadow:var(--sombra); }
+    .test-stars { color:#f59e0b; font-size:16px; margin-bottom:12px; }
+    .test-text { font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:16px; font-style:italic; }
+    .test-author { display:flex; align-items:center; gap:10px; }
+    .test-avatar {
+      width:40px; height:40px; border-radius:50%; background:var(--verde);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:16px; color:#fff; flex-shrink:0;
+    }
+    .test-name { font-size:14px; font-weight:700; }
+    .test-cargo { font-size:12px; color:var(--muted); }
+
+    /* FORMULARIO CONTACTO */
+    .form-section { background:linear-gradient(135deg,#f0fdf4,#eff6ff); }
+    .form-container {
+      max-width:640px; margin:0 auto;
+      background:var(--blanco); border-radius:var(--r-lg);
+      box-shadow:var(--sombra-lg); padding:40px;
+      border:1px solid var(--borde);
+    }
+    .form-title { font-size:24px; font-weight:800; margin-bottom:6px; }
+    .form-sub { font-size:14px; color:var(--muted); margin-bottom:28px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-group { margin-bottom:16px; }
+    .form-label { display:block; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+    .form-input {
+      width:100%; padding:11px 14px; border-radius:8px;
+      border:1.5px solid var(--borde); font-family:'Inter',sans-serif;
+      font-size:14px; color:var(--texto); outline:none;
+      transition:border-color .15s;
+    }
+    .form-input:focus { border-color:var(--verde); }
+    .form-select {
+      width:100%; padding:11px 14px; border-radius:8px;
+      border:1.5px solid var(--borde); font-family:'Inter',sans-serif;
+      font-size:14px; color:var(--texto); outline:none; background:#fff;
+      transition:border-color .15s; appearance:none;
+    }
+    .form-select:focus { border-color:var(--verde); }
+    .form-textarea {
+      width:100%; padding:11px 14px; border-radius:8px;
+      border:1.5px solid var(--borde); font-family:'Inter',sans-serif;
+      font-size:14px; color:var(--texto); outline:none;
+      transition:border-color .15s; resize:vertical; min-height:100px;
+    }
+    .form-textarea:focus { border-color:var(--verde); }
+    .btn-form {
+      width:100%; background:var(--verde); color:#fff;
+      padding:14px; border-radius:10px; font-size:16px; font-weight:700;
+      border:none; cursor:pointer; font-family:'Inter',sans-serif;
+      transition:all .15s; margin-top:8px;
+    }
+    .btn-form:hover { background:var(--verde-d); }
+    #form-success { display:none; text-align:center; padding:24px; color:var(--verde); }
+    #form-success h3 { font-size:20px; font-weight:800; margin-bottom:8px; }
+
+    /* FAQ */
+    .faq-list { max-width:720px; margin:0 auto; }
+    .faq-item {
+      border-bottom:1px solid var(--borde); padding:20px 0; cursor:pointer;
+    }
+    .faq-q {
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:15px; font-weight:600; gap:16px;
+    }
+    .faq-q span { font-size:20px; color:var(--verde); transition:transform .2s; flex-shrink:0; }
+    .faq-a { font-size:14px; color:var(--muted); line-height:1.7; margin-top:12px; display:none; }
+    .faq-item.open .faq-q span { transform:rotate(45deg); }
+    .faq-item.open .faq-a { display:block; }
+
+    /* FOOTER */
+    footer {
+      background:#0f172a; padding:56px 5% 28px;
+      color:#94a3b8;
+    }
+    .footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; margin-bottom:40px; }
+    .footer-brand h3 { color:#fff; font-size:18px; font-weight:800; margin-bottom:10px; }
+    .footer-brand p { font-size:13px; line-height:1.7; margin-bottom:16px; }
+    .footer-social { display:flex; gap:10px; }
+    .footer-social a {
+      width:36px; height:36px; border-radius:8px; background:#1e293b;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; transition:background .15s;
+    }
+    .footer-social a:hover { background:var(--verde); }
+    .footer-col h4 { color:#fff; font-size:14px; font-weight:700; margin-bottom:14px; }
+    .footer-col a { display:block; font-size:13px; margin-bottom:8px; transition:color .15s; }
+    .footer-col a:hover { color:#fff; }
+    .footer-bottom {
+      border-top:1px solid #1e293b; padding-top:24px;
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:12px; flex-wrap:wrap; gap:10px;
+    }
+    .footer-bottom a { color:#94a3b8; }
+    .footer-bottom a:hover { color:#fff; }
+    .wa-float {
+      position:fixed; bottom:24px; right:24px; z-index:200;
+      background:#25d366; color:#fff; width:56px; height:56px;
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-size:26px; box-shadow:0 4px 20px rgba(37,211,102,0.4);
+      transition:all .2s; text-decoration:none;
+    }
+    .wa-float:hover { transform:scale(1.1); box-shadow:0 8px 28px rgba(37,211,102,0.5); }
+
+    @media(max-width:900px) {
+      .hero-inner { grid-template-columns:1fr; }
+      .hero-visual { display:none; }
+      .beneficios-grid { grid-template-columns:1fr; }
+      .stats-grid { grid-template-columns:repeat(2,1fr); }
+      .footer-grid { grid-template-columns:1fr 1fr; }
+      nav .nav-links { display:none; }
+      .nav-hamburger { display:flex; }
+      nav .nav-links.abierto {
+        display:flex; flex-direction:column; align-items:flex-start;
+        position:fixed; top:68px; left:0; right:0;
+        background:#fff; border-bottom:2px solid var(--verde);
+        padding:16px 5% 20px; gap:14px; z-index:200;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      }
+      nav .nav-links.abierto a { font-size:15px; padding:4px 0; border-bottom:1px solid var(--borde); width:100%; }
+      nav .nav-links.abierto .nav-cta { width:100%; text-align:center; padding:12px; border-radius:10px; }
+    }
+    .nav-hamburger {
+      display:none; flex-direction:column; justify-content:center; gap:5px;
+      width:38px; height:38px; cursor:pointer; padding:4px;
+      background:none; border:none;
+    }
+    .nav-hamburger span {
+      display:block; width:24px; height:2.5px;
+      background:var(--texto); border-radius:2px;
+      transition:all .25s ease;
+    }
+    .nav-hamburger.abierto span:nth-child(1) { transform:translateY(7.5px) rotate(45deg); }
+    .nav-hamburger.abierto span:nth-child(2) { opacity:0; }
+    .nav-hamburger.abierto span:nth-child(3) { transform:translateY(-7.5px) rotate(-45deg); }
+    @media(max-width:600px) {
+      .form-row { grid-template-columns:1fr; }
+      .planes-grid { grid-template-columns:1fr; }
+      .stats-grid { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- WhatsApp flotante -->
+<a href="https://wa.me/56974889039?text=Hola%2C%20me%20interesa%20conocer%20Martinez%20Services%20ERP" class="wa-float" target="_blank" title="Contáctanos por WhatsApp">💬</a>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">MS</div>
+    <span class="nav-logo-text">MARTINEZ SERVICES <span>ERP</span></span>
+  </div>
+  <div class="nav-links" id="nav-links">
+    <a href="#modulos">Módulos</a>
+    <a href="#planes">Planes</a>
+    <a href="#beneficios">Beneficios</a>
+    <a href="#faq">FAQ</a>
+    <a href="app/index.html" style="color:var(--verde);font-weight:600">Ingresar →</a>
+    <a href="#contacto" class="nav-cta">Solicitar Demo</a>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavMobile()" aria-label="Menú">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<script>
+  function toggleNavMobile() {
+    const links = document.getElementById('nav-links');
+    const btn   = document.getElementById('nav-hamburger');
+    links.classList.toggle('abierto');
+    btn.classList.toggle('abierto');
+  }
+  // Cerrar al hacer click en un enlace
+  document.querySelectorAll('#nav-links a').forEach(a => {
+    a.addEventListener('click', () => {
+      document.getElementById('nav-links').classList.remove('abierto');
+      document.getElementById('nav-hamburger').classList.remove('abierto');
+    });
+  });
+</script>
+
+<!-- HERO -->
+<section class="hero" id="inicio">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge"><span></span> Software 100% Chileno · Hecho en Alto Hospicio</div>
+      <h1>El ERP que tu<br><em>empresa y condominio</em><br>necesitaban</h1>
+      <p>Gestiona condominios, empresas y PyMEs desde una sola plataforma en la nube. Contabilidad, Facturación SII, RRHH, Inventario y más — sin instalaciones, desde cualquier dispositivo.</p>
+      <div class="hero-btns">
+        <a href="#contacto" class="btn-hero-p" onclick="event.preventDefault();document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">🚀 Solicitar Demo Gratis</a>
+        <a href="#planes" class="btn-hero-s" onclick="event.preventDefault();document.getElementById('planes').scrollIntoView({behavior:'smooth',block:'start'})">Ver Planes y Precios</a>
+      </div>
+      <div class="hero-trust">
+        <div class="hero-trust-item"><span>✓</span> Sin contratos anuales</div>
+        <div class="hero-trust-item"><span>✓</span> 7 días demo gratis</div>
+        <div class="hero-trust-item"><span>✓</span> Soporte directo</div>
+        <div class="hero-trust-item"><span>✓</span> Integrado SII Chile</div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-visual-header">
+        <div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div>
+        <span>martinezservices-erp · Panel Principal</span>
+      </div>
+      <div class="hero-visual-body">
+        <div class="dash-row">
+          <div class="dash-kpi"><div class="dash-kpi-label">Unidades</div><div class="dash-kpi-val">48</div></div>
+          <div class="dash-kpi"><div class="dash-kpi-label">Al Día</div><div class="dash-kpi-val g">41</div></div>
+          <div class="dash-kpi"><div class="dash-kpi-label">Morosos</div><div class="dash-kpi-val r">7</div></div>
+          <div class="dash-kpi"><div class="dash-kpi-label">Fondo</div><div class="dash-kpi-val b">$2.4M</div></div>
+        </div>
+        <div class="dash-table">
+          <div class="dash-th"><span>Unidad</span><span>Período</span><span>Monto</span><span>Estado</span></div>
+          <div class="dash-tr"><span>Unid. 101</span><span>Jun 2026</span><span>$45.000</span><span><span class="badge-g">Al día</span></span></div>
+          <div class="dash-tr"><span>Unid. 203</span><span>May 2026</span><span>$45.000</span><span><span class="badge-r">Moroso</span></span></div>
+          <div class="dash-tr"><span>Unid. 305</span><span>Jun 2026</span><span>$45.000</span><span><span class="badge-y">Pendiente</span></span></div>
+          <div class="dash-tr"><span>Unid. 108</span><span>Jun 2026</span><span>$45.000</span><span><span class="badge-g">Al día</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bg">
+  <div class="stats-grid max" style="max-width:1200px;margin:0 auto">
+    <div class="stat-item"><div class="stat-num">7<span>+</span></div><div class="stat-label">Módulos integrados</div></div>
+    <div class="stat-item"><div class="stat-num">100<span>%</span></div><div class="stat-label">En la nube, sin instalar</div></div>
+    <div class="stat-item"><div class="stat-num">SII<span>✓</span></div><div class="stat-label">Facturación electrónica</div></div>
+    <div class="stat-item"><div class="stat-num">24<span>/7</span></div><div class="stat-label">Acceso desde cualquier lugar</div></div>
+  </div>
+</div>
+
+<!-- MÓDULOS -->
+<section id="modulos" style="background:var(--gris)">
+  <div class="max">
+    <div class="section-center">
+      <span class="section-tag">Todo en uno</span>
+      <h2 class="section-title">7 módulos que cubren toda tu operación</h2>
+      <p class="section-sub">Desde la gestión de tu condominio hasta la facturación electrónica con el SII — todo integrado y sincronizado en tiempo real.</p>
+    </div>
+    <div class="modulos-grid">
+      <div class="mod-card">
+        <div class="mod-icon">🏢</div>
+        <h3>Administración de Condominios</h3>
+        <p>Control total de copropiedades: unidades, gastos comunes, egresos, morosidad y fondo de reserva.</p>
+        <div class="mod-features">
+          <div class="mod-feat">Cobro automático de gastos comunes</div>
+          <div class="mod-feat">Control de morosidad con alertas</div>
+          <div class="mod-feat">Rendición de cuentas por período</div>
+          <div class="mod-feat">Panel del residente con historial</div>
+          <div class="mod-feat">Pasarela de pago gastos comunes <span style="color:#f59e0b;font-weight:700">(Próximamente)</span></div>
+        </div>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">📱</div>
+        <h3>App Residentes</h3>
+        <p>Portal digital para copropietarios: comunicados, reservas de espacios, votaciones y alertas vecinales.</p>
+        <div class="mod-features">
+          <div class="mod-feat">Circulares y comunicados oficiales</div>
+          <div class="mod-feat">Reserva de quincho y espacios</div>
+          <div class="mod-feat">Votaciones y asambleas digitales</div>
+          <div class="mod-feat">Alerta vecinal en tiempo real</div>
+        </div>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">👔</div>
+        <h3>Recursos Humanos</h3>
+        <p>Gestión completa de personal: fichas, remuneraciones, asistencia, contratos y vacaciones.</p>
+        <div class="mod-features">
+          <div class="mod-feat">Liquidaciones con cálculo AFP/Salud</div>
+          <div class="mod-feat">Control de asistencia diario</div>
+          <div class="mod-feat">Contratos y anexos digitales</div>
+          <div class="mod-feat">Solicitudes de vacaciones en línea</div>
+        </div>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">📒</div>
+        <h3>Contabilidad Automatizada</h3>
+        <p>Libro diario, balance de 8 columnas, conciliación bancaria e IVA F29 en un solo lugar.</p>
+        <div class="mod-features">
+          <div class="mod-feat">Balance 8 columnas exportable</div>
+          <div class="mod-feat">Carga de cartola bancaria CSV</div>
+          <div class="mod-feat">Conciliación bancaria automatizada <span style="color:#f59e0b;font-weight:700">(Próximamente)</span></div>
+          <div class="mod-feat">Declaración IVA F29</div>
+        </div>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">🧾</div>
+        <h3>Facturación Comercial</h3>
+        <p>Emisión de DTE conectado con el SII: facturas, boletas, notas de crédito y libros tributarios. <span style="color:#f59e0b;font-size:11px;font-weight:700">(Conexión directa vía API-SII en desarrollo)</span></p>
+        <div class="mod-features">
+          <div class="mod-feat">Facturas y boletas electrónicas</div>
+          <div class="mod-feat">Libro de ventas y compras SII</div>
+          <div class="mod-feat">Cotizaciones profesionales en PDF</div>
+          <div class="mod-feat">Cálculo IVA 19% automático</div>
+        </div>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">📦</div>
+        <h3>Control Gestión y Logística</h3>
+        <p>Inventario valorizado, bodegas, arriendos de activos, control de flota y órdenes de compra.</p>
+        <div class="mod-features">
+          <div class="mod-feat">Stock con alertas de mínimo</div>
+          <div class="mod-feat">Alertas de vencimiento contratos</div>
+          <div class="mod-feat">Control de mantención de flota</div>
+          <div class="mod-feat">Gestión de proveedores y OC</div>
+        </div>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">🔍</div>
+        <h3>Auditoría e Inteligencia</h3>
+        <p>Supervisión multicliente con logs de acceso, flujos de caja consolidados y KPIs estratégicos.</p>
+        <div class="mod-features">
+          <div class="mod-feat">Trazabilidad de accesos en tiempo real</div>
+          <div class="mod-feat">Flujo de caja consolidado</div>
+          <div class="mod-feat">KPIs y OKR del negocio</div>
+          <div class="mod-feat">Cifrado y seguridad máxima</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFICIOS VS COMPETENCIA -->
+<section id="beneficios">
+  <div class="max">
+    <div class="beneficios-grid">
+      <div>
+        <span class="section-tag">¿Por qué elegirnos?</span>
+        <h2 class="section-title" style="margin-top:12px">Más completo.<br>Más cercano.<br>Precio justo.</h2>
+        <div class="benef-list" style="margin-top:28px">
+          <div class="benef-item">
+            <div class="benef-icon">🇨🇱</div>
+            <div>
+              <h4>100% Chileno y adaptado a la ley</h4>
+              <p>Diseñado para el Código del Trabajo, SII, AFP y normativa chilena vigente. No adaptado, nativo.</p>
+            </div>
+          </div>
+          <div class="benef-item">
+            <div class="benef-icon">⚡</div>
+            <div>
+              <h4>Implementación en minutos</h4>
+              <p>Sin instalación, sin servidor, sin técnico. Entra desde el navegador y empieza a operar de inmediato.</p>
+            </div>
+          </div>
+          <div class="benef-item">
+            <div class="benef-icon">🏘️</div>
+            <div>
+              <h4>Único con módulo de condominios integrado</h4>
+              <p>Los softwares tradicionales no tienen gestión de copropiedades. Nosotros sí, completamente integrado con el ERP.</p>
+            </div>
+          </div>
+          <div class="benef-item">
+            <div class="benef-icon">🤝</div>
+            <div>
+              <h4>Soporte directo con la desarrolladora</h4>
+              <p>Hablas directamente con quien desarrolló el sistema. Sin call centers, sin tickets anónimos.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="benef-visual">
+          <h4 style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--texto)">Comparativa con la competencia</h4>
+          <div class="comp-row comp-header">
+            <span class="feat">Funcionalidad</span>
+            <span class="mss">MSS ERP</span>
+            <span>Softwares Tradicionales</span>
+            <span>Sistemas Legacy / Rígidos</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">Gestión de Condominios</span>
+            <span class="chk">✓</span><span class="no-chk">✗</span><span class="no-chk">✗</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">App Residentes</span>
+            <span class="chk">✓</span><span class="no-chk">✗</span><span class="no-chk">✗</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">RRHH + Remuneraciones</span>
+            <span class="chk">✓</span><span class="chk">✓</span><span class="chk">✓</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">Facturación SII</span>
+            <span class="chk">✓</span><span class="chk">✓</span><span class="chk">✓</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">Contabilidad 8 Columnas</span>
+            <span class="chk">✓</span><span class="parcial">~</span><span class="chk">✓</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">Control de Flota</span>
+            <span class="chk">✓</span><span class="no-chk">✗</span><span class="parcial">~</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">Auditoría Multicliente</span>
+            <span class="chk">✓</span><span class="no-chk">✗</span><span class="parcial">~</span>
+          </div>
+          <div class="comp-row">
+            <span class="feat">Soporte directo</span>
+            <span class="chk">✓</span><span class="no-chk">✗</span><span class="no-chk">✗</span>
+          </div>
+          <div style="margin-top:14px;padding:10px;background:var(--verde-l);border-radius:8px;font-size:12px;color:var(--verde-d);font-weight:600;text-align:center;">
+            ✓ = Incluido &nbsp;|&nbsp; ~ = Parcial &nbsp;|&nbsp; ✗ = No disponible
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLANES -->
+<section id="planes" style="background:var(--gris)">
+  <div class="max">
+    <div class="section-center">
+      <span class="section-tag azul">Precios transparentes</span>
+      <h2 class="section-title">Elige el plan que se ajusta a tu negocio</h2>
+      <p class="section-sub">Sin letras pequeñas, sin cobros sorpresa. Todos los planes incluyen actualizaciones y soporte técnico.</p>
+    </div>
+    <div class="planes-grid">
+      <div class="plan-card">
+        <div class="plan-nombre">Básico</div>
+        <div class="plan-precio"><sup style="font-size:16px">Desde </sup>1.5 UF<sup style="font-size:14px"> + IVA</sup></div>
+        <div class="plan-precio-sub">/ mes · Consultar según tamaño de entidad</div>
+        <div class="plan-sep"></div>
+        <div class="plan-item">Administración de Condominios</div>
+        <div class="plan-item">App Residentes</div>
+        <div class="plan-item">Recursos Humanos</div>
+        <div class="plan-item">Hasta 1 entidad</div>
+        <div class="plan-item">Soporte por email</div>
+        <div class="plan-item no">Contabilidad avanzada</div>
+        <div class="plan-item no">Facturación SII</div>
+        <div class="plan-item no">Logística y Flota</div>
+        <button class="btn-plan btn-plan-s" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">Solicitar cotización</button>
+      </div>
+      <div class="plan-card featured">
+        <div class="plan-badge-top">⭐ MÁS POPULAR</div>
+        <div class="plan-nombre">Completo</div>
+        <div class="plan-precio"><sup style="font-size:16px">Desde </sup>2.5 UF<sup style="font-size:14px"> + IVA</sup></div>
+        <div class="plan-precio-sub">/ mes · Precio fijo mensual</div>
+        <div class="plan-sep"></div>
+        <div class="plan-item">Todo el Plan Básico</div>
+        <div class="plan-item">Contabilidad 8 Columnas</div>
+        <div class="plan-item">Facturación SII (DTE)</div>
+        <div class="plan-item">Libro ventas y compras</div>
+        <div class="plan-item">Control de Inventario</div>
+        <div class="plan-item">Hasta 3 entidades</div>
+        <div class="plan-item">Soporte prioritario</div>
+        <div class="plan-item no">Auditoría multicliente</div>
+        <button class="btn-plan btn-plan-p" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">Solicitar cotización</button>
+      </div>
+      <div class="plan-card">
+        <div class="plan-nombre">Premium</div>
+        <div class="plan-precio" style="font-size:26px">Precio a medida</div>
+        <div class="plan-precio-sub">/ Cotizar según requerimiento</div>
+        <div class="plan-sep"></div>
+        <div class="plan-item">Todo el Plan Completo</div>
+        <div class="plan-item">Logística y Flota</div>
+        <div class="plan-item">Auditoría Multicliente</div>
+        <div class="plan-item">Entidades ilimitadas</div>
+        <div class="plan-item">KPIs y OKR estratégico</div>
+        <div class="plan-item">Capacitación 2 horas</div>
+        <div class="plan-item">Soporte directo WhatsApp</div>
+        <button class="btn-plan btn-plan-s" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">Solicitar cotización</button>
+      </div>
+      <div class="plan-card" style="border-color:#f59e0b;background:linear-gradient(135deg,#fffbeb,#fff)">
+        <div class="plan-nombre" style="color:#92400e">Demo Gratis</div>
+        <div class="plan-precio" style="color:#f59e0b">7 días</div>
+        <div class="plan-precio-sub">sin tarjeta de crédito</div>
+        <div class="plan-sep"></div>
+        <div class="plan-item">Acceso completo al sistema</div>
+        <div class="plan-item">Módulos según tu perfil</div>
+        <div class="plan-item">Datos de prueba incluidos</div>
+        <div class="plan-item">Capacitación incluida</div>
+        <div class="plan-item">Sin compromiso</div>
+        <button class="btn-plan" style="background:#f59e0b;color:#fff;font-family:'Inter',sans-serif;border:none;cursor:pointer;" onclick="document.getElementById('contacto').scrollIntoView({behavior:'smooth',block:'start'})">🎯 Quiero mi demo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIOS -->
+<section>
+  <div class="max">
+    <div class="section-center">
+      <span class="section-tag">Clientes satisfechos</span>
+      <h2 class="section-title">Lo que dicen quienes ya usan el sistema</h2>
+    </div>
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-text">"Por fin un sistema que entiende cómo funciona un condominio en Chile. Los gastos comunes se emiten solos y el fondo de reserva siempre cuadrado."</p>
+        <div class="test-author">
+          <div class="test-avatar">M</div>
+          <div><div class="test-name">María González</div><div class="test-cargo">Administradora, Condominio Las Palmas</div></div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-text">"Las liquidaciones de sueldo antes me tomaban 2 días. Ahora las proceso para todos en 5 minutos y el sistema calcula la AFP correcta de cada uno."</p>
+        <div class="test-author">
+          <div class="test-avatar">R</div>
+          <div><div class="test-name">Roberto Saavedra</div><div class="test-cargo">Gerente RRHH, Construcciones Nortinas</div></div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-text">"El módulo de arriendos de maquinaria es exactamente lo que necesitaba. Las alertas de vencimiento de contratos me salvan de perder clientes."</p>
+        <div class="test-author">
+          <div class="test-avatar">C</div>
+          <div><div class="test-name">Carolina Ríos</div><div class="test-cargo">Dueña, Arriendos del Norte SpA</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="background:var(--gris)">
+  <div class="max">
+    <div class="section-center">
+      <span class="section-tag">Preguntas frecuentes</span>
+      <h2 class="section-title">¿Tienes dudas? Las respondemos</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q">¿Necesito instalar algo para usar el sistema?<span>+</span></div>
+        <p class="faq-a">No. Martinez Services ERP funciona 100% en la nube. Solo necesitas un navegador web (Chrome, Edge o Safari) y conexión a internet. No hay instalaciones, ni servidores, ni mantenimiento de tu parte.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Puedo gestionar varias empresas o condominios con una sola cuenta?<span>+</span></div>
+        <p class="faq-a">Sí. El sistema está diseñado para ser multiempresa. Puedes cambiar entre tus distintas entidades desde el selector en el header. Cada entidad tiene sus datos completamente aislados.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿La facturación electrónica está conectada con el SII?<span>+</span></div>
+        <p class="faq-a">Sí. El ERP procesa todos los documentos tributarios de forma nativa: facturas electrónicas, boletas, notas de crédito y débito, con cálculo automático de IVA 19% y libro de ventas/compras integrado. La automatización del enlace directo por API-SII con certificado digital es una mejora planificada próximamente como parte de nuestra hoja de ruta de desarrollo.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Mis datos están seguros?<span>+</span></div>
+        <p class="faq-a">Sí. Los datos se almacenan en Google Firebase (Google Cloud), una de las infraestructuras más seguras del mundo. Solo los usuarios autenticados pueden acceder a los datos. Cada cliente ve únicamente su propia información.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Qué pasa si termina mi período de demo?<span>+</span></div>
+        <p class="faq-a">Al vencer la demo, el sistema te muestra una pantalla de upgrade con opciones para contratar un plan. Tus datos quedan guardados y no se pierden. Solo debes contactar para activar el plan que más te convenga.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Entregan capacitación?<span>+</span></div>
+        <p class="faq-a">Sí. Los planes Completo y Premium incluyen 2 horas de capacitación directa con la desarrolladora del sistema. También recibes la Guía Técnica completa en formato Word con todos los módulos explicados paso a paso.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Puedo pedir una cotización personalizada?<span>+</span></div>
+        <p class="faq-a">Por supuesto. Completa el formulario de contacto o escríbenos directamente por WhatsApp al +56 9 7488 9039. Te enviamos una propuesta formal en formato PDF con todos los detalles del servicio adaptado a tu caso.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULARIO CONTACTO / DEMO -->
+<section id="contacto" class="form-section">
+  <div class="max">
+    <div class="section-center">
+      <span class="section-tag">Contáctanos</span>
+      <h2 class="section-title">¿Listo para probar el sistema?</h2>
+      <p class="section-sub">Completa el formulario y te contactamos en menos de 24 horas con tu acceso demo personalizado.</p>
+    </div>
+    <div class="form-container">
+      <h3 class="form-title">Solicitar Demo o Cotización</h3>
+      <p class="form-sub">Cuéntanos un poco sobre tu negocio y te preparamos una propuesta a medida.</p>
+
+      <div id="form-success">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <h3>¡Mensaje recibido!</h3>
+        <p style="color:var(--muted);font-size:14px">Te contactaremos en menos de 24 horas. También puedes escribirnos directamente al <strong>+56 9 7488 9039</strong>.</p>
+      </div>
+
+      <form id="contact-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre *</label>
+            <input class="form-input" type="text" id="cf-nombre" placeholder="Tu nombre completo" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Empresa / Condominio</label>
+            <input class="form-input" type="text" id="cf-empresa" placeholder="Nombre de tu empresa">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Correo electrónico *</label>
+            <input class="form-input" type="email" id="cf-correo" placeholder="correo@empresa.cl" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input class="form-input" type="tel" id="cf-tel" placeholder="+56 9 xxxx xxxx">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de negocio *</label>
+          <select class="form-select" id="cf-tipo" required>
+            <option value="">Selecciona una opción...</option>
+            <option value="condominio">Condominio / Copropiedad</option>
+            <option value="empresa">Empresa Comercial / SpA / Ltda</option>
+            <option value="pyme">PyME / Emprendimiento</option>
+            <option value="persona">Persona Natural / Profesional Independiente</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">¿Qué módulos te interesan?</label>
+          <select class="form-select" id="cf-modulos">
+            <option value="">Selecciona...</option>
+            <option value="condominios">Solo Condominios</option>
+            <option value="rrhh">Solo RRHH y Remuneraciones</option>
+            <option value="facturacion">Solo Facturación y Contabilidad</option>
+            <option value="logistica">Solo Logística e Inventario</option>
+            <option value="completo">Sistema completo (todos los módulos)</option>
+            <option value="demo">Quiero ver todo primero (demo completa)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mensaje o consulta</label>
+          <textarea class="form-textarea" id="cf-mensaje" placeholder="Cuéntanos brevemente sobre tu negocio, cuántas personas trabajan, qué procesos quieres automatizar..."></textarea>
+        </div>
+        <button type="submit" class="btn-form">🚀 Enviar solicitud de demo</button>
+        <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px">Al enviar aceptas que te contactemos. Tus datos son confidenciales.</p>
+      </form>
+    </div>
+
+    <div style="display:flex;gap:24px;justify-content:center;margin-top:36px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;font-size:14px;">
+        <span style="font-size:22px">💬</span>
+        <div>
+          <div style="font-weight:700">WhatsApp directo</div>
+          <a href="https://wa.me/56974889039" target="_blank" style="color:var(--verde);font-weight:600">+56 9 7488 9039</a>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:14px;">
+        <span style="font-size:22px">📧</span>
+        <div>
+          <div style="font-weight:700">Correo electrónico</div>
+          <a href="mailto:aybserviciosg@gmail.com" style="color:var(--verde);font-weight:600">aybserviciosg@gmail.com</a>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:14px;">
+        <span style="font-size:22px">📍</span>
+        <div>
+          <div style="font-weight:700">Ubicación</div>
+          <span style="color:var(--muted)">Alto Hospicio, Chile</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="max">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <h3>MARTINEZ SERVICES ERP</h3>
+        <p>Software de gestión empresarial 100% chileno. Diseñado para condominios, empresas y PyMEs de todo Chile.</p>
+        <p style="font-size:12px;margin-top:4px">RUT: 76.782.954-K · Av. Unión Europea 3175, Alto Hospicio</p>
+        <div class="footer-social">
+          <a href="https://wa.me/56974889039" target="_blank">💬</a>
+          <a href="mailto:aybserviciosg@gmail.com">📧</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Módulos</h4>
+        <a href="#modulos">Condominios</a>
+        <a href="#modulos">App Residentes</a>
+        <a href="#modulos">Recursos Humanos</a>
+        <a href="#modulos">Contabilidad</a>
+        <a href="#modulos">Facturación SII</a>
+        <a href="#modulos">Logística</a>
+      </div>
+      <div class="footer-col">
+        <h4>Empresa</h4>
+        <a href="#beneficios">¿Por qué elegirnos?</a>
+        <a href="#planes">Planes y precios</a>
+        <a href="#faq">Preguntas frecuentes</a>
+        <a href="#contacto">Contacto</a>
+      </div>
+      <div class="footer-col">
+        <h4>Acceso</h4>
+        <a href="app/index.html">Ingresar al ERP →</a>
+        <a href="#contacto">Solicitar demo</a>
+        <a href="https://wa.me/56974889039" target="_blank">Soporte WhatsApp</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Martinez Services SPA · RUT 76.782.954-K · Todos los derechos reservados</span>
+      <span>Desarrollado con ❤️ en Alto Hospicio, Chile</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // Form submit
+  document.getElementById('contact-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const nombre  = document.getElementById('cf-nombre').value;
+    const correo  = document.getElementById('cf-correo').value;
+    const empresa = document.getElementById('cf-empresa').value;
+    const tel     = document.getElementById('cf-tel').value;
+    const tipo    = document.getElementById('cf-tipo').value;
+    const modulos = document.getElementById('cf-modulos').value;
+    const mensaje = document.getElementById('cf-mensaje').value;
+
+    // Enviar por WhatsApp
+    const txt = `Hola Gaudy, soy *${nombre}* de *${empresa||"(sin empresa)"}*.\n\nCorreo: ${correo}\nTeléfono: ${tel||"no indicado"}\nTipo negocio: ${tipo}\nMódulos de interés: ${modulos||"no indicado"}\n\nMensaje: ${mensaje||"Solicito información sobre el ERP"}\n\n_Enviado desde martinezservices-erp.cl_`;
+    window.open('https://wa.me/56974889039?text='+encodeURIComponent(txt), '_blank');
+
+    // Mostrar éxito
+    document.getElementById('contact-form').style.display = 'none';
+    document.getElementById('form-success').style.display = 'block';
+  });
+</script>
+</body>
+</html>
