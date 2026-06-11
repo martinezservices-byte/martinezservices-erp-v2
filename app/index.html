@@ -1485,65 +1485,50 @@
           <!-- SECCIÓN: VALORES LEGALES -->
           <div id="cfg-valores" class="cfg-section" style="display:none;">
             <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:20px;">
-              <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--c-accent);">💰 Valores Legales Chile — Actualizables</h3>
-              <p style="font-size:12px;color:var(--c-muted);margin-bottom:16px;">Estos valores se usan en los cálculos de remuneraciones. Actualízalos cuando cambien las leyes o el SII informe nuevos valores.</p>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;">
-                <div>
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">IMM vigente ($)</label>
-                  <input id="cfg-imm" type="number" value="539000" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Ingreso Mínimo Mensual 2025</div>
-                </div>
-                <div>
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Valor UF ($)</label>
-                  <input id="cfg-uf" type="number" value="40610" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Actualizar mensualmente</div>
-                </div>
-                <div>
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Valor UTM ($)</label>
-                  <input id="cfg-utm" type="number" value="69889" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">SII — Impuesto Único 2da Categoría</div>
-                </div>
-                <div>
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope imponible AFP (UF)</label>
-                  <input id="cfg-tope-uf" type="number" value="78" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Tope AFP y Salud (7%)</div>
-                </div>
-                <div>
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope imponible AFC (UF)</label>
-                  <input id="cfg-tope-afc-uf" type="number" value="131.9" step="0.1" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Seguro de Cesantía — superior al AFP</div>
-                </div>
-                <div style="margin-top:12px;">
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope gratificación Art.47 ($)</label>
-                  <input id="cfg-tope-grat" type="number" value="213396" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">IMM × 4.75 / 12</div>
-                </div>
-                <div style="margin-top:12px;">
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Seguro Cesantía trabajador (%)</label>
-                  <input id="cfg-seg-ces" type="number" value="0.6" step="0.01" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">0.6% Indefinido / 3% Plazo Fijo</div>
-                </div>
-                <div style="margin-top:12px;">
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">IVA (%)</label>
-                  <input id="cfg-iva" type="number" value="19" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Porcentaje IVA Chile</div>
-                </div>
+              <h3 style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--c-accent);">💰 Indicadores Previsionales Chile — Actualizables</h3>
+              <p style="font-size:12px;color:var(--c-muted);margin-bottom:14px;">Actualiza estos valores mensualmente con Previred. Se aplican en liquidaciones, LRE y Previred.</p>
+              <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">Valores Mensuales</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px;margin-bottom:12px;">
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">IMM / Sueldo Mínimo ($)</label><input id="cfg-imm" type="number" value="539000" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">Renta mínima trab. dependientes</div></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Valor UF ($)</label><input id="cfg-uf" type="number" value="40610" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">Actualizar al inicio de cada mes</div></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Valor UTM ($)</label><input id="cfg-utm" type="number" value="70588" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">Impuesto Único 2da Categoría (SII)</div></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Renta Mínima Menores 18/Mayores 65 ($)</label><input id="cfg-imm-men" type="number" value="402082" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Renta Mínima Casa Particular ($)</label><input id="cfg-imm-casa" type="number" value="539000" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">IVA (%)</label><input id="cfg-iva" type="number" value="19" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"></div>
               </div>
-              <div style="margin-top:16px;background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
-                <div style="font-size:11px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Tasas AFP — Cargo Trabajador (Mayo 2026)</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0 10px;">
-                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Capital (%)</label><input id="cfg-afp-capital" type="number" step="0.01" value="11.44" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Cuprum (%)</label><input id="cfg-afp-cuprum" type="number" step="0.01" value="11.44" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Hábitat (%)</label><input id="cfg-afp-habitat" type="number" step="0.01" value="11.27" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                  <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">PlanVital (%)</label><input id="cfg-afp-planvital" type="number" step="0.01" value="11.16" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">ProVida (%)</label><input id="cfg-afp-provida" type="number" step="0.01" value="11.45" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Modelo (%)</label><input id="cfg-afp-modelo" type="number" step="0.01" value="10.58" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">AFP Uno (%)</label><input id="cfg-afp-uno" type="number" step="0.01" value="10.46" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                  <div style="margin-top:8px;"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Tope Imponible AFP ($)</label><input id="cfg-tope-afp" type="number" value="3654962" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
-                </div>
-                <div style="font-size:10px;color:var(--c-muted);margin-top:6px;">Actualiza estos valores cada vez que Previred publique nuevas tasas (normalmente en julio).</div>
+              <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">Rentas Topes Imponibles</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px;margin-bottom:12px;">
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Tope AFP/Salud (90 UF) ($)</label><input id="cfg-tope-afp" type="number" value="3654962" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Tope AFP en UF</label><input id="cfg-tope-uf" type="number" value="90" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">Era 78 UF, ahora 90 UF</div></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Tope AFC en UF</label><input id="cfg-tope-afc-uf" type="number" value="135.2" step="0.1" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Tope Gratificación Art.47 ($)</label><input id="cfg-tope-grat" type="number" value="213396" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:7px 9px;border-radius:var(--radius);outline:none;"></div>
               </div>
-              <button id="btn-save-valores" class="btn-entrar" style="margin-top:16px;width:100%;">💾 Guardar Valores Legales y Tasas AFP</button>
+              <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">Asignación Familiar Legal — Tramos (Previred)</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 10px;margin-bottom:12px;">
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);margin-bottom:3px;">Tramo A ($)</label><input id="cfg-af-a" type="number" value="22007" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">Renta ≤ $631.976</div></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);margin-bottom:3px;">Tramo B ($)</label><input id="cfg-af-b" type="number" value="13505" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">$631.977–$923.067</div></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);margin-bottom:3px;">Tramo C ($)</label><input id="cfg-af-c" type="number" value="4267" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">$923.068–$1.439.668</div></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);margin-bottom:3px;">Tramo D ($)</label><input id="cfg-af-d" type="number" value="0" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">Renta > $1.439.668</div></div>
+              </div>
+              <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">AFC — Tasas Seguro de Cesantía</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px;margin-bottom:12px;">
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);margin-bottom:3px;">Indefinido — Trabajador (%)</label><input id="cfg-afc-ind-trab" type="number" value="0.6" step="0.01" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);margin-bottom:3px;">Indefinido — Empleador (%)</label><input id="cfg-afc-ind-emp" type="number" value="2.4" step="0.01" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);margin-bottom:3px;">Plazo Fijo — Empleador (%)</label><input id="cfg-afc-pf-emp" type="number" value="3.0" step="0.01" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"><div style="font-size:9px;color:var(--c-muted);margin-top:2px">Trabajador plazo fijo paga $0</div></div>
+              </div>
+              <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">Tasas AFP — Cargo del Trabajador</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 10px;margin-bottom:6px;">
+                <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Capital (%)</label><input id="cfg-afp-capital" type="number" step="0.01" value="11.44" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Cuprum (%)</label><input id="cfg-afp-cuprum" type="number" step="0.01" value="11.44" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Hábitat (%)</label><input id="cfg-afp-habitat" type="number" step="0.01" value="11.27" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">PlanVital (%)</label><input id="cfg-afp-planvital" type="number" step="0.01" value="11.16" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">ProVida (%)</label><input id="cfg-afp-provida" type="number" step="0.01" value="11.45" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">Modelo (%)</label><input id="cfg-afp-modelo" type="number" step="0.01" value="10.58" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">AFP Uno (%)</label><input id="cfg-afp-uno" type="number" step="0.01" value="10.46" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+                <div style="margin-top:8px"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">SIS — Seg. Invalidez (%)</label><input id="cfg-sis" type="number" step="0.01" value="1.62" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
+              </div>
+              <div style="font-size:9px;color:var(--c-muted);margin-bottom:12px;">SIS es cargo del empleador. Tasas a actualizar en julio de cada año según Previred.</div>
+              <button id="btn-save-valores" class="btn-entrar" style="width:100%;">💾 Guardar Indicadores Previsionales</button>
               <p id="cfg-valores-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
             </div>
           </div>
@@ -3959,7 +3944,8 @@ Clave: ${clavePortal}`);
       return Math.min(totalImpon, tope);
     }
     function calcPctCesantiaTrabajador(tipoContrato) {
-      return tipoContrato === "plazo_fijo" ? 0.03 : 0.006;
+      // Plazo fijo: empleador paga 3%, trabajador $0 (DT Chile)
+      return tipoContrato === "plazo_fijo" ? 0 : 0.006;
     }
     function calcImpuestoUnicoSegundaCat(rentaLiquidaImponible, utm) {
       if (!utm || rentaLiquidaImponible <= 0) return 0;
@@ -4163,9 +4149,10 @@ Clave: ${clavePortal}`);
             const propBase = diasAust > 0 ? Math.round(base * diasTrab / diasMes) : base;
 
             // Valor hora = sueldo/180 (mes 45 hrs semanales Chile)
-            const valHora = base/180;
-            const montoH50  = Math.round(valHora*1.5*h50n);
-            const montoH100 = Math.round(valHora*2*h100n);
+            // DT Chile: HE sobre base contractual, NO proporcional
+            const valHoraC = Math.round(base * 0.00777778);
+            const montoH50  = Math.round(valHoraC * 1.5 * h50n);
+            const montoH100 = Math.round(valHoraC * 2   * h100n);
 
             // Bonos variables del módulo movimientos + del modal
             const bonoVarMov = (mv2.bono_variable||0) + (mv2.comision||0) + (mv2.aguinaldo||0);
@@ -4182,7 +4169,8 @@ Clave: ${clavePortal}`);
             const baseAfp = calcBaseTopeAfp(totalImpon, cfgProc);
             const afpPct = getAfpPctTrabajador(r.afp, cfgProc);
             const descAfp = Math.round(baseAfp * afpPct);
-            const descSalud = Math.round(baseAfp * 0.07);
+            // FIX: Fonasa/Isapre siempre 7% del total imponible del mes
+            const descSalud = Math.round(totalImpon * 0.07);
             let descCesantia = 0;
             if (r.tipo_contrato !== "honorarios") {
               const baseAfc = calcBaseTopeAfc(totalImpon, cfgProc);
@@ -4251,9 +4239,9 @@ Clave: ${clavePortal}`);
         const h100n = parseFloat(document.getElementById(`nv-h100-${empDocId}`)?.value)||0;
         const viat  = parseFloat(document.getElementById(`nv-viat-${empDocId}`)?.value)||0;
         const otros = parseFloat(document.getElementById(`nv-otros-${empDocId}`)?.value)||0;
-        const valHora = base/180;
-        const montoH50  = Math.round(valHora*1.5*h50n);
-        const montoH100 = Math.round(valHora*2*h100n);
+        const valHoraC = Math.round(base * 0.00777778);
+        const montoH50  = Math.round(valHoraC * 1.5 * h50n);
+        const montoH100 = Math.round(valHoraC * 2   * h100n);
         const imponibleSinGratif = base + bonoa + montoH50 + montoH100;
         const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratif, cfg.imm);
         const totalImpon = imponibleSinGratif + gratif;
@@ -4262,7 +4250,8 @@ Clave: ${clavePortal}`);
         const baseAfp = calcBaseTopeAfp(totalImpon, cfg);
         const afpPct = getAfpPctTrabajador(afp, cfg);
         const descAfp = Math.round(baseAfp * afpPct);
-        const descSalud = Math.round(baseAfp * 0.07);
+        // FIX: Fonasa/Isapre siempre 7% del total imponible
+        const descSalud = Math.round(totalImpon * 0.07);
         let descCesantia = 0;
         if (tipoContrato !== "honorarios") {
           const baseAfc = calcBaseTopeAfc(totalImpon, cfg);
@@ -8172,7 +8161,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           .cert-row{display:flex;align-items:center;gap:18px;margin-top:20px;
             background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px 14px}
           .cert-txt{font-size:10px;color:#555;line-height:1.5;max-width:400px}
-          @media print{@page{size:A4;margin:16mm}body{padding:0}}
+          @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
         </style></head><body>
 
         <div class="hdr">
@@ -8220,7 +8209,8 @@ Si necesita clave, edita el cliente y agrega una.`;
             <table>
               <thead><tr><th>Haberes</th><th></th></tr></thead>
               <tbody>
-                <tr><td>Sueldo Base</td><td>${fmt(r.sueldo_base)}</td></tr>
+                <tr><td>Sueldo Base${r.sueldo_base_proporcional && r.sueldo_base_proporcional < r.sueldo_base ? ` <span style="font-size:8.5px;color:#d97706">(${r.dias_trabajados||0} días)</span>` : ""}</td><td>${fmt(r.sueldo_base_proporcional || r.sueldo_base)}</td></tr>
+                ${r.sueldo_base_proporcional && r.sueldo_base_proporcional < r.sueldo_base ? `<tr><td style="font-size:9px;color:#9ca3af;border:none;padding-bottom:2px">Base contrato: ${fmt(r.sueldo_base)}</td><td></td></tr>` : ""}
                 <tr><td>Gratificación Mensual</td><td>${fmt(r.gratificacion)}</td></tr>
                 ${r.bono_asistencia?`<tr><td>Bono Asistencia</td><td>${fmt(r.bono_asistencia)}</td></tr>`:""}
                 ${r.horas_extra_50?`<tr><td>Horas Extra 50%</td><td>${fmt(r.horas_extra_50)}</td></tr>`:""}
@@ -8245,7 +8235,7 @@ Si necesita clave, edita el cliente y agrega una.`;
                 ${r.impuesto_unico?`<tr><td>Impuesto Único (Renta Trib: ${fmt(r.total_imponible)})</td><td>${fmt(r.impuesto_unico)}</td></tr>`:""}
                 <tr class="subtot"><td><strong>TOTAL DESC. LEGALES</strong></td><td><strong>${fmt((r.desc_afp||0)+(r.desc_salud||0)+Math.round((r.total_imponible||0)*0.006)+(r.impuesto_unico||0))}</strong></td></tr>
                 <tr><td colspan="2" style="padding:6px 0;font-size:9px;color:#9ca3af;border:none"></td></tr>
-                ${r.otros_descuentos?`<tr><td>Otros Descuentos</td><td>${fmt(r.otros_descuentos)}</td></tr>`:""}
+                ${r.otros_descuentos?`<tr><td>Anticipo / Otros Descuentos</td><td>${fmt(r.otros_descuentos)}</td></tr>`:""}
                 ${r.otros_descuentos?`<tr class="subtot"><td><strong>TOTAL OTROS DESC.</strong></td><td><strong>${fmt(r.otros_descuentos)}</strong></td></tr>`:""}
               </tbody>
             </table>
@@ -8306,7 +8296,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         h1{font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:1px;color:#1b4332}
         p{line-height:1.9;margin-bottom:12px}
         .firma{margin-top:60px;border-top:1px solid #000;width:200px;padding-top:6px;font-size:10px}
-        @media print{@page{size:A4;margin:20mm}}</style></head><body>
+        @media print{@page{size:A4;margin:20mm}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
         <div style="text-align:center;border-bottom:2px solid #1b4332;padding-bottom:14px;margin-bottom:22px">
           ${logoH}
           <h1>Certificado de Antigüedad Laboral</h1>
@@ -8509,7 +8499,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           .firma-box{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px}
           .firma{text-align:center;width:220px}
           .firma-line{border-top:1.5px solid #333;padding-top:8px;font-size:10px;color:#333;margin-top:56px;line-height:1.5}
-          @media print{@page{size:A4;margin:15mm}body{padding:0}}
+          @media print{@page{size:A4;margin:15mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
         </style></head><body>
 
         <div class="hdr">
@@ -8582,7 +8572,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px}
         .firma{text-align:center;width:220px}
         .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
-        @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
+        @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
 
         <div class="hdr">
           <div><h1>Comprobante de Vacaciones</h1><p style="font-size:11px;color:#555">${empresa.nombre||"—"} · RUT: ${empresa.rut||"—"}</p></div>
@@ -8640,7 +8630,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px}
         .firma{text-align:center;width:220px}
         .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
-        @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
+        @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
 
         <div class="hdr">
           <div><h1>${esAnticipo?"Comprobante de Anticipo de Sueldo":"Comprobante de Permiso Administrativo"}</h1>
@@ -9833,7 +9823,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       };
     };
 
-    // ── EDITAR ENTIDAD CLIENTE — formulario completo igual al SA Panel ──
+    // ── EDITAR ENTIDAD CLIENTE — formulario completo (logo + firma + rem config) ──
     window.editarEntidadCliente = async (docId, coleccion) => {
       const d = await db.collection(coleccion).doc(docId).get();
       if (!d.exists) { alert("No se encontró la entidad"); return; }
@@ -9841,89 +9831,85 @@ Si necesita clave, edita el cliente y agrega una.`;
       const modal = document.createElement("div");
       modal.id = "modal-edit-ent-cli";
       modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:5000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      const fld = (lbl,inp) => `<div style="margin-bottom:10px"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${lbl}</label>${inp}</div>`;
+      const inps = (id,v,ph="") => `<input id="${id}" value="${v||""}" placeholder="${ph}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`;
+      const logoPreview  = r.logo_url  ? `<img id="ec-logo-prev-img"  src="${r.logo_url}"  style="height:44px;border-radius:6px;border:1px solid var(--c-border);object-fit:contain;display:block;margin-bottom:6px" onerror="this.style.display='none'">` : `<img id="ec-logo-prev-img"  src="" style="display:none;height:44px;border-radius:6px;border:1px solid var(--c-border);object-fit:contain;margin-bottom:6px">`;
+      const firmaPreview = r.firma_url ? `<img id="ec-firma-prev-img" src="${r.firma_url}" style="height:44px;border-radius:4px;border:1px solid var(--c-border);object-fit:contain;background:#fff;display:block;margin-bottom:6px" onerror="this.style.display='none'">` : `<img id="ec-firma-prev-img" src="" style="display:none;height:44px;border-radius:4px;border:1px solid var(--c-border);object-fit:contain;background:#fff;margin-bottom:6px">`;
       modal.innerHTML = `
-        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:600px;margin:auto;">
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:620px;margin:auto;">
           <div style="background:linear-gradient(135deg,var(--c-accent),#0ea5e9);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
             <div style="font-size:15px;font-weight:800;color:#fff;">✏️ Editar ${r.nombre||"Entidad"}</div>
             <button onclick="document.getElementById('modal-edit-ent-cli').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
           </div>
-          <div style="padding:20px;max-height:80vh;overflow-y:auto;">
+          <div style="padding:20px;max-height:82vh;overflow-y:auto;">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-              <div>${formField("Nombre / Razón Social *", `<input id="ec-nombre" value="${r.nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
-              <div>${formField("RUT *", `<input id="ec-rut" value="${r.rut||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              ${fld("Nombre / Razón Social *", inps("ec-nombre", r.nombre))}
+              ${fld("RUT *", inps("ec-rut", r.rut))}
             </div>
-            ${formField("Giro / Actividad", `<input id="ec-giro" value="${r.giro||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}
+            ${fld("Giro / Actividad", inps("ec-giro", r.giro))}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-              <div>${formField("Dirección", `<input id="ec-dir" value="${r.direccion||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
-              <div>${formField("Ciudad", `<input id="ec-ciudad" value="${r.ciudad||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-              <div>${formField("Teléfono", `<input id="ec-tel" value="${r.telefono||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
-              <div>${formField("Correo", `<input id="ec-correo" type="email" value="${r.correo||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              ${fld("Dirección", inps("ec-dir", r.direccion))}
+              ${fld("Ciudad", inps("ec-ciudad", r.ciudad))}
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-              <div>${formField("Representante Legal", `<input id="ec-rep-nombre" value="${r.rep_legal_nombre||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
-              <div>${formField("RUT Representante", `<input id="ec-rep-rut" value="${r.rep_legal_rut||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+              ${fld("Teléfono", inps("ec-tel", r.telefono))}
+              ${fld("Correo", inps("ec-correo", r.correo))}
             </div>
-
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              ${fld("Representante Legal", inps("ec-rep-nombre", r.rep_legal_nombre))}
+              ${fld("RUT Representante", inps("ec-rep-rut", r.rep_legal_rut))}
+            </div>
             <div style="background:rgba(21,101,192,0.08);border:1px solid rgba(21,101,192,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
               <div style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:8px;">🏦 Datos Bancarios</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-                <div>${formField("Banco", `<input id="ec-banco" value="${r.banco||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
-                <div>${formField("N° Cuenta", `<input id="ec-num-cuenta" value="${r.num_cuenta||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`)}</div>
+                ${fld("Banco", inps("ec-banco", r.banco))}
+                ${fld("N° Cuenta", inps("ec-num-cuenta", r.num_cuenta))}
               </div>
             </div>
-
-            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">🖼️ Logo de la Empresa</div>
+            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">🖼️ Logo</div>
             <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:10px;margin-bottom:10px;">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:5px;">Subir imagen (PNG, JPG — máx. 2 MB)</label>
-              <input type="file" id="ec-logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
-                onchange="logoFileToBase64('ec-logo-file','ec-logo','ec-logo-preview')">
-              <div id="ec-logo-preview" style="${r.logo_url?'display:block':'display:none'};margin-bottom:6px;">
-                <img id="ec-logo-preview-img" src="${r.logo_url||''}" style="height:48px;border-radius:6px;border:1px solid var(--c-border);object-fit:contain;" onerror="this.parentElement.style.display='none'">
-              </div>
-              <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL —</div>
-              <input id="ec-logo" type="url" value="${r.logo_url||''}" placeholder="https://..."
-                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"
-                oninput="if(this.value){document.getElementById('ec-logo-preview-img').src=this.value;document.getElementById('ec-logo-preview').style.display='block';}">
+              <input type="file" id="ec-logo-file" accept="image/*" onchange="logoFileToBase64('ec-logo-file','ec-logo','ec-logo-prev-img')" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;padding:5px 7px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;">
+              ${logoPreview}
+              <input id="ec-logo" type="url" value="${r.logo_url||''}" placeholder="https://... (o URL directa)" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;" oninput="const i=document.getElementById('ec-logo-prev-img');i.src=this.value;i.style.display=this.value?'block':'none'">
             </div>
-
-            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">✍️ Firma del Representante Legal</div>
+            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;">✍️ Firma Representante Legal</div>
             <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:10px;margin-bottom:10px;">
-              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:5px;">Subir imagen de firma (PNG — máx. 1 MB)</label>
-              <input type="file" id="ec-firma-file" accept="image/png,image/jpeg,image/webp"
-                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
-                onchange="logoFileToBase64('ec-firma-file','ec-firma','ec-firma-preview')">
-              <div id="ec-firma-preview" style="${r.firma_url?'display:block':'display:none'};margin-bottom:6px;">
-                <img id="ec-firma-preview-img" src="${r.firma_url||''}" style="height:40px;border-radius:4px;border:1px solid var(--c-border);object-fit:contain;background:#fff;" onerror="this.parentElement.style.display='none'">
-              </div>
-              <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL —</div>
-              <input id="ec-firma" type="url" value="${r.firma_url||''}" placeholder="https://..."
-                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"
-                oninput="if(this.value){document.getElementById('ec-firma-preview-img').src=this.value;document.getElementById('ec-firma-preview').style.display='block';}">
+              <input type="file" id="ec-firma-file" accept="image/*" onchange="logoFileToBase64('ec-firma-file','ec-firma','ec-firma-prev-img')" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;padding:5px 7px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;">
+              ${firmaPreview}
+              <input id="ec-firma" type="url" value="${r.firma_url||''}" placeholder="https://... (o URL directa)" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;" oninput="const i=document.getElementById('ec-firma-prev-img');i.src=this.value;i.style.display=this.value?'block':'none'">
+              <div style="font-size:10px;color:var(--c-muted);margin-top:4px;">Aparece en liquidaciones, contratos y certificados.</div>
             </div>
-
             <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
               <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">⚙️ Configuración de Remuneraciones</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
-                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
-                  <input type="checkbox" id="ec-gratif" ${r.config_rem?.paga_gratificacion!==false?'checked':''} style="accent-color:var(--c-accent)">Paga Gratificación Legal
-                </label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
-                  <input type="checkbox" id="ec-colacion" ${r.config_rem?.paga_colacion?'checked':''} style="accent-color:var(--c-accent)">Paga Colación
-                </label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
-                  <input type="checkbox" id="ec-movil" ${r.config_rem?.paga_movilizacion?'checked':''} style="accent-color:var(--c-accent)">Paga Movilización
-                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="ec-gratif" ${r.config_rem?.paga_gratificacion!==false?'checked':''} style="accent-color:var(--c-accent)">Paga Gratificación Legal</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="ec-colacion" ${r.config_rem?.paga_colacion?'checked':''} style="accent-color:var(--c-accent)">Paga Colación</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="ec-movil" ${r.config_rem?.paga_movilizacion?'checked':''} style="accent-color:var(--c-accent)">Paga Movilización</label>
               </div>
             </div>
-
             <button id="btn-save-ec" class="btn-entrar" style="width:100%">💾 Guardar Cambios</button>
             <p id="ec-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:14px;"></p>
           </div>
         </div>`;
       document.body.appendChild(modal);
+      // Helper: convert file to base64 for the inner previews
+      function ec_fileToBase64(fileInputId, urlFieldId, previewImgId) {
+        const fi = document.getElementById(fileInputId);
+        const uf = document.getElementById(urlFieldId);
+        const pi = document.getElementById(previewImgId);
+        if (!fi?.files?.length) return;
+        const file = fi.files[0];
+        if (!file.type.startsWith("image/")) { alert("Solo imágenes (PNG, JPG, SVG)"); return; }
+        if (file.size > 2097152) { alert("Máximo 2 MB"); return; }
+        const reader = new FileReader();
+        reader.onload = e => {
+          if (uf) uf.value = e.target.result;
+          if (pi) { pi.src = e.target.result; pi.style.display = "block"; }
+        };
+        reader.readAsDataURL(file);
+      }
+      document.getElementById("ec-logo-file").onchange  = () => ec_fileToBase64("ec-logo-file","ec-logo","ec-logo-prev-img");
+      document.getElementById("ec-firma-file").onchange = () => ec_fileToBase64("ec-firma-file","ec-firma","ec-firma-prev-img");
       document.getElementById("btn-save-ec").onclick = async () => {
         const nombre = document.getElementById("ec-nombre").value.trim();
         if (!nombre) { document.getElementById("ec-msg").textContent="El nombre es obligatorio"; return; }
@@ -9932,28 +9918,27 @@ Si necesita clave, edita el cliente y agrega una.`;
         try {
           await db.collection(coleccion).doc(docId).update({
             nombre,
-            rut:           document.getElementById("ec-rut").value.trim(),
-            giro:          document.getElementById("ec-giro").value.trim(),
-            direccion:     document.getElementById("ec-dir").value.trim(),
-            ciudad:        document.getElementById("ec-ciudad").value.trim(),
-            telefono:      document.getElementById("ec-tel").value.trim(),
-            correo:        document.getElementById("ec-correo").value.trim().toLowerCase(),
+            rut:              document.getElementById("ec-rut").value.trim(),
+            giro:             document.getElementById("ec-giro").value.trim(),
+            direccion:        document.getElementById("ec-dir").value.trim(),
+            ciudad:           document.getElementById("ec-ciudad").value.trim(),
+            telefono:         document.getElementById("ec-tel").value.trim(),
+            correo:           document.getElementById("ec-correo").value.trim().toLowerCase(),
             rep_legal_nombre: document.getElementById("ec-rep-nombre").value.trim(),
             rep_legal_rut:    document.getElementById("ec-rep-rut").value.trim(),
-            banco:         document.getElementById("ec-banco").value.trim(),
-            num_cuenta:    document.getElementById("ec-num-cuenta").value.trim(),
-            logo_url:      document.getElementById("ec-logo").value.trim()||"",
-            firma_url:     document.getElementById("ec-firma").value.trim()||"",
+            banco:            document.getElementById("ec-banco").value.trim(),
+            num_cuenta:       document.getElementById("ec-num-cuenta").value.trim(),
+            logo_url:         document.getElementById("ec-logo").value.trim()||"",
+            firma_url:        document.getElementById("ec-firma").value.trim()||"",
             config_rem: {
-              paga_gratificacion:  document.getElementById("ec-gratif").checked,
-              paga_colacion:       document.getElementById("ec-colacion").checked,
-              paga_movilizacion:   document.getElementById("ec-movil").checked,
+              paga_gratificacion: document.getElementById("ec-gratif").checked,
+              paga_colacion:      document.getElementById("ec-colacion").checked,
+              paga_movilizacion:  document.getElementById("ec-movil").checked,
             },
             actualizado: firebase.firestore.FieldValue.serverTimestamp()
           });
-          document.getElementById("ec-msg").style.color="var(--c-accent)";
-          document.getElementById("ec-msg").textContent="✓ Guardado correctamente.";
-          // Recargar lista si el modal de mis empresas sigue abierto
+          document.getElementById("ec-msg").style.color = "var(--c-accent)";
+          document.getElementById("ec-msg").textContent = "✓ Guardado correctamente.";
           setTimeout(async () => {
             document.getElementById("modal-edit-ent-cli").remove();
             const me = document.getElementById("modal-mis-empresas");
@@ -9966,22 +9951,24 @@ Si necesita clave, edita el cliente y agrega una.`;
         }
       };
     };
+
     const _origUpdateHeaderPlan = updateHeaderPlan;
     updateHeaderPlan = function() {
       _origUpdateHeaderPlan();
       // Agregar botón Mis Empresas para usuarios no superadmin
-      const existeBtn = document.getElementById("btn-mis-empresas");
-      if (!existeBtn && !isSuperadmin() && STATE.user) {
+      function tryAddMisEmpresasBtn() {
+        if (document.getElementById("btn-mis-empresas")) return;
+        if (isSuperadmin() || !STATE.user) return;
         const headerRight = document.querySelector(".header-right");
-        if (headerRight) {
-          const btn = document.createElement("button");
-          btn.id = "btn-mis-empresas";
-          btn.textContent = "🏢 Mis Empresas";
-          btn.style.cssText = "background:rgba(46,168,79,0.15);border:1px solid rgba(46,168,79,0.4);color:var(--c-accent);font-family:var(--font);font-size:12px;font-weight:700;padding:7px 14px;border-radius:var(--radius);cursor:pointer;";
-          btn.onclick = abrirGestionEmpresasCliente;
-          headerRight.insertBefore(btn, headerRight.firstChild);
-        }
+        if (!headerRight) { setTimeout(tryAddMisEmpresasBtn, 800); return; }
+        const btn = document.createElement("button");
+        btn.id = "btn-mis-empresas";
+        btn.textContent = "🏢 Mis Empresas";
+        btn.style.cssText = "background:rgba(46,168,79,0.15);border:1px solid rgba(46,168,79,0.4);color:var(--c-accent);font-family:var(--font);font-size:12px;font-weight:700;padding:7px 14px;border-radius:var(--radius);cursor:pointer;";
+        btn.onclick = abrirGestionEmpresasCliente;
+        headerRight.insertBefore(btn, headerRight.firstChild);
       }
+      setTimeout(tryAddMisEmpresasBtn, 300);
     };
 
 
@@ -10322,6 +10309,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           @media print{
             @page{size:A4;margin:14mm}
             body{padding:0}
+            -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;
             -webkit-print-color-adjust:exact !important;
             print-color-adjust:exact !important;
             .alcance{background:#1b4332 !important;color:#fff !important;}
@@ -11443,6 +11431,11 @@ Si necesita clave, edita el cliente y agrega una.`;
         if (cfg.afp_provida) document.getElementById("cfg-afp-provida").value = cfg.afp_provida;
         if (cfg.afp_modelo) document.getElementById("cfg-afp-modelo").value = cfg.afp_modelo;
         if (cfg.afp_uno) document.getElementById("cfg-afp-uno").value = cfg.afp_uno;
+        const s = (id,v) => { const el = document.getElementById(id); if(el && v!==undefined) el.value = v; };
+        s("cfg-sis", cfg.sis); s("cfg-af-a", cfg.af_tramo_a); s("cfg-af-b", cfg.af_tramo_b);
+        s("cfg-af-c", cfg.af_tramo_c); s("cfg-af-d", cfg.af_tramo_d);
+        s("cfg-afc-ind-trab", cfg.afc_ind_trab); s("cfg-afc-ind-emp", cfg.afc_ind_emp);
+        s("cfg-afc-pf-emp", cfg.afc_pf_emp); s("cfg-imm-men", cfg.imm_menores); s("cfg-imm-casa", cfg.imm_casa);
         // Planes
         if (cfg.plan_demo_precio !== undefined) document.getElementById("cfg-precio-demo").value = cfg.plan_demo_precio;
         if (cfg.plan_demo_desc) document.getElementById("cfg-desc-demo").value = cfg.plan_demo_desc;
@@ -11500,6 +11493,16 @@ Si necesita clave, edita el cliente y agrega una.`;
           afp_provida: parseFloat(document.getElementById("cfg-afp-provida")?.value)||11.45,
           afp_modelo: parseFloat(document.getElementById("cfg-afp-modelo")?.value)||10.58,
           afp_uno: parseFloat(document.getElementById("cfg-afp-uno")?.value)||10.46,
+          sis: parseFloat(document.getElementById("cfg-sis")?.value)||1.62,
+          af_tramo_a: parseFloat(document.getElementById("cfg-af-a")?.value)||22007,
+          af_tramo_b: parseFloat(document.getElementById("cfg-af-b")?.value)||13505,
+          af_tramo_c: parseFloat(document.getElementById("cfg-af-c")?.value)||4267,
+          af_tramo_d: parseFloat(document.getElementById("cfg-af-d")?.value)||0,
+          afc_ind_trab: parseFloat(document.getElementById("cfg-afc-ind-trab")?.value)||0.6,
+          afc_ind_emp: parseFloat(document.getElementById("cfg-afc-ind-emp")?.value)||2.4,
+          afc_pf_emp: parseFloat(document.getElementById("cfg-afc-pf-emp")?.value)||3.0,
+          imm_menores: parseFloat(document.getElementById("cfg-imm-men")?.value)||402082,
+          imm_casa: parseFloat(document.getElementById("cfg-imm-casa")?.value)||539000,
           actualizado: firebase.firestore.FieldValue.serverTimestamp()
         }, {merge: true});
         msg.style.color = "var(--c-accent)";
@@ -11647,7 +11650,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px}
         .firma{text-align:center;width:220px}
         .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
-        @media print{@page{size:A4;margin:16mm}body{padding:0}}</style></head><body>
+        @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
         <div class="hdr">${logoH}<h1>${doc.nombre}</h1><div style="font-size:10px;color:#666;text-align:right">${ciudad}<br>${hoy}</div></div>
         <p>${cuerpoFinal.replace(/\n/g,"</p><p>")}</p>
         <div class="firma-row">
