@@ -1349,6 +1349,24 @@
               </div>
             </div>
 
+            <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:10px;">✍️ Firma del Representante Legal</div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Subir imagen de firma (PNG fondo blanco — máx. 1 MB)</label>
+                <input type="file" id="ne-firma-file" accept="image/png,image/jpeg,image/webp"
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
+                  onchange="logoFileToBase64('ne-firma-file','ne-firma','ne-firma-preview')">
+                <div id="ne-firma-preview" style="display:none;margin-bottom:6px;">
+                  <img id="ne-firma-preview-img" src="" style="height:48px;border-radius:4px;border:1px solid var(--c-border);object-fit:contain;background:#fff;" onerror="this.parentElement.style.display='none'">
+                </div>
+                <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL —</div>
+                <input id="ne-firma" type="url" placeholder="https://..."
+                  style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;"
+                  oninput="if(this.value){document.getElementById('ne-firma-preview-img').src=this.value;document.getElementById('ne-firma-preview').style.display='block';}">
+                <div style="font-size:10px;color:var(--c-muted);margin-top:4px;">Aparecerá en liquidaciones, contratos, certificados y comprobantes.</div>
+              </div>
+            </div>
+
             <button id="btn-crear-entidad" class="btn-entrar" style="width:100%">💾 Registrar Entidad</button>
             <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.25);border-radius:var(--radius);padding:12px;margin-bottom:10px;">
               <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">⚙️ Configuración de Remuneraciones (Código del Trabajo Chile)</div>
@@ -4293,6 +4311,10 @@ Clave: ${clavePortal}`);
     // ── 3. LIQUIDACIONES ──
     async function renderRRHH_Liquidaciones(zone, empId) {
       zone.innerHTML =
+        `<div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.25);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--c-accent);display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px">📤</span>
+          <div><strong>Control de visibilidad:</strong> Las liquidaciones son privadas hasta que el jefe pinche <strong>"Enviar"</strong>. Solo aparecen en el portal del colaborador las marcadas <strong style="color:var(--c-accent)">✅ En Portal</strong>.</div>
+        </div>` +
         `<div style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
           <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Filtrar por período</label>
@@ -4313,6 +4335,7 @@ Clave: ${clavePortal}`);
         tb.innerHTML = "";
         snap.forEach(d => {
           const r = d.data();
+          const enPortal = r.visible_portal === true;
           tb.innerHTML += `<tr>
             <td><strong>${r.periodo||"—"}</strong></td>
             <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
@@ -4325,6 +4348,11 @@ Clave: ${clavePortal}`);
             <td style="font-size:11px">${r.salud||"—"}</td>
             <td style="white-space:nowrap">
               <button onclick="imprimirLiquidacionPorId('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
+              <button onclick="toggleLiqPortal('${d.id}','${empId}',${!enPortal})"
+                style="background:${enPortal?'rgba(46,168,79,0.15)':'var(--c-surface)'};border:1px solid ${enPortal?'var(--c-accent)':'var(--c-border)'};color:${enPortal?'var(--c-accent)':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;"
+                title="${enPortal?'Visible en portal del trabajador — clic para ocultar':'Clic para publicar en portal del trabajador'}">
+                ${enPortal?'✅ En Portal':'📤 Enviar'}
+              </button>
               <button onclick="editarLiquidacion('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Editar novedades">✏️</button>
               <button onclick="eliminarLiq('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
             </td>
@@ -6721,6 +6749,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           tipo_cuenta:  document.getElementById("ne-tipo-cuenta")?.value || "",
           num_cuenta:   document.getElementById("ne-num-cuenta")?.value.trim() || "",
           logo_url:     document.getElementById("ne-logo")?.value.trim() || "",
+          firma_url:    document.getElementById("ne-firma")?.value.trim() || "",
           config_rem: {
             tipo_gratificacion:  tipoGratif,
             paga_gratificacion:  tipoGratif !== "no_paga",
@@ -7475,8 +7504,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         } catch(e) {}
 
         // ── Cargar datos SIN orderBy para evitar errores de índice ──
+        // Solo liquidaciones publicadas en el portal (visible_portal:true)
         const [remSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
-          db.collection("remuneraciones").where("empleado_id","==",empDocId).limit(12).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("remuneraciones").where("empleado_id","==",empDocId).where("visible_portal","==",true).limit(12).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
           db.collection("vacaciones").where("empleado_id","==",empDocId).limit(20).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
           db.collection("permisos").where("empleado_id","==",empDocId).limit(10).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
           db.collection("anticipos").where("empleado_id","==",empDocId).limit(10).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
@@ -8324,7 +8354,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         ${clausulasExtra}
 
         <div class="firma-box">
-          <div class="firma"><div class="firma-line">Firma del Empleador<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
+          <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:38px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Firma del Empleador<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
           <div class="firma"><div class="firma-line">Firma del Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div></div>
         </div>
         </body></html>`;
@@ -8380,7 +8410,7 @@ Si necesita clave, edita el cliente y agrega una.`;
 
         <div class="firma-row">
           <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${r.nombre||"—"}</strong></div></div>
-          <div class="firma"><div class="firma-line">Jefatura / RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
+          <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:38px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Jefatura / RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
         </div>
         <p style="font-size:8px;color:#9ca3af;text-align:center;margin-top:20px">Emitido: ${hoy} · Martinez Services ERP</p>
         </body></html>`;
@@ -8440,7 +8470,7 @@ Si necesita clave, edita el cliente y agrega una.`;
 
         <div class="firma-row">
           <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${r.nombre||"—"}</strong></div></div>
-          <div class="firma"><div class="firma-line">Autorizado por RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
+          <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:38px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Autorizado por RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
         </div>
         <p style="font-size:8px;color:#9ca3af;text-align:center;margin-top:20px">Emitido: ${hoy} · Martinez Services ERP</p>
         </body></html>`;
@@ -9803,6 +9833,22 @@ Si necesita clave, edita el cliente y agrega una.`;
                 oninput="if(this.value){document.getElementById('ee-logo-preview-img').src=this.value;document.getElementById('ee-logo-preview').style.display='block';}">
             </div>
 
+            <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">✍️ Firma del Representante Legal</div>
+            <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:10px;margin-bottom:8px;">
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Subir imagen de firma (PNG fondo blanco — máx. 1 MB)</label>
+              <input type="file" id="ee-firma-file" accept="image/png,image/jpeg,image/webp"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px;"
+                onchange="logoFileToBase64('ee-firma-file','ee-firma','ee-firma-preview')">
+              <div id="ee-firma-preview" style="${r.firma_url?'display:block':'display:none'};margin-bottom:6px;">
+                <img id="ee-firma-preview-img" src="${r.firma_url||''}" style="height:48px;border-radius:4px;border:1px solid var(--c-border);object-fit:contain;background:#fff;" onerror="this.parentElement.style.display='none'">
+              </div>
+              <div style="font-size:11px;color:var(--c-muted);margin-bottom:4px;">— o pega una URL —</div>
+              <input id="ee-firma" type="url" value="${r.firma_url||''}" placeholder="https://..."
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"
+                oninput="if(this.value){document.getElementById('ee-firma-preview-img').src=this.value;document.getElementById('ee-firma-preview').style.display='block';}">
+              <div style="font-size:10px;color:var(--c-muted);margin-top:4px;">Esta firma aparecerá en liquidaciones, contratos, certificados y comprobantes de vacaciones/permisos.</div>
+            </div>
+
             <div style="font-size:12px;font-weight:700;color:var(--c-accent);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 10px;">⚙️ Configuración de Remuneraciones</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
               <div>${formField("Gratificación Legal", `<select id="ee-gratif" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;">
@@ -9852,6 +9898,7 @@ Si necesita clave, edita el cliente y agrega una.`;
             tipo_cuenta: document.getElementById("ee-tipo-cuenta")?.value||"",
             num_cuenta: document.getElementById("ee-num-cuenta")?.value.trim()||"",
             logo_url: document.getElementById("ee-logo")?.value.trim()||"",
+            firma_url: document.getElementById("ee-firma")?.value.trim()||"",
             config_rem: {
               tipo_gratificacion: document.getElementById("ee-gratif")?.value||"art47_mensual",
               paga_gratificacion: (document.getElementById("ee-gratif")?.value||"") !== "no_paga",
@@ -9895,6 +9942,9 @@ Si necesita clave, edita el cliente y agrega una.`;
       const logoH = empresa.logo_url
         ? `<img src="${empresa.logo_url}" style="height:55px;object-fit:contain;" onerror="this.remove()">`
         : `<div style="width:55px;height:55px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900">${(empresa.nombre||"E").charAt(0)}</div>`;
+      const firmaH = empresa.firma_url
+        ? `<img src="${empresa.firma_url}" style="height:38px;object-fit:contain;max-width:160px;" onerror="this.remove()">`
+        : "";
       const [yy,mm] = (r.periodo||"-").split("-");
       const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
       const periodoTexto = (yy&&mm) ? `${meses[parseInt(mm)-1]} de ${yy}` : (r.periodo||"—");
@@ -9940,7 +9990,18 @@ Si necesita clave, edita el cliente y agrega una.`;
           .firma{text-align:center;width:200px}
           .firma-line{border-top:1px solid #aaa;padding-top:5px;margin-top:44px;font-size:9px;color:#555}
           .pie{font-size:8px;color:#9ca3af;text-align:center;margin-top:14px;border-top:1px solid #e5e7eb;padding-top:8px}
-          @media print{@page{size:A4;margin:14mm}body{padding:0}}
+          .firma-img{height:38px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;}
+          @media print{
+            @page{size:A4;margin:14mm}
+            body{padding:0}
+            -webkit-print-color-adjust:exact !important;
+            print-color-adjust:exact !important;
+            .alcance{background:#1b4332 !important;color:#fff !important;}
+            table th{background:#1b4332 !important;color:#fff !important;}
+            .info-box{background:#f0fdf4 !important;}
+            .kpi2{background:#f0fdf4 !important;}
+            tr.subtot td{background:#f0fdf4 !important;}
+          }
         </style></head><body>
 
         <div class="hdr">
@@ -10028,8 +10089,13 @@ Si necesita clave, edita el cliente y agrega una.`;
         </div>
 
         <div class="firma-row">
-          <div class="firma"><div class="firma-line">Firma Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div></div>
-          <div class="firma"><div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
+          <div class="firma">
+            <div class="firma-line">Firma Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div>
+          </div>
+          <div class="firma">
+            ${firmaH ? `<img src="${empresa.firma_url}" class="firma-img" onerror="this.remove()">` : ""}
+            <div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div>
+          </div>
         </div>
 
         <div class="pie">${pieLiq} · Emitido: ${new Date().toLocaleDateString("es-CL",{day:"2-digit",month:"long",year:"numeric"})}</div>
@@ -10043,6 +10109,59 @@ Si necesita clave, edita el cliente y agrega una.`;
       if (!confirm("Eliminar esta liquidacion?")) return;
       await db.collection("remuneraciones").doc(docId).delete();
       renderRRHH_Liquidaciones(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── Publicar / despublicar liquidación en el portal del trabajador ──
+    window.toggleLiqPortal = async (docId, empId, publicar) => {
+      try {
+        await db.collection("remuneraciones").doc(docId).update({
+          visible_portal: publicar,
+          fecha_publicacion_portal: publicar ? firebase.firestore.FieldValue.serverTimestamp() : null
+        });
+        const msg = publicar
+          ? "✅ Liquidación publicada en el portal del trabajador."
+          : "🔒 Liquidación ocultada del portal del trabajador.";
+        // Actualizar solo la fila sin recargar toda la tabla
+        const periodo = document.getElementById("liq-filtro-periodo").value;
+        if (periodo && empId) {
+          const snap = await db.collection("remuneraciones")
+            .where("entityId","==",empId).where("periodo","==",periodo).get();
+          const tb = document.getElementById("tbl-liq-tbody");
+          if (tb) {
+            tb.innerHTML = "";
+            snap.forEach(d => {
+              const r = d.data();
+              const enPortal = r.visible_portal === true;
+              tb.innerHTML += `<tr>
+                <td><strong>${r.periodo||"—"}</strong></td>
+                <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
+                <td>${r.nombre||"—"}</td>
+                <td>${r.cargo||"—"}</td>
+                <td style="color:var(--c-accent)">${formatMonto(r.total_haberes)}</td>
+                <td style="color:var(--c-danger)">${formatMonto(r.total_descuentos)}</td>
+                <td style="font-weight:800">${formatMonto(r.liquido_pagar)}</td>
+                <td style="font-size:11px">${r.afp||"—"}</td>
+                <td style="font-size:11px">${r.salud||"—"}</td>
+                <td style="white-space:nowrap">
+                  <button onclick="imprimirLiquidacionPorId('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
+                  <button onclick="toggleLiqPortal('${d.id}','${empId}',${!enPortal})"
+                    style="background:${enPortal?'rgba(46,168,79,0.15)':'var(--c-surface)'};border:1px solid ${enPortal?'var(--c-accent)':'var(--c-border)'};color:${enPortal?'var(--c-accent)':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">
+                    ${enPortal?'✅ En Portal':'📤 Enviar'}
+                  </button>
+                  <button onclick="editarLiquidacion('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">✏️</button>
+                  <button onclick="eliminarLiq('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
+                </td>
+              </tr>`;
+            });
+          }
+        }
+        // Toast notification
+        const toast = document.createElement("div");
+        toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1b4332;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);";
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      } catch(e) { alert("Error: " + e.message); }
     };
 
     // ── HELPER: Obtener datos de la empresa/entidad activa correcta ──
