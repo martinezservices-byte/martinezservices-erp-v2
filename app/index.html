@@ -1481,9 +1481,19 @@
                   <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Actualizar mensualmente</div>
                 </div>
                 <div>
-                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope imponible (UF)</label>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Valor UTM ($)</label>
+                  <input id="cfg-utm" type="number" value="69889" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">SII — Impuesto Único 2da Categoría</div>
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope imponible AFP (UF)</label>
                   <input id="cfg-tope-uf" type="number" value="78" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
-                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Tope legal vigente</div>
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Tope AFP y Salud (7%)</div>
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope imponible AFC (UF)</label>
+                  <input id="cfg-tope-afc-uf" type="number" value="131.9" step="0.1" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                  <div style="font-size:10px;color:var(--c-muted);margin-top:3px;">Seguro de Cesantía — superior al AFP</div>
                 </div>
                 <div style="margin-top:12px;">
                   <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tope gratificación Art.47 ($)</label>
@@ -3830,6 +3840,74 @@ Clave: ${clavePortal}`);
       renderRRHH_Fichas(document.getElementById("module-dynamic-zone"), empId);
     };
 
+    // ── Utilidades legales remuneraciones (Chile) ──
+    async function loadConfigLegalRem() {
+      const defaults = {
+        imm: 539000, uf: 40610, utm: 69889,
+        tope_uf: 78, tope_afp: 3654962, tope_afc_uf: 131.9,
+        afp_capital: 11.44, afp_cuprum: 11.44, afp_habitat: 11.27,
+        afp_planvital: 11.16, afp_provida: 11.45, afp_modelo: 10.58, afp_uno: 10.46
+      };
+      try {
+        const doc = await db.collection("sistema_config").doc("principal").get();
+        if (doc.exists) return Object.assign({}, defaults, doc.data());
+      } catch (e) {}
+      return defaults;
+    }
+    function getAfpPctTrabajador(afp, cfg) {
+      const k = (afp || "").toLowerCase();
+      const map = {
+        capital: (cfg.afp_capital || 11.44) / 100,
+        cuprum: (cfg.afp_cuprum || 11.44) / 100,
+        habitat: (cfg.afp_habitat || 11.27) / 100,
+        planvital: (cfg.afp_planvital || 11.16) / 100,
+        provida: (cfg.afp_provida || 11.45) / 100,
+        modelo: (cfg.afp_modelo || 10.58) / 100,
+        uno: (cfg.afp_uno || 10.46) / 100
+      };
+      return map[k] || (cfg.afp_capital || 11.44) / 100;
+    }
+    function calcTopeGratifArt47(imm) {
+      return Math.round((imm * 4.75) / 12);
+    }
+    function calcGratificacionLegal(imponibleSinGratif, tipoGratif, imm) {
+      if (tipoGratif === "no_paga") return 0;
+      if (tipoGratif === "art50_25") return Math.round(imponibleSinGratif * 0.25 / 12);
+      return Math.min(Math.round(imponibleSinGratif * 0.25), calcTopeGratifArt47(imm));
+    }
+    function calcBaseTopeAfp(totalImpon, cfg) {
+      const tope = cfg.tope_afp || Math.round((cfg.tope_uf || 78) * (cfg.uf || 40610));
+      return Math.min(totalImpon, tope);
+    }
+    function calcBaseTopeAfc(totalImpon, cfg) {
+      const tope = cfg.tope_afc || Math.round((cfg.tope_afc_uf || 131.9) * (cfg.uf || 40610));
+      return Math.min(totalImpon, tope);
+    }
+    function calcPctCesantiaTrabajador(tipoContrato) {
+      return tipoContrato === "plazo_fijo" ? 0.03 : 0.006;
+    }
+    function calcImpuestoUnicoSegundaCat(rentaLiquidaImponible, utm) {
+      if (!utm || rentaLiquidaImponible <= 0) return 0;
+      const rentaUtm = rentaLiquidaImponible / utm;
+      if (rentaUtm <= 13.5) return 0;
+      const tramos = [
+        { hasta: 30, factor: 0.04, rebajaUtm: 0.54 },
+        { hasta: 50, factor: 0.08, rebajaUtm: 1.74 },
+        { hasta: 70, factor: 0.135, rebajaUtm: 4.49 },
+        { hasta: 90, factor: 0.23, rebajaUtm: 11.14 },
+        { hasta: 120, factor: 0.304, rebajaUtm: 17.80 },
+        { hasta: 310, factor: 0.35, rebajaUtm: 23.32 },
+        { hasta: Infinity, factor: 0.40, rebajaUtm: 38.82 }
+      ];
+      for (const t of tramos) {
+        if (rentaUtm <= t.hasta) {
+          const impUtm = rentaUtm * t.factor - t.rebajaUtm;
+          return Math.max(0, Math.round(impUtm * utm));
+        }
+      }
+      return 0;
+    }
+
     // ── 2. PROCESO DE REMUNERACIONES ──
     async function renderRRHH_Remuneraciones(zone, empId) {
       zone.innerHTML =
@@ -3873,18 +3951,18 @@ Clave: ${clavePortal}`);
         let filas = "";
         empSnap.forEach(d => {
           const r = d.data();
-          const valH50 = Math.round((r.sueldo_base||0)/180*1.5);  // valor hora extra 50%
-          const valH100= Math.round((r.sueldo_base||0)/180*2);    // valor hora extra 100%
+          const tc = r.tipo_contrato || "indefinido";
+          const calcNv = `calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp||""}','${r.salud||""}','${tc}')`;
           filas += `<tr style="border-bottom:1px solid var(--c-border)">
             <td style="padding:8px;font-size:12px"><strong>${r.nombre}</strong><br><span style="font-size:10px;color:var(--c-muted)">${r.rut} · ${r.cargo||'—'}</span></td>
             <td style="padding:4px;text-align:right;font-size:12px;color:var(--c-accent)">${formatMonto(r.sueldo_base)}</td>
-            <td style="padding:4px"><input type="number" min="0" value="${r.asig_colacion||0}" id="nv-col-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
-            <td style="padding:4px"><input type="number" min="0" value="${r.asig_movilizacion||0}" id="nv-mov-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
-            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-bonoa-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
-            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-h50-${d.id}" style="width:55px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
-            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-h100-${d.id}" style="width:55px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
-            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-viat-${d.id}" style="width:75px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
-            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-otros-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="calcFilaRem('${d.id}','${r.sueldo_base||0}','${r.afp}','${r.salud}')"></td>
+            <td style="padding:4px"><input type="number" min="0" value="${r.asig_colacion||0}" id="nv-col-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="${calcNv}"></td>
+            <td style="padding:4px"><input type="number" min="0" value="${r.asig_movilizacion||0}" id="nv-mov-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="${calcNv}"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-bonoa-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="${calcNv}"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-h50-${d.id}" style="width:55px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="${calcNv}"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-h100-${d.id}" style="width:55px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="${calcNv}"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-viat-${d.id}" style="width:75px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="${calcNv}"></td>
+            <td style="padding:4px"><input type="number" min="0" value="0" id="nv-otros-${d.id}" style="width:80px;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:5px;border-radius:4px;text-align:right" oninput="${calcNv}"></td>
             <td style="padding:8px;font-size:11px;text-align:right;min-width:90px">
               <div id="nv-tot-${d.id}" style="font-weight:700;color:var(--c-accent)">—</div>
               <div id="nv-liq-${d.id}" style="font-weight:800;font-size:12px">—</div>
@@ -3932,9 +4010,20 @@ Clave: ${clavePortal}`);
 
         document.body.appendChild(modal);
 
+        // Cargar parámetros legales y config de gratificación para preview y procesamiento
+        const legalCfg = await loadConfigLegalRem();
+        let configGratif = "art47_mensual";
+        try {
+          const cfgDoc = await getEmpresaActiva(empId);
+          configGratif = cfgDoc?.config_rem?.tipo_gratificacion || "art47_mensual";
+        } catch (e) {}
+        window._remLegalCfg = legalCfg;
+        window._remConfigGratif = configGratif;
+
         // Calcular preview de cada fila al abrir
         empSnap.forEach(d => {
-          calcFilaRem(d.id, d.data().sueldo_base||0, d.data().afp, d.data().salud);
+          const r = d.data();
+          calcFilaRem(d.id, r.sueldo_base||0, r.afp, r.salud, r.tipo_contrato);
         });
 
         // Botón confirmar
@@ -3945,25 +4034,16 @@ Clave: ${clavePortal}`);
           const batch2 = db.batch();
           let totalH=0,totalD=0,totalL=0;
 
-          // Leer config gratificación de la empresa activa
-          let configGratif = "art47_mensual";
+          const cfgProc = await loadConfigLegalRem();
+          let tipoGratifEmp = "art47_mensual";
           try {
             const cfgDoc = await getEmpresaActiva(empId);
-            configGratif = cfgDoc?.config_rem?.tipo_gratificacion || "art47_mensual";
-          } catch(e){}
+            tipoGratifEmp = cfgDoc?.config_rem?.tipo_gratificacion || "art47_mensual";
+          } catch (e) {}
 
           empSnap.forEach(d => {
             const r = d.data();
             const base = r.sueldo_base||r.sueldo_pactado||0;
-            let gratif = 0;
-            if (configGratif === "art47_mensual") {
-              // IMM Mayo 2026: $539.000 | Tope gratif = IMM × 4.75 / 12 = $213.396
-              gratif = Math.min(Math.round(base/12), 213396);
-            } else if (configGratif === "art50_25") {
-              gratif = Math.round(base * 0.25 / 12);
-            } else {
-              gratif = 0; // no_paga: condominios
-            }
             // Novedades del mes
             const col   = parseFloat(document.getElementById(`nv-col-${d.id}`)?.value)||0;
             const mov   = parseFloat(document.getElementById(`nv-mov-${d.id}`)?.value)||0;
@@ -3976,25 +4056,28 @@ Clave: ${clavePortal}`);
             const valHora = base/180;
             const montoH50  = Math.round(valHora*1.5*h50n);
             const montoH100 = Math.round(valHora*2*h100n);
-            // Imponible = base + gratif + bonos + horas extra (SIN colación, movil, viáticos)
-            const totalImpon = base + gratif + bonoa + montoH50 + montoH100;
-            // No imponible = colación + movilización + viáticos
+            // Imponible devengado sin gratificación (base + bonos + HE)
+            const imponibleSinGratif = base + bonoa + montoH50 + montoH100;
+            // Art. 47: 25% del imponible devengado, tope dinámico (IMM × 4.75) / 12
+            const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratifEmp, cfgProc.imm);
+            const totalImpon = imponibleSinGratif + gratif;
             const totalNoImpon = col + mov + viat;
             const totalHaberes = totalImpon + totalNoImpon;
-            // Descuentos sobre base imponible
-            // Tasas AFP vigentes Mayo 2026 (Previred) — cargo trabajador
-            const afpPct = {
-              capital:  0.1144, cuprum:   0.1144, habitat:  0.1127,
-              modelo:   0.1058, planvital: 0.1116, provida:  0.1145,
-              uno:      0.1046
-            }[r.afp?.toLowerCase()] || 0.1144;
-            const descAfp    = Math.round(totalImpon * afpPct);
-            const descSalud  = Math.round(totalImpon * 0.07);
-            // Seguro cesantía: 0.6% indefinido / 3% plazo fijo (cargo trabajador)
-            const pctCesantia = (r.tipo_contrato === "plazo_fijo") ? 0.03 : 0.006;
-            const descCesantia = Math.round(totalImpon * pctCesantia);
-            const totalDesc  = descAfp + descSalud + descCesantia + otros;
-            const liquido   = Math.round(totalHaberes - totalDesc);
+            // Descuentos previsionales con topes legales diferenciados
+            const baseAfp = calcBaseTopeAfp(totalImpon, cfgProc);
+            const afpPct = getAfpPctTrabajador(r.afp, cfgProc);
+            const descAfp = Math.round(baseAfp * afpPct);
+            const descSalud = Math.round(baseAfp * 0.07);
+            let descCesantia = 0;
+            if (r.tipo_contrato !== "honorarios") {
+              const baseAfc = calcBaseTopeAfc(totalImpon, cfgProc);
+              const pctCesantia = calcPctCesantiaTrabajador(r.tipo_contrato);
+              descCesantia = Math.round(baseAfc * pctCesantia);
+            }
+            const rentaLiquida = totalImpon - descAfp - descSalud - descCesantia;
+            const impuestoUnico = calcImpuestoUnicoSegundaCat(rentaLiquida, cfgProc.utm);
+            const totalDesc = descAfp + descSalud + descCesantia + impuestoUnico + otros;
+            const liquido = Math.round(totalHaberes - totalDesc);
             totalH+=Math.round(totalHaberes); totalD+=totalDesc; totalL+=liquido;
 
             const ref = db.collection("remuneraciones").doc(`${empId}_${periodo}_${d.id}`);
@@ -4012,8 +4095,9 @@ Clave: ${clavePortal}`);
               total_imponible:Math.round(totalImpon),
               total_no_imponible:Math.round(totalNoImpon),
               total_haberes:Math.round(totalHaberes),
-              desc_afp:descAfp, desc_salud:descSalud,
-              impuesto_unico:0,
+              desc_afp:descAfp, desc_salud:descSalud, desc_cesantia:descCesantia,
+              renta_liquida_imponible:Math.round(rentaLiquida),
+              impuesto_unico:impuestoUnico,
               total_descuentos:totalDesc,
               liquido_pagar:liquido,
               estado:"procesado",
@@ -4028,11 +4112,11 @@ Clave: ${clavePortal}`);
         };
       };
 
-      // Cálculo en tiempo real por fila
-      window.calcFilaRem = (empDocId, sueldoBase, afp, salud) => {
+      // Cálculo en tiempo real por fila (misma lógica legal que al confirmar)
+      window.calcFilaRem = (empDocId, sueldoBase, afp, salud, tipoContrato) => {
+        const cfg = window._remLegalCfg || { imm:539000, utm:69889, tope_afp:3654962, tope_afc_uf:131.9, uf:40610, tope_uf:78, afp_capital:11.44 };
+        const tipoGratif = window._remConfigGratif || "art47_mensual";
         const base  = parseFloat(sueldoBase)||0;
-        // La gratificación se calculará definitivamente al procesar
-        const gratif = Math.min(base/12, 40000); // preview — se ajusta al confirmar
         const col   = parseFloat(document.getElementById(`nv-col-${empDocId}`)?.value)||0;
         const mov   = parseFloat(document.getElementById(`nv-mov-${empDocId}`)?.value)||0;
         const bonoa = parseFloat(document.getElementById(`nv-bonoa-${empDocId}`)?.value)||0;
@@ -4043,13 +4127,23 @@ Clave: ${clavePortal}`);
         const valHora = base/180;
         const montoH50  = Math.round(valHora*1.5*h50n);
         const montoH100 = Math.round(valHora*2*h100n);
-        const totalImpon = base + gratif + bonoa + montoH50 + montoH100;
+        const imponibleSinGratif = base + bonoa + montoH50 + montoH100;
+        const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratif, cfg.imm);
+        const totalImpon = imponibleSinGratif + gratif;
         const totalNoImpon = col + mov + viat;
         const totalHab = totalImpon + totalNoImpon;
-        const afpPct = {capital:0.1145,cuprum:0.1145,habitat:0.1127,modelo:0.1045,planvital:0.1116,provida:0.1145,uno:0.1045}[afp?.toLowerCase()]||0.1145;
-        const descAfp   = Math.round(totalImpon*afpPct);
-        const descSalud = Math.round(totalImpon*0.07);
-        const liquido   = Math.round(totalHab - descAfp - descSalud - otros);
+        const baseAfp = calcBaseTopeAfp(totalImpon, cfg);
+        const afpPct = getAfpPctTrabajador(afp, cfg);
+        const descAfp = Math.round(baseAfp * afpPct);
+        const descSalud = Math.round(baseAfp * 0.07);
+        let descCesantia = 0;
+        if (tipoContrato !== "honorarios") {
+          const baseAfc = calcBaseTopeAfc(totalImpon, cfg);
+          descCesantia = Math.round(baseAfc * calcPctCesantiaTrabajador(tipoContrato));
+        }
+        const rentaLiquida = totalImpon - descAfp - descSalud - descCesantia;
+        const impuestoUnico = calcImpuestoUnicoSegundaCat(rentaLiquida, cfg.utm);
+        const liquido = Math.round(totalHab - descAfp - descSalud - descCesantia - impuestoUnico - otros);
         const totEl = document.getElementById(`nv-tot-${empDocId}`);
         const liqEl = document.getElementById(`nv-liq-${empDocId}`);
         if (totEl) totEl.textContent = `Tot: ${formatMonto(totalHab)}`;
@@ -9798,79 +9892,472 @@ Si necesita clave, edita el cliente y agrega una.`;
     };
 
     // ═══════════════════════════════════════════════════════════
-    // LIBROS DE REMUNERACIONES — completo
+    // LIBROS DE REMUNERACIONES — LRE DT / SII / Interno
     // ═══════════════════════════════════════════════════════════
+    function descargarCSV(nombreArchivo, contenido) {
+      const a = document.createElement("a");
+      a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(contenido);
+      a.download = nombreArchivo;
+      a.click();
+    }
+    function formatRutLRE(rut) {
+      if (!rut) return "";
+      return rut.replace(/\./g, "").trim();
+    }
+    function formatRutArchivo(rut) {
+      return (rut || "").replace(/\./g, "").replace(/-/g, "");
+    }
+    function formatFechaLRE(fecha) {
+      if (!fecha) return "";
+      if (fecha.includes("/")) return fecha;
+      const p = fecha.split("-");
+      if (p.length === 3) return p[2] + "/" + p[1] + "/" + p[0];
+      return "";
+    }
+    function intLRE(n) { return Math.max(0, Math.round(n || 0)); }
+    function calcDiasMesPeriodo(periodo) {
+      const [yy, mm] = periodo.split("-");
+      return new Date(parseInt(yy), parseInt(mm), 0).getDate();
+    }
+    function mapRegionCodigoDT(region) {
+      const map = {
+        tarapaca: 1, tarapacá: 1, antofagasta: 2, atacama: 3, coquimbo: 4,
+        valparaiso: 5, valparaíso: 5, ohiggins: 6, "o'higgins": 6, maule: 7,
+        biobio: 8, biobío: 8, araucania: 9, araucanía: 9, "los lagos": 10,
+        aysen: 11, aysén: 11, magallanes: 12, metropolitana: 13,
+        "los rios": 14, "los ríos": 14, arica: 15, nuble: 16, ñuble: 16
+      };
+      const k = (region || "").toLowerCase().replace(/^(x{0,3}[ivxlcdm]+\s*[-—]\s*)/i, "").trim();
+      for (const [nom, cod] of Object.entries(map)) {
+        if (k.includes(nom)) return String(cod).padStart(2, "0");
+      }
+      return "13";
+    }
+    function mapAfpCodigoLRE(afp) {
+      const k = (afp || "").toLowerCase().replace(/\s/g, "");
+      return { capital: "08", cuprum: "02", habitat: "05", modelo: "33", planvital: "34", provida: "07", uno: "35" }[k] || "05";
+    }
+    function mapSaludCodigoLRE(salud) {
+      const sl = (salud || "").toLowerCase();
+      if (!sl || sl.includes("fonasa")) return "01";
+      if (sl.includes("banmedica")) return "12";
+      if (sl.includes("consalud")) return "06";
+      if (sl.includes("colmena")) return "07";
+      if (sl.includes("vida tres") || sl.includes("vidatres")) return "21";
+      if (sl.includes("nueva masvida") || sl.includes("masvida")) return "15";
+      if (sl.includes("cruzblanca") || sl.includes("cruz blanca")) return "14";
+      if (sl.includes("esencial")) return "27";
+      return "01";
+    }
+    function mapMutualCodigoLRE(mutual) {
+      const m = (mutual || "achs").toLowerCase();
+      if (m.includes("museg") || m.includes("mutual")) return "02";
+      if (m.includes("ist")) return "03";
+      if (m.includes("isl")) return "04";
+      return "01";
+    }
+    async function getRemuneracionesPeriodo(empId, periodo) {
+      const snap = await db.collection("remuneraciones").where("entityId", "==", empId).get();
+      const docs = [];
+      snap.forEach(d => { if (d.data().periodo === periodo) docs.push({ id: d.id, ...d.data() }); });
+      docs.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+      return docs;
+    }
+    async function getEmpleadosMap(empId) {
+      const snap = await db.collection("empleados").where("entityId", "==", empId).get();
+      const map = {};
+      snap.forEach(d => { map[d.id] = d.data(); });
+      return map;
+    }
+    function calcTotalesRem(docs) {
+      const t = { trabajadores: docs.length, imponible: 0, noImponible: 0, haberes: 0, afp: 0, salud: 0, afc: 0, impuesto: 0, otros: 0, descuentos: 0, liquido: 0 };
+      docs.forEach(r => {
+        t.imponible += r.total_imponible || 0;
+        t.noImponible += r.total_no_imponible || 0;
+        t.haberes += r.total_haberes || 0;
+        t.afp += r.desc_afp || 0;
+        t.salud += r.desc_salud || 0;
+        t.afc += r.desc_cesantia || 0;
+        t.impuesto += r.impuesto_unico || 0;
+        t.otros += r.otros_descuentos || 0;
+        t.descuentos += r.total_descuentos || 0;
+        t.liquido += r.liquido_pagar || 0;
+      });
+      return t;
+    }
+    const LRE_COLUMNAS_DT = [
+      { cod: 1101, hdr: "Rut trabajador(1101)" },
+      { cod: 1102, hdr: "Fecha inicio contrato(1102)" },
+      { cod: 1103, hdr: "Fecha término de contrato(1103)" },
+      { cod: 1104, hdr: "Causal término de contrato(1104)" },
+      { cod: 1105, hdr: "Región prestación servicios(1105)" },
+      { cod: 1106, hdr: "Comuna prestación servicios(1106)" },
+      { cod: 1170, hdr: "Tipo impuesto renta(1170)" },
+      { cod: 1107, hdr: "Código tipo jornada(1107)" },
+      { cod: 1108, hdr: "Persona Discapacidad/Inválido(1108)" },
+      { cod: 1109, hdr: "Pensionado vejez(1109)" },
+      { cod: 1141, hdr: "AFP(1141)" },
+      { cod: 1142, hdr: "IPS ExINP(1142)" },
+      { cod: 1143, hdr: "FONASA-ISAPRE(1143)" },
+      { cod: 1151, hdr: "AFC(1151)" },
+      { cod: 1110, hdr: "CCAF(1110)" },
+      { cod: 1152, hdr: "Org. administrador ley 16.744(1152)" },
+      { cod: 1111, hdr: "Nro cargas familiares legales(1111)" },
+      { cod: 1115, hdr: "Nro días trabajados(1115)" },
+      { cod: 1116, hdr: "Nro días licencia médica(1116)" },
+      { cod: 1117, hdr: "Nro días vacaciones(1117)" },
+      { cod: 1118, hdr: "Subsidio trabajador joven(1118)" },
+      { cod: 1155, hdr: "Ahorro previsional voluntario individual(1155)" },
+      { cod: 1157, hdr: "Ahorro previsional voluntario colectivo(1157)" },
+      { cod: 1131, hdr: "Indemnización a todo evento(1131)" },
+      { cod: 2101, hdr: "Sueldo(2101)" },
+      { cod: 2102, hdr: "Sobresueldo HE(2102)" },
+      { cod: 2106, hdr: "Gratificación(2106)" },
+      { cod: 2111, hdr: "Bono asistencia(2111)" },
+      { cod: 2301, hdr: "Colación(2301)" },
+      { cod: 2302, hdr: "Movilización(2302)" },
+      { cod: 2303, hdr: "Viáticos(2303)" },
+      { cod: 3141, hdr: "Cotización AFP/IPS(3141)" },
+      { cod: 3143, hdr: "Cotización salud 7%(3143)" },
+      { cod: 3151, hdr: "Cotización AFC trabajador(3151)" },
+      { cod: 3161, hdr: "Impuesto retenido(3161)" },
+      { cod: 3185, hdr: "Otros descuentos(3185)" },
+      { cod: 4151, hdr: "Aporte AFC empleador(4151)" },
+      { cod: 4152, hdr: "Aporte mutual/accidentes ley 16.744(4152)" },
+      { cod: 4155, hdr: "Aporte SIS empleador(4155)" },
+      { cod: 5201, hdr: "Total haberes(5201)" },
+      { cod: 5210, hdr: "Total haberes imponibles tributables(5210)" },
+      { cod: 5220, hdr: "Total haberes imponibles no tributables(5220)" },
+      { cod: 5230, hdr: "Total haberes no imponibles(5230)" },
+      { cod: 5240, hdr: "Total haberes no imponibles tributables(5240)" },
+      { cod: 5301, hdr: "Total descuentos(5301)" },
+      { cod: 5361, hdr: "Total descuentos impuestos remuneraciones(5361)" },
+      { cod: 5341, hdr: "Total descuentos cotizaciones trabajador(5341)" },
+      { cod: 5302, hdr: "Total otros descuentos(5302)" },
+      { cod: 5410, hdr: "Total aportes empleador(5410)" },
+      { cod: 5501, hdr: "Total líquido(5501)" },
+      { cod: 5564, hdr: "Total indemnizaciones tributables(5564)" }
+    ];
+    function buildFilaLRE(r, emp, empresa, periodo) {
+      const diasMes = calcDiasMesPeriodo(periodo);
+      const region = mapRegionCodigoDT(empresa.region || empresa.direccion_region);
+      const comuna = empresa.comuna_codigo_dt || "13101";
+      const mutual = empresa.config_rem?.mutual || "achs";
+      const honorarios = (r.tipo_contrato || "").toLowerCase() === "honorarios";
+      const sueldo = intLRE(r.sueldo_base);
+      const sobresueldo = intLRE((r.horas_extra_50 || 0) + (r.horas_extra_100 || 0));
+      const gratif = intLRE(r.gratificacion);
+      const bono = intLRE(r.bono_asistencia);
+      const col = intLRE(r.asig_colacion);
+      const mov = intLRE(r.asig_movilizacion);
+      const viat = intLRE(r.viaticos);
+      const descAfp = intLRE(r.desc_afp);
+      const descSalud = intLRE(r.desc_salud);
+      const descAfc = intLRE(r.desc_cesantia);
+      const impuesto = intLRE(r.impuesto_unico);
+      const otros = intLRE(r.otros_descuentos);
+      const totalHab = intLRE(r.total_haberes);
+      const totalImp = intLRE(r.total_imponible);
+      const totalNoImp = intLRE(r.total_no_imponible);
+      const totalDesc = intLRE(r.total_descuentos);
+      const liquido = intLRE(r.liquido_pagar);
+      const descCotiz = descAfp + descSalud + descAfc;
+      const baseImp = totalImp || (sueldo + sobresueldo + gratif + bono);
+      const afcEmp = honorarios ? 0 : ((r.tipo_contrato === "plazo_fijo") ? intLRE(baseImp * 0.03) : intLRE(baseImp * 0.024));
+      const sisEmp = honorarios ? 0 : intLRE(baseImp * 0.009);
+      const mutualEmp = honorarios ? 0 : intLRE(baseImp * 0.0093);
+      const totalAportes = afcEmp + sisEmp + mutualEmp;
+      const vals = {};
+      vals[1101] = formatRutLRE(r.rut || emp.rut);
+      vals[1102] = formatFechaLRE(emp.fecha_ingreso || r.fecha_ingreso);
+      vals[1103] = formatFechaLRE(emp.fecha_termino || r.fecha_termino || "");
+      vals[1104] = "";
+      vals[1105] = region;
+      vals[1106] = comuna;
+      vals[1170] = honorarios ? "01" : "02";
+      vals[1107] = "01";
+      vals[1108] = "0";
+      vals[1109] = "0";
+      vals[1141] = honorarios ? "" : mapAfpCodigoLRE(r.afp);
+      vals[1142] = "";
+      vals[1143] = mapSaludCodigoLRE(r.salud);
+      vals[1151] = honorarios ? "0" : "1";
+      vals[1110] = "00";
+      vals[1152] = mapMutualCodigoLRE(mutual);
+      vals[1111] = String(emp.cargas_familiares || r.cargas_familiares || 0);
+      vals[1115] = String(r.dias_trabajados || diasMes);
+      vals[1116] = String(r.dias_licencia || 0);
+      vals[1117] = String(r.dias_vacaciones || 0);
+      vals[1118] = "0";
+      vals[1155] = "0";
+      vals[1157] = "0";
+      vals[1131] = "0";
+      vals[2101] = sueldo;
+      vals[2102] = sobresueldo;
+      vals[2106] = gratif;
+      vals[2111] = bono;
+      vals[2301] = col;
+      vals[2302] = mov;
+      vals[2303] = viat;
+      vals[3141] = descAfp;
+      vals[3143] = descSalud;
+      vals[3151] = descAfc;
+      vals[3161] = impuesto;
+      vals[3185] = otros;
+      vals[4151] = afcEmp;
+      vals[4152] = mutualEmp;
+      vals[4155] = sisEmp;
+      vals[5201] = totalHab;
+      vals[5210] = totalImp;
+      vals[5220] = 0;
+      vals[5230] = totalNoImp;
+      vals[5240] = 0;
+      vals[5301] = totalDesc;
+      vals[5361] = impuesto;
+      vals[5341] = descCotiz;
+      vals[5302] = otros;
+      vals[5410] = totalAportes;
+      vals[5501] = liquido;
+      vals[5564] = 0;
+      return LRE_COLUMNAS_DT.map(c => vals[c.cod] !== undefined && vals[c.cod] !== null ? vals[c.cod] : "");
+    }
+    function generarCSVLRE(docs, empresa, empleadosMap, periodo) {
+      let csv = LRE_COLUMNAS_DT.map(c => c.hdr).join(";") + "\n";
+      docs.forEach(r => {
+        const emp = empleadosMap[r.empleado_id] || {};
+        csv += buildFilaLRE(r, emp, empresa, periodo).join(";") + "\n";
+      });
+      return csv;
+    }
+    function generarCSVRetencionesSII(docs, empresa, periodo) {
+      const retenidos = docs.filter(r => intLRE(r.impuesto_unico) > 0);
+      let csv = "RUT_EMPLEADOR;RAZON_SOCIAL;PERIODO;RUT_TRABAJADOR;NOMBRE_TRABAJADOR;RENTA_LIQUIDA_IMPONIBLE;IMPUESTO_UNICO_RETENIDO;MONTO_DECLARAR_F29\n";
+      retenidos.forEach(r => {
+        csv += [
+          formatRutLRE(empresa.rut),
+          (empresa.nombre || empresa.razon_social || "").replace(/;/g, " "),
+          periodo,
+          formatRutLRE(r.rut),
+          (r.nombre || "").replace(/;/g, " "),
+          intLRE(r.renta_liquida_imponible || (r.total_imponible - (r.desc_afp || 0) - (r.desc_salud || 0) - (r.desc_cesantia || 0))),
+          intLRE(r.impuesto_unico),
+          intLRE(r.impuesto_unico)
+        ].join(";") + "\n";
+      });
+      const totalRet = retenidos.reduce((s, r) => s + intLRE(r.impuesto_unico), 0);
+      csv += [formatRutLRE(empresa.rut), "TOTAL RETENCIONES PERIODO", periodo, "", "", "", totalRet, totalRet].join(";") + "\n";
+      return { csv, retenidos, totalRet };
+    }
+
     async function renderRRHH_Libros(zone, empId) {
-      const mesActual = new Date().toISOString().slice(0,7);
+      if (!empId) {
+        zone.innerHTML = `<div style="padding:40px;text-align:center;color:var(--c-muted)">Selecciona una empresa para ver los libros de remuneraciones.</div>`;
+        return;
+      }
+      const mesActual = new Date().toISOString().slice(0, 7);
       zone.innerHTML =
         `<div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:14px;margin-bottom:16px;">
-          <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">📚 Libros de Remuneraciones</div>
+          <div style="font-size:14px;font-weight:800;color:var(--c-accent);margin-bottom:4px;">📚 Libros Oficiales de Remuneraciones — Chile</div>
+          <div style="font-size:12px;color:var(--c-muted);margin-bottom:12px;">Reportes masivos del mes procesado · filtrados por empresa activa (empId)</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
             <div>
               <label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Período</label>
               <input type="month" id="libro-periodo" value="${mesActual}" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
             </div>
-            <button id="btn-ver-libro" class="btn-entrar">📋 Ver Libro</button>
-            <button id="btn-libro-pdf" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ PDF Archivar</button>
-            <button id="btn-libro-sii" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📋 SII/LRE</button>
-            <button id="btn-libro-dt" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📤 DT Chile</button>
-            <button id="btn-libro-previred" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">💳 Previred</button>
+            <button id="btn-cargar-libros" class="btn-entrar">🔄 Cargar Planilla del Mes</button>
           </div>
-        </div>` +
-        tableWrap("tbl-libro","Nómina del Período","Haberes, descuentos y líquido por trabajador",
-          ["RUT","Trabajador","Cargo","S.Base","Gratif.","Col.","Mov.","H.E.50%","H.E.100%","Viát.","Tot.Imp.","T.Haberes","AFP","Salud","T.Desc.","Líquido"]);
+        </div>
+        <div class="kpi-row" id="libro-kpis" style="margin-bottom:16px;">
+          <div class="kpi-card"><div class="kpi-label">Trabajadores</div><div class="kpi-value" id="kpi-lib-trab">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Imponible</div><div class="kpi-value green" id="kpi-lib-imp">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total No Imponible</div><div class="kpi-value" id="kpi-lib-noimp">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Descuentos</div><div class="kpi-value danger" id="kpi-lib-desc">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Líquido</div><div class="kpi-value" id="kpi-lib-liq">—</div></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--c-border);padding-bottom:10px;">
+          <button class="libro-tab btn-entrar" data-tab="interno" style="font-size:12px;padding:8px 14px;">📋 Libro Interno</button>
+          <button class="libro-tab" data-tab="lre" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius);cursor:pointer;">📤 LRE — Mi DT</button>
+          <button class="libro-tab" data-tab="sii" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--radius);cursor:pointer;">🏛️ Retenciones SII (F29)</button>
+        </div>
+        <div id="libro-panel-interno" class="libro-panel">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <button id="btn-libro-imprimir" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🖨️ Imprimir Libro Interno</button>
+            <button id="btn-libro-csv-interno" style="background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;font-weight:600;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">📥 Exportar CSV</button>
+          </div>` +
+        tableWrap("tbl-libro", "Libro de Remuneraciones — Uso Interno Contabilidad", "Formato clásico con desglose haberes, descuentos y líquido por trabajador",
+          ["RUT", "Trabajador", "Cargo", "S.Base", "Gratif.", "B.Asist.", "H.E.50%", "H.E.100%", "Col.", "Mov.", "Viát.", "Tot.Imp.", "Tot.NoImp.", "T.Haberes", "AFP $", "Salud $", "AFC $", "Imp.Único", "Otros", "T.Desc.", "Líquido"]) +
+        `</div>
+        <div id="libro-panel-lre" class="libro-panel" style="display:none;">
+          <div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.25);border-radius:var(--radius);padding:14px;margin-bottom:14px;font-size:12px;color:#0ea5e9;">
+            <strong>LRE — Libro de Remuneraciones Electrónico (Dirección del Trabajo)</strong><br>
+            Archivo CSV con códigos oficiales DT (1101, 2101, 3141, 5201…). Delimitador punto y coma (;). Nombre archivo: <code>rutempleador_aaaamm.csv</code> para carga masiva en portal <strong>Mi DT</strong>.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <button id="btn-export-lre-dt" class="btn-entrar">📤 Exportar LRE para Mi DT</button>
+            <span id="libro-lre-info" style="font-size:12px;color:var(--c-muted);align-self:center;">—</span>
+          </div>
+          <div style="overflow-x:auto;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:10px;">
+            <table style="width:100%;border-collapse:collapse;font-size:10px;" id="tbl-lre-preview">
+              <thead><tr style="background:var(--c-bg);"><th style="padding:6px;text-align:left;color:var(--c-muted)">Vista previa LRE (primeros registros)</th></tr></thead>
+              <tbody id="tbl-lre-preview-body"><tr><td style="padding:12px;color:var(--c-muted)">Carga la planilla del mes para ver la vista previa.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="libro-panel-sii" class="libro-panel" style="display:none;">
+          <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:var(--radius);padding:14px;margin-bottom:14px;font-size:12px;color:#a78bfa;">
+            <strong>Libro de Retenciones — Impuesto Único 2da Categoría (SII)</strong><br>
+            Listado de trabajadores con retención de Impuesto Único del mes. Usar para declaración en <strong>Formulario 29</strong> del SII.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+            <button id="btn-export-sii-f29" class="btn-entrar">📥 Exportar Libro Retenciones (CSV)</button>
+            <div style="font-size:13px;font-weight:700;color:var(--c-accent);" id="libro-sii-total">Total a declarar F29: —</div>
+          </div>` +
+        tableWrap("tbl-sii", "Retenciones Impuesto Único — Segunda Categoría", "Solo trabajadores con retención de impuesto en el período",
+          ["RUT", "Trabajador", "Renta Líquida Imponible", "Impuesto Único Retenido", "Monto F29"]) +
+        `</div>`;
 
-      const cargarLibro = async () => {
-        const periodo = document.getElementById("libro-periodo").value;
-        if (!periodo || !empId) return;
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
+      let _libroDocs = [];
+      let _libroEmpresa = null;
+      let _libroEmpleados = {};
+
+      const activarTabLibro = (tab) => {
+        document.querySelectorAll(".libro-tab").forEach(b => {
+          const on = b.dataset.tab === tab;
+          b.style.background = on ? "var(--c-accent)" : "var(--c-surface)";
+          b.style.borderColor = on ? "var(--c-accent)" : "var(--c-border)";
+          b.style.color = on ? "#fff" : "var(--c-text)";
+        });
+        document.querySelectorAll(".libro-panel").forEach(p => p.style.display = "none");
+        const panel = document.getElementById("libro-panel-" + tab);
+        if (panel) panel.style.display = "block";
+      };
+      document.querySelectorAll(".libro-tab").forEach(btn => {
+        btn.onclick = () => activarTabLibro(btn.dataset.tab);
+      });
+
+      const renderLibroInterno = (docs, tot) => {
         const tb = document.getElementById("tbl-libro-tbody");
-        const docs = [];
-        snap.forEach(d => { if (d.data().periodo === periodo) docs.push({id:d.id,...d.data()}); });
-        if (!docs.length) { tb.innerHTML = emptyRow(16,"Sin remuneraciones procesadas para " + periodo + ". Ve a Proceso de Remuneraciones para procesar el mes."); return; }
+        if (!docs.length) {
+          tb.innerHTML = emptyRow(21, "Sin remuneraciones procesadas. Ve a Proceso de Remuneraciones para procesar el mes.");
+          return;
+        }
         tb.innerHTML = "";
-        let tH=0, tD=0, tL=0;
-        docs.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
         docs.forEach(r => {
-          tH += r.total_haberes||0; tD += r.total_descuentos||0; tL += r.liquido_pagar||0;
           tb.innerHTML += "<tr>" +
-            "<td style='font-family:monospace;font-size:10px'>" + (r.rut||"—") + "</td>" +
-            "<td><strong style='font-size:11px'>" + (r.nombre||"—") + "</strong></td>" +
-            "<td style='font-size:10px'>" + (r.cargo||"—") + "</td>" +
+            "<td style='font-family:monospace;font-size:10px'>" + (r.rut || "—") + "</td>" +
+            "<td><strong style='font-size:11px'>" + (r.nombre || "—") + "</strong></td>" +
+            "<td style='font-size:10px'>" + (r.cargo || "—") + "</td>" +
             "<td>" + formatMonto(r.sueldo_base) + "</td>" +
             "<td>" + formatMonto(r.gratificacion) + "</td>" +
-            "<td style='color:#0ea5e9'>" + formatMonto(r.asig_colacion) + "</td>" +
-            "<td style='color:#0ea5e9'>" + formatMonto(r.asig_movilizacion) + "</td>" +
+            "<td>" + formatMonto(r.bono_asistencia) + "</td>" +
             "<td>" + formatMonto(r.horas_extra_50) + "</td>" +
             "<td>" + formatMonto(r.horas_extra_100) + "</td>" +
+            "<td style='color:#0ea5e9'>" + formatMonto(r.asig_colacion) + "</td>" +
+            "<td style='color:#0ea5e9'>" + formatMonto(r.asig_movilizacion) + "</td>" +
             "<td style='color:#0ea5e9'>" + formatMonto(r.viaticos) + "</td>" +
             "<td style='color:var(--c-accent);font-weight:700'>" + formatMonto(r.total_imponible) + "</td>" +
+            "<td style='color:#0ea5e9'>" + formatMonto(r.total_no_imponible) + "</td>" +
             "<td style='color:var(--c-accent);font-weight:700'>" + formatMonto(r.total_haberes) + "</td>" +
-            "<td style='font-size:10px'>" + (r.afp||"—") + "</td>" +
-            "<td style='font-size:10px'>" + (r.salud||"—") + "</td>" +
-            "<td style='color:var(--c-danger)'>" + formatMonto(r.total_descuentos) + "</td>" +
+            "<td style='font-size:10px;color:var(--c-danger)'>" + formatMonto(r.desc_afp) + "</td>" +
+            "<td style='font-size:10px;color:var(--c-danger)'>" + formatMonto(r.desc_salud) + "</td>" +
+            "<td style='font-size:10px;color:var(--c-danger)'>" + formatMonto(r.desc_cesantia) + "</td>" +
+            "<td style='font-size:10px;color:var(--c-danger)'>" + formatMonto(r.impuesto_unico) + "</td>" +
+            "<td style='font-size:10px;color:var(--c-danger)'>" + formatMonto(r.otros_descuentos) + "</td>" +
+            "<td style='color:var(--c-danger);font-weight:700'>" + formatMonto(r.total_descuentos) + "</td>" +
             "<td style='font-weight:900'>" + formatMonto(r.liquido_pagar) + "</td>" +
             "</tr>";
         });
-        tb.innerHTML += "<tr style='background:var(--c-bg);font-weight:800'>" +
-          "<td colspan='11' style='text-align:right;font-size:12px'>TOTALES:</td>" +
-          "<td style='color:var(--c-accent)'>" + formatMonto(tH) + "</td>" +
-          "<td colspan='2'></td>" +
-          "<td style='color:var(--c-danger)'>" + formatMonto(tD) + "</td>" +
-          "<td style='font-weight:900'>" + formatMonto(tL) + "</td>" +
+        tb.innerHTML += "<tr style='background:var(--c-bg);font-weight:800;border-top:2px solid var(--c-accent)'>" +
+          "<td colspan='11' style='text-align:right;font-size:12px'>TOTALES PLANILLA (" + docs.length + " trab.):</td>" +
+          "<td style='color:var(--c-accent)'>" + formatMonto(tot.imponible) + "</td>" +
+          "<td style='color:#0ea5e9'>" + formatMonto(tot.noImponible) + "</td>" +
+          "<td style='color:var(--c-accent)'>" + formatMonto(tot.haberes) + "</td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(tot.afp) + "</td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(tot.salud) + "</td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(tot.afc) + "</td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(tot.impuesto) + "</td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(tot.otros) + "</td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(tot.descuentos) + "</td>" +
+          "<td style='font-weight:900;font-size:13px'>" + formatMonto(tot.liquido) + "</td>" +
           "</tr>";
       };
 
-      document.getElementById("btn-ver-libro").onclick = cargarLibro;
+      const renderLibroSII = (docs) => {
+        const tb = document.getElementById("tbl-sii-tbody");
+        const retenidos = docs.filter(r => intLRE(r.impuesto_unico) > 0);
+        const totalRet = retenidos.reduce((s, r) => s + intLRE(r.impuesto_unico), 0);
+        document.getElementById("libro-sii-total").textContent = "Total a declarar F29: " + formatMonto(totalRet) + " (" + retenidos.length + " trabajadores con retención)";
+        if (!retenidos.length) {
+          tb.innerHTML = emptyRow(5, "Ningún trabajador con Impuesto Único retenido en este período (rentas bajo 13,5 UTM).");
+          return;
+        }
+        tb.innerHTML = "";
+        retenidos.forEach(r => {
+          const rli = intLRE(r.renta_liquida_imponible || (r.total_imponible - (r.desc_afp || 0) - (r.desc_salud || 0) - (r.desc_cesantia || 0)));
+          const iu = intLRE(r.impuesto_unico);
+          tb.innerHTML += "<tr>" +
+            "<td style='font-family:monospace;font-size:11px'>" + (r.rut || "—") + "</td>" +
+            "<td><strong>" + (r.nombre || "—") + "</strong></td>" +
+            "<td style='font-weight:600'>" + formatMonto(rli) + "</td>" +
+            "<td style='color:var(--c-danger);font-weight:700'>" + formatMonto(iu) + "</td>" +
+            "<td style='font-weight:900;color:var(--c-accent)'>" + formatMonto(iu) + "</td>" +
+            "</tr>";
+        });
+        tb.innerHTML += "<tr style='background:var(--c-bg);font-weight:800'>" +
+          "<td colspan='3' style='text-align:right'>TOTAL RETENCIONES PERÍODO</td>" +
+          "<td style='color:var(--c-danger)'>" + formatMonto(totalRet) + "</td>" +
+          "<td style='font-weight:900;color:var(--c-accent)'>" + formatMonto(totalRet) + "</td></tr>";
+      };
 
-      document.getElementById("btn-libro-pdf").onclick = async () => {
+      const renderPreviewLRE = (docs, empresa) => {
+        const body = document.getElementById("tbl-lre-preview-body");
+        if (!docs.length) {
+          body.innerHTML = "<tr><td style='padding:12px;color:var(--c-muted)'>Sin datos para vista previa.</td></tr>";
+          return;
+        }
+        const preview = docs.slice(0, 5);
+        let html = "<tr><td style='padding:8px;font-size:10px;color:var(--c-muted)'>" +
+          LRE_COLUMNAS_DT.length + " columnas oficiales · " + docs.length + " filas a exportar · Empresa: " + (empresa.nombre || "—") + "</td></tr>";
+        preview.forEach(r => {
+          const emp = _libroEmpleados[r.empleado_id] || {};
+          const fila = buildFilaLRE(r, emp, empresa, document.getElementById("libro-periodo").value);
+          html += "<tr style='border-top:1px solid var(--c-border)'><td style='padding:6px 8px;font-size:10px'>" +
+            "<strong>" + (r.nombre || "—") + "</strong> · RUT " + (r.rut || "—") + "<br>" +
+            "<span style='color:var(--c-muted)'>Sueldo(2101): " + formatMonto(fila[24]) + " · Gratif(2106): " + formatMonto(fila[26]) +
+            " · AFP(3141): " + formatMonto(fila[31]) + " · Imp(3161): " + formatMonto(fila[34]) + " · Líquido(5501): " + formatMonto(fila[49]) + "</span></td></tr>";
+        });
+        if (docs.length > 5) html += "<tr><td style='padding:6px 8px;font-size:10px;color:var(--c-muted)'>… y " + (docs.length - 5) + " trabajadores más en el archivo CSV completo.</td></tr>";
+        body.innerHTML = html;
+        document.getElementById("libro-lre-info").textContent = docs.length + " registros listos para Mi DT";
+      };
+
+      const cargarLibros = async () => {
+        const periodo = document.getElementById("libro-periodo").value;
+        if (!periodo || !empId) return;
+        _libroDocs = await getRemuneracionesPeriodo(empId, periodo);
+        _libroEmpresa = await getEmpresaActiva(empId);
+        _libroEmpleados = await getEmpleadosMap(empId);
+        const tot = calcTotalesRem(_libroDocs);
+        document.getElementById("kpi-lib-trab").textContent = tot.trabajadores;
+        document.getElementById("kpi-lib-imp").textContent = formatMonto(tot.imponible);
+        document.getElementById("kpi-lib-noimp").textContent = formatMonto(tot.noImponible);
+        document.getElementById("kpi-lib-desc").textContent = formatMonto(tot.descuentos);
+        document.getElementById("kpi-lib-liq").textContent = formatMonto(tot.liquido);
+        renderLibroInterno(_libroDocs, tot);
+        renderLibroSII(_libroDocs);
+        renderPreviewLRE(_libroDocs, _libroEmpresa);
+      };
+
+      document.getElementById("btn-cargar-libros").onclick = cargarLibros;
+      document.getElementById("libro-periodo").onchange = cargarLibros;
+
+      document.getElementById("btn-libro-imprimir").onclick = async () => {
         const periodo = document.getElementById("libro-periodo").value;
         if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
-        const docs = [];
-        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
+        if (!_libroDocs.length) await cargarLibros();
+        const docs = _libroDocs;
         if (!docs.length) { alert("Sin datos para " + periodo); return; }
-        const empresa = await getEmpresaActiva(empId);
+        const empresa = _libroEmpresa || await getEmpresaActiva(empId);
         const fmt = n => "$" + Math.round(n||0).toLocaleString("es-CL");
         const fmtN = n => Math.round(n||0).toLocaleString("es-CL");
         let filas = ""; let tBase=0,tGrat=0,tBonA=0,tHE50=0,tHE100=0,tCol=0,tMov=0,tViat=0,tImp=0,tNoImp=0,tH=0,tAfp=0,tSal=0,tIU=0,tOtros=0,tD=0,tL=0;
@@ -9973,127 +10460,47 @@ Si necesita clave, edita el cliente y agrega una.`;
         setTimeout(function(){ w.print(); }, 600);
       };
 
-      document.getElementById("btn-libro-sii").onclick = async () => {
+      document.getElementById("btn-libro-csv-interno").onclick = async () => {
         const periodo = document.getElementById("libro-periodo").value;
         if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
-        const docs = [];
-        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
-        if (!docs.length) { alert("Sin datos para " + periodo); return; }
-        let csv = "RUT_TRABAJADOR;NOMBRE;TIPO_CONTRATO;PERIODO;SUELDO_BASE;GRATIFICACION;ASIG_COLACION;ASIG_MOVILIZACION;BONO_ASISTENCIA;H_EXTRA_50;H_EXTRA_100;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;AFP;MONTO_AFP;SALUD;MONTO_SALUD;IMPUESTO_UNICO;OTROS_DESC;TOTAL_DESCUENTOS;LIQUIDO\n";
-        docs.forEach(r => {
-          csv += [r.rut,r.nombre,r.tipo_contrato||"INDEFINIDO",r.periodo,r.sueldo_base||0,r.gratificacion||0,r.asig_colacion||0,r.asig_movilizacion||0,r.bono_asistencia||0,r.horas_extra_50||0,r.horas_extra_100||0,r.viaticos||0,r.total_imponible||0,r.total_no_imponible||0,r.total_haberes||0,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,r.impuesto_unico||0,r.otros_descuentos||0,r.total_descuentos||0,r.liquido_pagar||0].join(";") + "\n";
+        if (!_libroDocs.length) await cargarLibros();
+        if (!_libroDocs.length) { alert("Sin datos para " + periodo); return; }
+        let csv = "RUT;NOMBRE;CARGO;SUELDO_BASE;GRATIFICACION;BONO_ASISTENCIA;HE_50;HE_100;COLACION;MOVILIZACION;VIATICOS;TOTAL_IMPONIBLE;TOTAL_NO_IMPONIBLE;TOTAL_HABERES;DESC_AFP;DESC_SALUD;DESC_AFC;IMPUESTO_UNICO;OTROS_DESC;TOTAL_DESCUENTOS;LIQUIDO\n";
+        _libroDocs.forEach(r => {
+          csv += [r.rut, r.nombre, r.cargo, r.sueldo_base || 0, r.gratificacion || 0, r.bono_asistencia || 0,
+            r.horas_extra_50 || 0, r.horas_extra_100 || 0, r.asig_colacion || 0, r.asig_movilizacion || 0, r.viaticos || 0,
+            r.total_imponible || 0, r.total_no_imponible || 0, r.total_haberes || 0, r.desc_afp || 0, r.desc_salud || 0,
+            r.desc_cesantia || 0, r.impuesto_unico || 0, r.otros_descuentos || 0, r.total_descuentos || 0, r.liquido_pagar || 0
+          ].join(";") + "\n";
         });
-        const a = document.createElement("a");
-        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
-        a.download = "LRE_SII_" + periodo + ".csv"; a.click();
+        descargarCSV("Libro_Interno_" + periodo + ".csv", csv);
       };
 
-      document.getElementById("btn-libro-dt").onclick = async () => {
+      document.getElementById("btn-export-lre-dt").onclick = async () => {
         const periodo = document.getElementById("libro-periodo").value;
         if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
-        const empresa = await getEmpresaActiva(empId);
-        const docs = [];
-        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
-        if (!docs.length) { alert("Sin datos para " + periodo); return; }
-        // Formato oficial Libro de Remuneraciones DT (Dirección del Trabajo Chile)
-        // Encabezado con códigos oficiales del formato DT
-        const cols = [
-          "Rut trabajador(1101)","Fecha inicio contrato(1102)","Fecha término de contrato(1103)",
-          "Causal término de contrato(1104)","Región prestación servicios(1105)","Comuna prestación servicios(1106)",
-          "Tipo impuesto renta(1170)","Código tipo jornada(1107)","Persona Discapacidad/Inválido(1108)",
-          "Pensionado vejez(1109)","AFP(1141)","IPS ExINP(1142)","FONASA-ISAPRE(1143)","AFC(1151)",
-          "Nro cargas familiares legales(1111)","Nro días trabajados(1115)","Nro días licencia médica(1116)","Nro días vacaciones(1117)",
-          "Sueldo(2101)","Sobresueldo HE(2102)","Gratificación(2106)","Bono asistencia(2111)",
-          "Colación(2301)","Movilización(2302)","Viáticos(2303)",
-          "Cotización AFP/IPS(3141)","Cotización salud 7%(3143)","Cotización AFC trabajador(3151)",
-          "Impuesto retenido(3161)","Otros descuentos(3185)",
-          "Total haberes(5201)","Total haberes imponibles tributables(5210)",
-          "Total haberes no imponibles(5230)","Total descuentos(5301)","Total líquido(5501)"
-        ];
-        let csv = cols.join(";") + "\n";
-        const [yy,mm] = periodo.split("-");
-        const diasMes = new Date(parseInt(yy), parseInt(mm), 0).getDate();
-        // Mapas códigos AFP e Isapres para el formato DT
-        const afpCod = {capital:"08",cuprum:"02",habitat:"05",modelo:"33",planvital:"34",provida:"07",uno:"35"};
-        const saludCod = (s) => {
-          if (!s) return "01"; // FONASA por defecto
-          const sl = s.toLowerCase();
-          if (sl.includes("fonasa")) return "01";
-          if (sl.includes("banmedica")) return "12"; if (sl.includes("consalud")) return "06";
-          if (sl.includes("colmena")) return "07"; if (sl.includes("vida tres")) return "21";
-          if (sl.includes("nueva masvida")) return "15"; if (sl.includes("cruzblanca")) return "14";
-          if (sl.includes("esencial")) return "27"; return "01";
-        };
-        docs.forEach(r => {
-          const afpK = (r.afp||"").toLowerCase().replace(/\s/g,"");
-          const row = [
-            r.rut||"",
-            r.fecha_ingreso||"",
-            r.fecha_termino||"",
-            "",                                             // 1104 causal término
-            "01",                                           // 1105 región (01=Tarapacá)
-            "01101",                                        // 1106 comuna (01101=Iquique — ajustable)
-            "02",                                           // 1170 tipo impuesto (02=2da categoría trabajador)
-            "01",                                           // 1107 jornada (01=completa)
-            "0",                                            // 1108 discapacidad
-            "0",                                            // 1109 pensionado vejez
-            afpCod[afpK]||"05",                             // 1141 AFP
-            "",                                             // 1142 IPS
-            saludCod(r.salud),                              // 1143 salud
-            "1",                                            // 1151 AFC
-            r.cargas_familiares||"0",                       // 1111 cargas
-            diasMes,                                        // 1115 días trabajados
-            "0",                                            // 1116 días licencia
-            "0",                                            // 1117 días vacaciones
-            Math.round(r.sueldo_base||0),                  // 2101 sueldo
-            Math.round((r.horas_extra_50||0)+(r.horas_extra_100||0)), // 2102 sobresueldo
-            Math.round(r.gratificacion||0),                 // 2106 gratificación
-            Math.round(r.bono_asistencia||0),               // 2111 bono asistencia
-            Math.round(r.asig_colacion||0),                 // 2301 colación
-            Math.round(r.asig_movilizacion||0),             // 2302 movilización
-            Math.round(r.viaticos||0),                      // 2303 viáticos
-            Math.round(r.desc_afp||0),                      // 3141 cotización AFP
-            Math.round(r.desc_salud||0),                    // 3143 cotización salud
-            Math.round((r.total_imponible||0)*0.006),        // 3151 AFC trabajador 0.6%
-            Math.round(r.impuesto_unico||0),                // 3161 impuesto retenido
-            Math.round(r.otros_descuentos||0),              // 3185 otros descuentos
-            Math.round(r.total_haberes||0),                 // 5201 total haberes
-            Math.round(r.total_imponible||0),               // 5210 imponibles tributables
-            Math.round(r.total_no_imponible||0),            // 5230 no imponibles
-            Math.round(r.total_descuentos||0),              // 5301 total descuentos
-            Math.round(r.liquido_pagar||0)                  // 5501 total líquido
-          ];
-          csv += row.join(";") + "\n";
-        });
-        const a = document.createElement("a");
-        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
-        a.download = "LibroDT_" + (empresa.rut||"empresa").replace(/\./g,"").replace(/-/g,"") + "_" + periodo + ".csv";
-        a.click();
-        alert("✅ Libro DT exportado para " + docs.length + " trabajadores.\nFormato compatible con portal Dirección del Trabajo (DT Chile).\nArchivo: LibroDT_" + periodo + ".csv");
+        if (!_libroDocs.length) await cargarLibros();
+        if (!_libroDocs.length) { alert("Sin datos procesados para " + periodo); return; }
+        const empresa = _libroEmpresa || await getEmpresaActiva(empId);
+        const csv = generarCSVLRE(_libroDocs, empresa, _libroEmpleados, periodo);
+        const [yy, mm] = periodo.split("-");
+        const nombre = formatRutArchivo(empresa.rut) + "_" + yy + mm + ".csv";
+        descargarCSV(nombre, csv);
+        alert("✅ LRE exportado: " + nombre + "\n" + _libroDocs.length + " trabajadores · " + LRE_COLUMNAS_DT.length + " columnas oficiales DT.\nSube este archivo en Mi DT → Libro de Remuneraciones Electrónico → Carga masiva.");
       };
 
-      document.getElementById("btn-libro-previred").onclick = async () => {
+      document.getElementById("btn-export-sii-f29").onclick = async () => {
         const periodo = document.getElementById("libro-periodo").value;
         if (!periodo || !empId) { alert("Selecciona el período primero"); return; }
-        const snap = await db.collection("remuneraciones").where("entityId","==",empId).get();
-        const empresa = await getEmpresaActiva(empId);
-        const docs = [];
-        snap.forEach(d => { if (d.data().periodo === periodo) docs.push(d.data()); });
-        if (!docs.length) { alert("Sin datos para " + periodo); return; }
-        let csv = "RUT_EMPRESA;RUT_TRABAJADOR;NOMBRE;AFP;MONTO_AFP;SALUD;MONTO_SALUD;SUELDO_IMPONIBLE;LIQUIDO;PERIODO\n";
-        docs.forEach(r => {
-          csv += [empresa.rut||"",r.rut,r.nombre,r.afp,r.desc_afp||0,r.salud,r.desc_salud||0,r.total_imponible||0,r.liquido_pagar||0,r.periodo].join(";") + "\n";
-        });
-        const a = document.createElement("a");
-        a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
-        a.download = "Previred_" + periodo + ".csv"; a.click();
-        alert("Archivo Previred exportado para " + docs.length + " trabajadores.");
+        if (!_libroDocs.length) await cargarLibros();
+        if (!_libroDocs.length) { alert("Sin datos para " + periodo); return; }
+        const empresa = _libroEmpresa || await getEmpresaActiva(empId);
+        const { csv, retenidos, totalRet } = generarCSVRetencionesSII(_libroDocs, empresa, periodo);
+        descargarCSV("Retenciones_SII_F29_" + formatRutArchivo(empresa.rut) + "_" + periodo + ".csv", csv);
+        alert("✅ Libro de Retenciones SII exportado.\n" + retenidos.length + " trabajadores con retención.\nTotal Formulario 29: " + formatMonto(totalRet));
       };
 
-      // Cargar automáticamente el mes actual
-      await cargarLibro();
+      await cargarLibros();
     }
 
     // ── EDITAR LIQUIDACIÓN — abre modal con novedades editables ──
@@ -10201,7 +10608,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         // Valores legales
         if (cfg.imm) document.getElementById("cfg-imm").value = cfg.imm;
         if (cfg.uf) document.getElementById("cfg-uf").value = cfg.uf;
+        if (cfg.utm) document.getElementById("cfg-utm").value = cfg.utm;
         if (cfg.tope_uf) document.getElementById("cfg-tope-uf").value = cfg.tope_uf;
+        if (cfg.tope_afc_uf) document.getElementById("cfg-tope-afc-uf").value = cfg.tope_afc_uf;
         if (cfg.tope_gratif) document.getElementById("cfg-tope-grat").value = cfg.tope_gratif;
         if (cfg.seg_cesantia) document.getElementById("cfg-seg-ces").value = cfg.seg_cesantia;
         if (cfg.iva_pct) document.getElementById("cfg-iva").value = cfg.iva_pct;
@@ -10256,7 +10665,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         await db.collection("sistema_config").doc("principal").set({
           imm: parseFloat(document.getElementById("cfg-imm").value)||539000,
           uf: parseFloat(document.getElementById("cfg-uf").value)||40610,
+          utm: parseFloat(document.getElementById("cfg-utm").value)||69889,
           tope_uf: parseFloat(document.getElementById("cfg-tope-uf").value)||78,
+          tope_afc_uf: parseFloat(document.getElementById("cfg-tope-afc-uf").value)||131.9,
           tope_gratif: parseFloat(document.getElementById("cfg-tope-grat").value)||213396,
           seg_cesantia: parseFloat(document.getElementById("cfg-seg-ces").value)||0.6,
           iva_pct: parseFloat(document.getElementById("cfg-iva").value)||19,
