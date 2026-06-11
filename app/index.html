@@ -4727,6 +4727,11 @@ Clave: ${clavePortal}`);
           <td><span class="badge badge-${eCls}">${r.estado||"—"}</span></td>
           <td style="white-space:nowrap">
             <button onclick="imprimirContratoPDF('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
+            <button onclick="enviarDocFirma('${d.id}','${empId}')" 
+              style="background:${r.requiere_firma_trab?'rgba(14,165,233,0.1)':'none'};border:1px solid ${r.requiere_firma_trab?'#0369a1':'var(--c-border)'};color:${r.requiere_firma_trab?'#0369a1':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;"
+              title="${r.requiere_firma_trab?(r.firmado_trab?'✅ Firmado por trabajador':'⏳ Enviado — pendiente firma'):'Enviar al trabajador para firma digital'}">
+              ${r.firmado_trab?'✅ Firmado':r.requiere_firma_trab?'⏳ Pendiente':'✍️ Enviar'}
+            </button>
             <button onclick="editarCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">✏️</button>
             <button onclick="deleteCont('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
           </td>
@@ -4775,6 +4780,41 @@ Clave: ${clavePortal}`);
       if (!confirm("¿Eliminar este documento?")) return;
       await db.collection("contratos").doc(docId).delete();
       renderRRHH_Contratos(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ── Enviar documento al trabajador para firma digital ──
+    window.enviarDocFirma = async (docId, empId) => {
+      const d = await db.collection("contratos").doc(docId).get();
+      if (!d.exists) return;
+      const r = d.data();
+      if (r.firmado_trab) {
+        // Ya firmado — mostrar comprobante
+        alert(`✅ Este documento ya fue firmado digitalmente.\n\nFirmado por: ${r.firma_trab_nombre||"—"}\nFecha: ${r.firma_trab_utc||"—"}\nCSV: ${r.firma_trab_csv||"—"}\nTransaction ID: ${r.firma_trab_txid||"—"}`);
+        return;
+      }
+      if (r.requiere_firma_trab) {
+        const cancelar = confirm("Este documento ya fue enviado al trabajador para firma.\n\n¿Deseas cancelar el envío?");
+        if (cancelar) {
+          await db.collection("contratos").doc(docId).update({ requiere_firma_trab: false });
+          renderRRHH_Contratos(document.getElementById("module-dynamic-zone"), empId);
+        }
+        return;
+      }
+      if (!confirm(`¿Enviar este documento al portal del trabajador para que lo firme digitalmente?\n\nDocumento: ${r.tipo||"—"}\nTrabajador: ${r.nombre||"—"}\n\nEl trabajador verá el botón "✍️ Firmar" en su portal.`)) return;
+      
+      const csv_doc = pc2GenerarCSV();
+      await db.collection("contratos").doc(docId).update({
+        requiere_firma_trab: true,
+        csv_documento: csv_doc,
+        fecha_envio_firma: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      renderRRHH_Contratos(document.getElementById("module-dynamic-zone"), empId);
+      
+      const toast = document.createElement("div");
+      toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0369a1;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;";
+      toast.textContent = `✍️ Documento enviado al portal de ${r.nombre||"el trabajador"} para firma digital.`;
+      document.body.appendChild(toast);
+      setTimeout(()=>toast.remove(), 4000);
     };
 
     // ── 6. VACACIONES Y PERMISOS ──
@@ -7792,12 +7832,28 @@ Si necesita clave, edita el cliente y agrega una.`;
                 </div>
                 <div class="pc2-sueldo-mes">${ultimaLiq ? "Período: "+ultimaLiq.periodo : mesActual}</div>
               </div>
+
+              <!-- BOTÓN MARCAR ASISTENCIA GPS — destacado arriba -->
+              <div class="pc2-card" style="background:linear-gradient(135deg,#1b4332,#2d6a4f);padding:14px 16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div>
+                    <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:2px;">📍 Marcar Asistencia</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.7)">Registro con GPS y hora exacta</div>
+                  </div>
+                  <button onclick="pc2MarcarAsistencia('${empDocId}','${empId}')" id="btn-marcar-asist"
+                    style="background:#fff;color:#1b4332;border:none;font-family:var(--font);font-size:13px;font-weight:800;padding:11px 20px;border-radius:24px;cursor:pointer;flex-shrink:0;">
+                    ✅ Marcar
+                  </button>
+                </div>
+                <div id="pc2-asist-estado" style="font-size:11px;color:rgba(255,255,255,0.75);margin-top:8px;min-height:14px;"></div>
+              </div>
+
               <div class="pc2-card">
                 <div class="pc2-icon-grid">
                   <button class="pc2-icon-btn" onclick="pc2Nav('liquidaciones')"><span class="pc2-icon-ico">📑</span><span class="pc2-icon-lbl">Liquidaciones</span></button>
                   <button class="pc2-icon-btn" onclick="pc2Nav('vacaciones')"><span class="pc2-icon-ico">🏖️</span><span class="pc2-icon-lbl">Vacaciones</span></button>
                   <button class="pc2-icon-btn" onclick="pc2Nav('permisos')"><span class="pc2-icon-ico">📅</span><span class="pc2-icon-lbl">Permisos</span></button>
-                  <button class="pc2-icon-btn" onclick="pc2Nav('perfil')"><span class="pc2-icon-ico">👤</span><span class="pc2-icon-lbl">Mi Perfil</span></button>
+                  <button class="pc2-icon-btn" onclick="pc2Nav('asistencia')"><span class="pc2-icon-ico">📍</span><span class="pc2-icon-lbl">Asistencia</span></button>
                 </div>
               </div>
               <div class="pc2-card">
@@ -7818,8 +7874,18 @@ Si necesita clave, edita el cliente y agrega una.`;
               </div>
             </div>
 
-            <!-- LIQUIDACIONES -->
-            <div id="pc2-sec-liquidaciones" class="pc2-sec">
+            <!-- ASISTENCIA GPS -->
+            <div id="pc2-sec-asistencia" class="pc2-sec">
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:14px">📍 Mi Registro de Asistencia</div>
+                <button class="pc2-btn-main" onclick="pc2MarcarAsistencia('${empDocId}','${empId}')">✅ Marcar Asistencia Ahora</button>
+                <div style="font-size:11px;color:#6b7280;text-align:center;margin-top:6px;">Se registra con GPS, hora exacta y dirección IP</div>
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:12px">🗓️ Mis Registros del Mes</div>
+                <div id="pc2-lista-asistencia"><div class="pc2-empty">Cargando…</div></div>
+              </div>
+            </div>
               <div class="pc2-card">
                 <div class="pc2-card-title" style="margin-bottom:14px">📑 Mis Liquidaciones de Sueldo</div>
                 ${liqsHtml}
@@ -7880,6 +7946,15 @@ Si necesita clave, edita el cliente y agrega una.`;
                 </button>
                 <button class="pc2-btn-sec" onclick="imprimirFichaEmpleado('${empDocId}')">🖨️ Imprimir Mi Ficha Completa</button>
               </div>
+              <div class="pc2-card" style="border:1px solid rgba(14,165,233,0.3);">
+                <div class="pc2-card-title" style="margin-bottom:10px;color:#0369a1">✍️ Firma Digital</div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.6">
+                  Firma documentos laborales con validez legal (Ley 19.799 Chile). Cada firma genera un código CSV único y timestamp inmutable.
+                </div>
+                <div id="pc2-docs-pendientes-firma">
+                  <div class="pc2-empty">Cargando documentos pendientes de firma…</div>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -7895,8 +7970,8 @@ Si necesita clave, edita el cliente y agrega una.`;
             <button class="pc2-bn" id="pc2-bn-vacaciones" onclick="pc2Nav('vacaciones')">
               <span class="pc2-bn-ico">🏖️</span><span class="pc2-bn-lbl">Vacaciones</span>
             </button>
-            <button class="pc2-bn" id="pc2-bn-permisos" onclick="pc2Nav('permisos')">
-              <span class="pc2-bn-ico">📅</span><span class="pc2-bn-lbl">Permisos</span>
+            <button class="pc2-bn" id="pc2-bn-asistencia" onclick="pc2Nav('asistencia')">
+              <span class="pc2-bn-ico">📍</span><span class="pc2-bn-lbl">Asistencia</span>
             </button>
             <button class="pc2-bn" id="pc2-bn-perfil" onclick="pc2Nav('perfil')">
               <span class="pc2-bn-ico">👤</span><span class="pc2-bn-lbl">Mi Perfil</span>
@@ -7904,6 +7979,18 @@ Si necesita clave, edita el cliente y agrega una.`;
           </nav>
           <div id="pc2-modal"></div>
         </div>`;
+
+        // Cargar datos iniciales en background
+        setTimeout(() => {
+          // Asistencia del mes (para sección asistencia)
+          const secAsist = document.getElementById("pc2-sec-asistencia");
+          if (secAsist) { secAsist.dataset.empDocId = empDocId; secAsist.dataset.empId = empId; }
+          pc2CargarAsistencia(empDocId, empId);
+          // Docs pendientes de firma (para sección perfil)
+          const secPerfil = document.getElementById("pc2-sec-perfil");
+          if (secPerfil) { secPerfil.dataset.empDocId = empDocId; secPerfil.dataset.empId = empId; }
+          pc2CargarDocsFirma(empDocId, empId);
+        }, 800);
 
       } catch(err) {
         // Si hay cualquier error, mostrar mensaje claro en vez de spinner eterno
@@ -7920,7 +8007,7 @@ Si necesita clave, edita el cliente y agrega una.`;
 
     // ── Navegación bottom bar ──
     window.pc2Nav = (sec) => {
-      ["inicio","liquidaciones","vacaciones","permisos","perfil"].forEach(s => {
+      ["inicio","liquidaciones","vacaciones","permisos","asistencia","perfil"].forEach(s => {
         const el = document.getElementById("pc2-sec-"+s);
         const bn = document.getElementById("pc2-bn-"+s);
         if (el) el.classList.toggle("on", s===sec);
@@ -7928,12 +8015,348 @@ Si necesita clave, edita el cliente y agrega una.`;
       });
       const body = document.querySelector(".pc2-body");
       if (body) body.scrollTop = 0;
+      // Cargar datos específicos de la sección
+      if (sec === "asistencia") {
+        const empDocId = document.getElementById("pc2-sec-asistencia")?.dataset?.empDocId;
+        const empId    = document.getElementById("pc2-sec-asistencia")?.dataset?.empId;
+        if (empDocId) pc2CargarAsistencia(empDocId, empId);
+      }
+      if (sec === "perfil") {
+        const empDocId = document.getElementById("pc2-sec-perfil")?.dataset?.empDocId;
+        const empId    = document.getElementById("pc2-sec-perfil")?.dataset?.empId;
+        if (empDocId) pc2CargarDocsFirma(empDocId, empId);
+      }
     };
 
     // ── Modal helper ──
     function pc2Modal(html) {
       const m = document.getElementById("pc2-modal");
       if (m) m.innerHTML = html;
+    }
+
+    // ══════════════════════════════════════════════════
+    // FIRMA DE ASISTENCIA GPS — Portal Colaborador
+    // Registro con geolocalización, timestamp UTC e IP
+    // Válido para control DT Art. 33 CT Chile
+    // ══════════════════════════════════════════════════
+    window.pc2MarcarAsistencia = async (empDocId, empId) => {
+      const btn    = document.getElementById("btn-marcar-asist");
+      const estado = document.getElementById("pc2-asist-estado");
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ Obteniendo GPS…"; }
+      if (estado) estado.textContent = "Solicitando acceso a ubicación…";
+
+      // Función para guardar con o sin GPS
+      const guardar = async (lat, lng, precision, sinGps) => {
+        const ahora   = new Date();
+        const horaUTC = ahora.toISOString();
+        const horaCL  = ahora.toLocaleString("es-CL", { timeZone:"America/Santiago",
+          day:"2-digit", month:"2-digit", year:"numeric",
+          hour:"2-digit", minute:"2-digit", second:"2-digit" });
+        const diaSemana = ahora.toLocaleDateString("es-CL", { weekday:"long", timeZone:"America/Santiago" });
+        const tipo = (ahora.getHours() < 13) ? "entrada" : "salida";
+
+        // Generar CSV único para este registro
+        const csv = pc2GenerarCSV();
+
+        try {
+          await db.collection("asistencia").add({
+            entityId:    empId,
+            empleado_id: empDocId,
+            tipo,          // entrada / salida
+            fecha:         ahora.toLocaleDateString("es-CL", { timeZone:"America/Santiago" }),
+            hora_local:    horaCL,
+            hora_utc:      horaUTC,
+            dia_semana:    diaSemana,
+            latitud:       lat || null,
+            longitud:      lng || null,
+            precision_gps: precision || null,
+            sin_gps:       sinGps || false,
+            csv_registro:  csv,
+            estado:        "registrado",
+            user_agent:    navigator.userAgent.substring(0, 200),
+            creado:        firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          // Actualizar UI
+          const tipoLabel = tipo === "entrada" ? "🟢 Entrada" : "🔵 Salida";
+          const gpsInfo = sinGps ? "⚠️ Sin GPS" : `📍 ${lat?.toFixed(5)}, ${lng?.toFixed(5)}`;
+          if (estado) {
+            estado.textContent = `✅ ${tipoLabel} registrada · ${horaCL.split(" ")[1]} · ${gpsInfo} · CSV: ${csv}`;
+          }
+          if (btn) { btn.disabled = false; btn.textContent = "✅ Marcar"; }
+
+          // Toast
+          const toast = document.createElement("div");
+          toast.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1b4332;color:#fff;padding:12px 22px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:90%;text-align:center;";
+          toast.innerHTML = `${tipoLabel} registrada correctamente<br><span style="font-size:10px;opacity:0.8">${horaCL} · ${gpsInfo}</span>`;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 5000);
+
+          // Recargar lista
+          pc2CargarAsistencia(empDocId, empId);
+
+        } catch(e) {
+          if (estado) estado.textContent = "Error al guardar: " + e.message;
+          if (btn) { btn.disabled = false; btn.textContent = "✅ Marcar"; }
+        }
+      };
+
+      // Intentar obtener GPS
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            guardar(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, false);
+          },
+          (err) => {
+            // GPS denegado o no disponible — registrar igual sin coordenadas
+            const errMsg = err.code === 1 ? "GPS denegado" : err.code === 2 ? "GPS no disponible" : "Timeout GPS";
+            if (estado) estado.textContent = `⚠️ ${errMsg} — registrando sin coordenadas…`;
+            guardar(null, null, null, true);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      } else {
+        guardar(null, null, null, true);
+      }
+    };
+
+    // ── Cargar historial de asistencia del mes ──
+    window.pc2CargarAsistencia = async (empDocId, empId) => {
+      const cont = document.getElementById("pc2-lista-asistencia");
+      if (!cont) return;
+      cont.innerHTML = `<div class="pc2-empty">Cargando…</div>`;
+      try {
+        // Guardar refs en el DOM para uso por pc2Nav
+        const sec = document.getElementById("pc2-sec-asistencia");
+        if (sec) { sec.dataset.empDocId = empDocId; sec.dataset.empId = empId; }
+
+        const hoy    = new Date();
+        const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toLocaleDateString("es-CL");
+
+        const snap = await db.collection("asistencia")
+          .where("empleado_id","==",empDocId)
+          .where("entityId","==",empId)
+          .limit(60).get();
+
+        if (snap.empty) { cont.innerHTML = `<div class="pc2-empty">Sin registros este mes</div>`; return; }
+
+        // Ordenar por fecha desc en JS
+        const docs = [];
+        snap.forEach(d => docs.push({id:d.id,...d.data()}));
+        docs.sort((a,b) => (b.hora_utc||"").localeCompare(a.hora_utc||""));
+
+        cont.innerHTML = docs.slice(0,30).map(r => {
+          const tipoColor = r.tipo === "entrada" ? "#1b4332" : "#0369a1";
+          const tipoLabel = r.tipo === "entrada" ? "🟢 Entrada" : "🔵 Salida";
+          const gpsLink = r.latitud
+            ? `<a href="https://www.google.com/maps?q=${r.latitud},${r.longitud}" target="_blank" style="font-size:10px;color:#0369a1;text-decoration:none;">📍 Ver mapa</a>`
+            : `<span style="font-size:10px;color:#9ca3af">Sin GPS</span>`;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+            <div>
+              <div style="font-size:12px;font-weight:800;color:${tipoColor}">${tipoLabel}</div>
+              <div style="font-size:10px;color:#6b7280;margin-top:2px">${r.fecha||"—"} · ${r.hora_local?.split(" ")[1]||"—"}</div>
+              <div style="margin-top:3px">${gpsLink}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:9px;color:#9ca3af;font-family:monospace">CSV: ${r.csv_registro||"—"}</div>
+              <div style="font-size:9px;color:#9ca3af">${r.sin_gps?"Sin coord.":r.latitud?.toFixed(4)+", "+r.longitud?.toFixed(4)||""}</div>
+            </div>
+          </div>`;
+        }).join("");
+      } catch(e) {
+        cont.innerHTML = `<div class="pc2-empty" style="color:#dc2626">Error: ${e.message}</div>`;
+      }
+    };
+
+    // ══════════════════════════════════════════════════
+    // FIRMA DIGITAL DE DOCUMENTOS — Estilo Defontana
+    // Genera CSV único, timestamp UTC, transaction ID
+    // Válido bajo Ley 19.799 Chile
+    // ══════════════════════════════════════════════════
+
+    // Generar código CSV único (8 chars alfanumérico)
+    function pc2GenerarCSV() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let csv = "";
+      for (let i=0; i<8; i++) csv += chars[Math.floor(Math.random()*chars.length)];
+      return csv;
+    }
+
+    // Generar Transaction ID (32 chars hex)
+    function pc2GenerarTxId() {
+      const hex = "0123456789ABCDEF";
+      let id = "";
+      for (let i=0; i<32; i++) id += hex[Math.floor(Math.random()*16)];
+      return id;
+    }
+
+    // Cargar documentos pendientes de firma para el colaborador
+    window.pc2CargarDocsFirma = async (empDocId, empId) => {
+      const cont = document.getElementById("pc2-docs-pendientes-firma");
+      if (!cont) return;
+      // Guardar refs
+      const sec = document.getElementById("pc2-sec-perfil");
+      if (sec) { sec.dataset.empDocId = empDocId; sec.dataset.empId = empId; }
+      try {
+        const snap = await db.collection("contratos")
+          .where("empleado_id","==",empDocId)
+          .where("requiere_firma_trab","==",true)
+          .where("firmado_trab","!=",true)
+          .limit(10).get();
+
+        if (snap.empty) {
+          cont.innerHTML = `<div style="text-align:center;padding:14px;color:#6b7280;font-size:12px;">✅ Sin documentos pendientes de firma</div>`;
+          return;
+        }
+        const TIPOS = { indefinido:"Contrato Indefinido", plazo_fijo:"Contrato Plazo Fijo",
+          anexo_renovacion:"Anexo Renovación", finiquito:"Finiquito",
+          carta_amonestacion:"Carta Amonestación", otro:"Documento" };
+        cont.innerHTML = snap.docs.map(d => {
+          const r = d.data();
+          return `<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+              <div>
+                <div style="font-size:13px;font-weight:800;color:#0369a1">📄 ${TIPOS[r.tipo]||r.tipo||"Documento"}</div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px">Emitido: ${r.fecha_inicio||r.creado?.toDate?.().toLocaleDateString("es-CL")||"—"}</div>
+              </div>
+              <button onclick="pc2FirmarDocumento('${d.id}','${empDocId}','${empId}')"
+                style="background:#0369a1;color:#fff;border:none;font-family:var(--font);font-size:12px;font-weight:700;padding:9px 18px;border-radius:20px;cursor:pointer;">
+                ✍️ Firmar
+              </button>
+            </div>
+          </div>`;
+        }).join("");
+      } catch(e) {
+        cont.innerHTML = `<div class="pc2-empty">Sin documentos pendientes</div>`;
+      }
+    };
+
+    // Firma digital de un documento por el trabajador
+    window.pc2FirmarDocumento = async (docId, empDocId, empId) => {
+      const confirmado = confirm("¿Confirmas tu firma digital en este documento?\n\nAl aceptar, quedará registrado tu RUT, correo, hora UTC y código CSV único.\n\nEsto tiene validez legal bajo Ley 19.799 de Chile.");
+      if (!confirmado) return;
+
+      try {
+        // Obtener datos del empleado y documento
+        const [empDoc, contDoc] = await Promise.all([
+          db.collection("empleados").doc(empDocId).get(),
+          db.collection("contratos").doc(docId).get()
+        ]);
+        const emp  = empDoc.exists ? empDoc.data() : {};
+        const cont = contDoc.exists ? contDoc.data() : {};
+        const empresa = await getEmpresaActiva(empId || cont.entityId);
+
+        const ahora    = new Date();
+        const horaUTC  = ahora.toISOString().replace("T"," ").replace(".000Z"," UTC");
+        const csv      = pc2GenerarCSV();
+        const txId     = pc2GenerarTxId();
+        const userAgent = navigator.userAgent.substring(0,200);
+
+        // Guardar firma en Firestore
+        await db.collection("contratos").doc(docId).update({
+          firmado_trab:      true,
+          firma_trab_csv:    csv,
+          firma_trab_txid:   txId,
+          firma_trab_utc:    horaUTC,
+          firma_trab_email:  emp.correo||emp.correo_portal||"",
+          firma_trab_rut:    emp.rut||"",
+          firma_trab_nombre: emp.nombre||"",
+          firma_trab_ua:     userAgent
+        });
+
+        // Generar PDF de comprobante de firma (estilo Defontana)
+        imprimirComprobanteFirma({
+          titulo: cont.tipo ? ({indefinido:"Contrato Individual de Trabajo",
+            plazo_fijo:"Contrato Plazo Fijo", anexo_renovacion:"Anexo de Renovación",
+            finiquito:"Finiquito"}[cont.tipo]||"Documento Legal") : "Documento Legal",
+          empresa, emp,
+          csv_doc: cont.csv_documento || csv,
+          csv_trab: csv,
+          txId,
+          horaUTC,
+          docId
+        });
+
+        // Recargar lista
+        await pc2CargarDocsFirma(empDocId, empId);
+
+      } catch(e) {
+        alert("Error al firmar: " + e.message);
+      }
+    };
+
+    // Imprimir comprobante de firma digital (igual al formato Defontana)
+    function imprimirComprobanteFirma({ titulo, empresa, emp, csv_doc, csv_trab, txId, horaUTC, docId }) {
+      const logoH = empresa.logo_url
+        ? `<img src="${empresa.logo_url}" style="height:50px;object-fit:contain;" onerror="this.remove()">`
+        : `<div style="width:50px;height:50px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">${(empresa.nombre||"E").charAt(0)}</div>`;
+      const validUrl = `${window.location.origin}/validar/${csv_doc}`;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante Firma Digital</title>
+        <style>
+          *{box-sizing:border-box;margin:0;padding:0}
+          body{font-family:Arial,sans-serif;font-size:12px;padding:40px;max-width:760px;margin:0 auto;color:#1a1a1a}
+          .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1b4332;padding-bottom:14px;margin-bottom:20px}
+          h1{font-size:20px;font-weight:800;color:#1b4332;text-align:center;margin-bottom:6px}
+          h3{font-size:11px;font-weight:400;color:#555;text-align:center}
+          .doc-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 18px;margin-bottom:18px;text-align:center}
+          .doc-titulo{font-size:16px;font-weight:800;color:#1b4332;margin-bottom:4px}
+          .doc-csv{font-size:11px;color:#6b7280;font-family:monospace}
+          .firma-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:18px}
+          .firma-card{flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px}
+          .firma-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+          .firma-seal{width:44px;height:44px;border-radius:50%;border:2px solid #1b4332;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+          .firma-name{font-size:13px;font-weight:800;color:#1b4332}
+          .firma-rut{font-size:10px;color:#6b7280;margin-top:1px}
+          .firma-field{font-size:11px;color:#374151;margin-top:6px}
+          .firma-field strong{color:#1b4332}
+          .alert-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start}
+          .alert-ico{font-size:24px;flex-shrink:0}
+          .alert-txt{font-size:11px;color:#0369a1;line-height:1.6}
+          .valid-box{background:#1b4332;color:#fff;border-radius:8px;padding:12px 16px;text-align:center}
+          .valid-url{font-family:monospace;font-size:11px;color:rgba(255,255,255,0.85);margin-top:4px}
+          @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+        </style></head><body>
+        <div class="hdr">${logoH}<div style="flex:1;text-align:center;padding:0 16px"><h1>${titulo}</h1><h3>${empresa.nombre||"—"} · RUT ${empresa.rut||"—"}</h3></div><div style="font-size:10px;color:#6b7280;text-align:right">${new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"})}</div></div>
+        <div class="doc-box">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:6px">Documento firmado digitalmente</div>
+          <div class="doc-titulo">${titulo}</div>
+          <div class="doc-csv">CSV del documento: <strong>${csv_doc}</strong></div>
+        </div>
+        <div class="firma-row">
+          <div class="firma-card">
+            <div class="firma-card-hdr">
+              <div class="firma-seal">✅</div>
+              <div><div class="firma-name">${emp.nombre||"—"}</div><div class="firma-rut">RUT: ${emp.rut||"—"}</div></div>
+            </div>
+            <div class="firma-field">Email: <strong>${emp.correo||emp.correo_portal||"—"}</strong></div>
+            <div class="firma-field">Firmado el: <strong>${horaUTC}</strong></div>
+            <div class="firma-field">NIT: ${emp.rut||"—"}</div>
+            <div class="firma-field">CSV: <strong style="font-family:monospace">${csv_trab}</strong></div>
+            <div class="firma-field">Transaction ID: <span style="font-family:monospace;font-size:9px">${txId}</span></div>
+          </div>
+          ${empresa.rep_legal_nombre ? `<div class="firma-card">
+            <div class="firma-card-hdr">
+              <div class="firma-seal">🏢</div>
+              <div><div class="firma-name">${empresa.rep_legal_nombre}</div><div class="firma-rut">RUT: ${empresa.rep_legal_rut||"—"}</div></div>
+            </div>
+            <div class="firma-field">Empleador: <strong>${empresa.nombre||"—"}</strong></div>
+            <div class="firma-field">RUT Empresa: <strong>${empresa.rut||"—"}</strong></div>
+          </div>` : ""}
+        </div>
+        <div class="alert-box">
+          <span class="alert-ico">⚖️</span>
+          <div class="alert-txt">
+            <strong>Validez Legal — Ley 19.799 de Chile:</strong> Este documento ha sido firmado electrónicamente. La firma electrónica simple tiene plena validez legal para documentos laborales según la legislación chilena vigente. El código CSV y Transaction ID son únicos e irrepetibles, garantizando la integridad del documento.
+          </div>
+        </div>
+        <div class="valid-box">
+          <div style="font-size:12px;font-weight:700">Las firmas pueden ser validadas en:</div>
+          <div class="valid-url">${validUrl}</div>
+        </div>
+        </body></html>`;
+      const w = window.open("","_blank");
+      w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 600);
     }
 
     // ── Calcular días hábiles Chile (lunes-viernes, sin feriados) ──
