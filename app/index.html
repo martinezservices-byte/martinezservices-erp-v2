@@ -4210,167 +4210,190 @@ Clave: ${clavePortal}`);
 
         // Botón confirmar
         document.getElementById("btn-confirmar-proceso").onclick = async () => {
-          const btn = document.getElementById("btn-confirmar-proceso");
-          btn.textContent = "Procesando..."; btn.disabled = true;
+        const btn = document.getElementById("btn-confirmar-proceso");
+        btn.textContent = "⏳ Procesando...";
+        btn.disabled = true;
 
+        try {
           const batch2 = db.batch();
-          let totalH=0,totalD=0,totalL=0;
+          let totalSueldoBaseProp=0, totalGratif=0, totalBonoa=0, totalHE=0, totalBonoVar=0, totalNoImpon=0;
+          let totalDescAfp=0, totalDescSalud=0, totalDescCes=0, totalImpUnico=0, totalOtrosDesc=0;
+          let totalHaberes=0, totalDescuentos=0, totalLiquido=0;
 
           const cfgProc = await loadConfigLegalRem();
           let tipoGratifEmp = "art47_mensual";
           try {
-            const cfgDoc = await getEmpresaActiva(empId);
-            tipoGratifEmp = cfgDoc?.config_rem?.tipo_gratificacion || "art47_mensual";
-          } catch (e) {}
+            const empCfg = await getEmpresaActiva(empId);
+            tipoGratifEmp = empCfg?.config_rem?.tipo_gratificacion || "art47_mensual";
+          } catch(e) {}
 
-          // ── LEER MOVIMIENTOS DEL PERSONAL para este período ──
-          // Estos vienen del módulo Movimientos + aprobaciones automáticas del portal
+          // ── Cargar movimientos del personal ──
           const movSnap = await db.collection("movimientos_personal")
             .where("entityId","==",empId).where("periodo","==",periodo).get();
-          const movMap = {}; // empDocId → { dias_licencia, dias_ausencia, dias_vacaciones, bono_variable, anticipo, ... }
-          movSnap.forEach(d => {
-            const mv = d.data();
-            const eid = mv.empleado_id;
+
+          const movMap = {};
+          movSnap.forEach(mv => {
+            const d = mv.data();
+            const eid = d.empleado_id;
             if (!movMap[eid]) movMap[eid] = { dias_trabajados:null, dias_licencia:0, dias_ausencia:0, dias_vacaciones:0, bono_variable:0, anticipo:0, prestamo:0, comision:0, aguinaldo:0 };
             const m = movMap[eid];
-            switch(mv.tipo) {
-              case "licencia":       m.dias_licencia   += mv.cantidad||0; break;
-              case "ausencia":       m.dias_ausencia   += mv.cantidad||0; break;
-              case "vacaciones":     m.dias_vacaciones += mv.cantidad||0; break;
-              case "bono":           m.bono_variable   += mv.monto||0; break;
-              case "comision":       m.comision        += mv.monto||0; break;
-              case "aguinaldo":      m.aguinaldo       += mv.monto||0; break;
-              case "anticipo":       m.anticipo        += mv.monto||0; break;
-              case "prestamo":       m.prestamo        += mv.monto||0; break;
-              case "dias_trabajados": m.dias_trabajados = mv.cantidad||30; break;
+            switch(d.tipo) {
+              case "licencia":        m.dias_licencia   += d.cantidad||0; break;
+              case "ausencia":        m.dias_ausencia   += d.cantidad||0; break;
+              case "vacaciones":      m.dias_vacaciones += d.cantidad||0; break;
+              case "bono":            m.bono_variable   += d.monto||0; break;
+              case "comision":        m.comision        += d.monto||0; break;
+              case "aguinaldo":       m.aguinaldo       += d.monto||0; break;
+              case "anticipo":        m.anticipo        += d.monto||0; break;
+              case "prestamo":        m.prestamo        += d.monto||0; break;
+              case "dias_trabajados": m.dias_trabajados  = d.cantidad||30; break;
             }
           });
 
-          const diasMes = 30; // Chile: mes comercial SIEMPRE 30 días (DT Art. 55 CT)
-
           empSnap.forEach(d => {
             const r = d.data();
-            const base = r.sueldo_base||r.sueldo_pactado||0;
-            // Novedades manuales del modal
+            const base = r.sueldo_base || r.sueldo_pactado || 0;
+
             const col   = parseFloat(document.getElementById(`nv-col-${d.id}`)?.value)||0;
             const mov   = parseFloat(document.getElementById(`nv-mov-${d.id}`)?.value)||0;
             const bonoa = parseFloat(document.getElementById(`nv-bonoa-${d.id}`)?.value)||0;
             const h50n  = parseFloat(document.getElementById(`nv-h50-${d.id}`)?.value)||0;
             const h100n = parseFloat(document.getElementById(`nv-h100-${d.id}`)?.value)||0;
             const viat  = parseFloat(document.getElementById(`nv-viat-${d.id}`)?.value)||0;
-            const otros = parseFloat(document.getElementById(`nv-otros-${d.id}`)?.value)||0;
-            // Nuevos campos del modal
-            const diasTrabModal = parseFloat(document.getElementById(`nv-dtrab-${d.id}`)?.value)||30;
-            const anticipoModal = parseFloat(document.getElementById(`nv-anticipo-${d.id}`)?.value)||0;
-            const prestamoModal = parseFloat(document.getElementById(`nv-prestamo-${d.id}`)?.value)||0;
+            const diasTrabModal  = parseFloat(document.getElementById(`nv-dtrab-${d.id}`)?.value)||30;
+            const anticipoModal  = parseFloat(document.getElementById(`nv-anticipo-${d.id}`)?.value)||0;
+            const prestamoModal  = parseFloat(document.getElementById(`nv-prestamo-${d.id}`)?.value)||0;
 
-            // ── Aplicar movimientos del personal ──
             const mv2 = movMap[d.id] || {};
-            const diasLic  = mv2.dias_licencia  || 0;
-            const diasAus  = mv2.dias_ausencia  || 0;
-            const diasVac  = mv2.dias_vacaciones|| 0;
-            // diasTrab: del modal (si < 30) o calculado de movimientos
+
+            // ── Base 30 días comerciales chilenos (DT Chile) ──
             const diasTrabFinal = diasTrabModal < 30 ? diasTrabModal :
               (mv2.dias_trabajados !== null && mv2.dias_trabajados !== undefined
                 ? mv2.dias_trabajados
-                : (30 - (diasLic + diasAus + diasVac)));
-            const diasAust = 30 - Math.max(0, Math.min(30, diasTrabFinal));
+                : (30 - ((mv2.dias_licencia||0)+(mv2.dias_ausencia||0)+(mv2.dias_vacaciones||0))));
             const diasTrab = Math.max(0, Math.min(30, diasTrabFinal));
+            const diasAust = 30 - diasTrab;
 
-            // ── Proporcionalizar según días trabajados (Art. 55 CT Chile) ──
-            // EXCEPTO horas extra que van sobre base contractual completa
-            // Factor proporcional: Chile usa base 30 días comerciales (DT)
-            // diasMes ya es 30, así que factor = diasTrab / 30
-            const factor = diasAust > 0 ? (diasTrab / 30) : 1;
-            const propBase  = diasAust > 0 ? Math.round(base  * factor) : base;
-            const propBonoa = Math.round(bonoa * factor);   // Bono asistencia proporcional
-            const propCol   = Math.round(col   * factor);   // Colación proporcional
-            const propMov   = Math.round(mov   * factor);   // Movilización proporcional
-            const propViat  = viat;   // Viáticos NO proporcional — es monto manual
+            // ── Proporcionalizar según días trabajados ──
+            const factor    = diasTrab / 30;
+            const propBase  = Math.round(base  * factor);
+            const propBonoa = Math.round(bonoa * factor);
+            const propCol   = Math.round(col   * factor);
+            const propMov   = Math.round(mov   * factor);
+            const propViat  = viat; // Viáticos = monto manual, no proporcional
 
-            // HE siempre sobre base contractual completa (DT Chile)
-            // DT Chile: HE sobre sueldo base contractual (no proporcional)
-            // Factor YA incluye el recargo: 0.00777778 = HE 50% / 0.01555556 = HE 100%
-            // NO multiplicar por 1.5/2.0 adicional
+            // ── HE sobre base contractual completa (DT Chile Ley 21.561) ──
             const factorHE50  = parseFloat(cfgProc?.factor_he50  || 0.00824239);
             const factorHE100 = parseFloat(cfgProc?.factor_he100 || 0.01098986);
-            const montoH50  = Math.round(base * factorHE50  * h50n);
-            const montoH100 = Math.round(base * factorHE100 * h100n);
+            const montoH50    = Math.round(base * factorHE50  * h50n);
+            const montoH100   = Math.round(base * factorHE100 * h100n);
 
-            // Bonos variables del módulo movimientos (NO proporcionales — son devengados)
-            const bonoVarMov  = (mv2.bono_variable||0) + (mv2.comision||0) + (mv2.aguinaldo||0);
-            const anticipoMov = anticipoModal + prestamoModal + (mv2.anticipo||0) + (mv2.prestamo||0);
+            const bonoVarMov  = (mv2.bono_variable||0)+(mv2.comision||0)+(mv2.aguinaldo||0);
+            const anticipoTotal = anticipoModal + prestamoModal + (mv2.anticipo||0) + (mv2.prestamo||0);
 
-            // Imponible = base proporcional + bono proporcional + HE (contractual) + bonos variables
             const imponibleSinGratif = propBase + propBonoa + montoH50 + montoH100 + bonoVarMov;
-            const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratifEmp, cfgProc.imm, diasTrab);
-            const totalImpon = imponibleSinGratif + gratif;
-            // No imponibles proporcionales
+            const gratif  = calcGratificacionLegal(imponibleSinGratif, tipoGratifEmp, cfgProc.imm, diasTrab);
+            const totalImpon   = imponibleSinGratif + gratif;
             const totalNoImpon = propCol + propMov + propViat;
-            const totalHaberes = totalImpon + totalNoImpon;
+            const totalHab     = totalImpon + totalNoImpon;
 
-            // Descuentos previsionales con topes legales
-            const baseAfp = calcBaseTopeAfp(totalImpon, cfgProc);
-            const afpPct = getAfpPctTrabajador(r.afp, cfgProc);
-            const descAfp = Math.round(baseAfp * afpPct);
-            // FIX: Fonasa/Isapre siempre 7% del total imponible del mes
-            const descSalud = Math.round(totalImpon * 0.07);
+            const baseAfp  = calcBaseTopeAfp(totalImpon, cfgProc);
+            const afpPct   = getAfpPctTrabajador(r.afp, cfgProc);
+            const descAfp  = Math.round(baseAfp * afpPct);
+            const descSalud= Math.round(totalImpon * 0.07);
             let descCesantia = 0;
             if (r.tipo_contrato !== "honorarios") {
               const baseAfc = calcBaseTopeAfc(totalImpon, cfgProc);
-              const pctCesantia = calcPctCesantiaTrabajador(r.tipo_contrato);
-              descCesantia = Math.round(baseAfc * pctCesantia);
+              descCesantia = Math.round(baseAfc * calcPctCesantiaTrabajador(r.tipo_contrato));
             }
-            const rentaLiquida = totalImpon - descAfp - descSalud - descCesantia;
-            const impuestoUnico = calcImpuestoUnicoSegundaCat(rentaLiquida, cfgProc.utm);
-            const totalDesc = descAfp + descSalud + descCesantia + impuestoUnico + otros + anticipoMov;
-            const liquido = Math.round(totalHaberes - totalDesc);
-            totalH+=Math.round(totalHaberes); totalD+=totalDesc; totalL+=liquido;
+            const rentaLiq   = totalImpon - descAfp - descSalud - descCesantia;
+            const impUnico   = calcImpuestoUnicoSegundaCat(rentaLiq, cfgProc.utm);
+            const totalDesc  = descAfp + descSalud + descCesantia + impUnico + anticipoTotal;
+            const liquido    = Math.round(totalHab - totalDesc);
+
+            totalSueldoBaseProp += propBase;
+            totalGratif += gratif;
+            totalBonoa  += propBonoa;
+            totalHE     += montoH50 + montoH100;
+            totalBonoVar+= bonoVarMov;
+            totalNoImpon+= totalNoImpon;
+            totalDescAfp += descAfp;
+            totalDescSalud += descSalud;
+            totalDescCes += descCesantia;
+            totalImpUnico += impUnico;
+            totalOtrosDesc += anticipoTotal;
+            totalHaberes    += totalHab;
+            totalDescuentos += totalDesc;
+            totalLiquido    += liquido;
 
             const ref = db.collection("remuneraciones").doc(`${empId}_${periodo}_${d.id}`);
             batch2.set(ref, {
-              entityId:empId, periodo, empleado_id:d.id,
-              rut:r.rut, nombre:r.nombre, cargo:r.cargo,
-              tipo_contrato: r.tipo_contrato||"INDEFINIDO",
-              afp:r.afp, salud:r.salud,
-              sueldo_base:base, sueldo_base_proporcional:propBase,
-              dias_trabajados:diasTrab, anticipo_sueldo:anticipoModal, prestamo_empresa:prestamoModal,
-              gratificacion:Math.round(gratif),
-              asig_colacion:propCol, asig_movilizacion:propMov,
-              asig_colacion_contrato:col, asig_movilizacion_contrato:mov,
-              bono_asistencia:propBonoa, bono_variable:bonoVarMov,
-              horas_extra_50:montoH50, horas_extra_50_hrs:h50n,
-              horas_extra_100:montoH100, horas_extra_100_hrs:h100n,
-              viaticos:viat,
-              // Ausentismo (para LRE/DT)
-              dias_trabajados:diasTrab, dias_licencia:diasLic,
-              dias_ausencia:diasAus, dias_vacaciones:diasVac,
-              otros_descuentos:otros + anticipoMov,
-              total_imponible:Math.round(totalImpon),
-              total_no_imponible:Math.round(totalNoImpon),
-              total_haberes:Math.round(totalHaberes),
-              desc_afp:descAfp, desc_salud:descSalud, desc_cesantia:descCesantia,
-              renta_liquida_imponible:Math.round(rentaLiquida),
-              impuesto_unico:impuestoUnico,
-              total_descuentos:totalDesc,
-              liquido_pagar:liquido,
-              estado:"procesado",
+              entityId: empId, periodo,
+              empleado_id: d.id, rut: r.rut, nombre: r.nombre, cargo: r.cargo,
+              tipo_contrato: r.tipo_contrato||"indefinido",
+              afp: r.afp, salud: r.salud,
+              sueldo_base: base, sueldo_base_proporcional: propBase,
+              dias_trabajados: diasTrab, dias_ausencia: diasAust,
+              gratificacion: Math.round(gratif),
+              asig_colacion: propCol, asig_movilizacion: propMov,
+              asig_colacion_contrato: col, asig_movilizacion_contrato: mov,
+              bono_asistencia: propBonoa, bono_variable: bonoVarMov,
+              horas_extra_50: montoH50, horas_extra_50_hrs: h50n,
+              horas_extra_100: montoH100, horas_extra_100_hrs: h100n,
+              viaticos: propViat,
+              anticipo_sueldo: anticipoModal, prestamo_empresa: prestamoModal,
+              otros_descuentos: anticipoTotal,
+              total_imponible: Math.round(totalImpon),
+              total_no_imponible: Math.round(totalNoImpon),
+              total_haberes: Math.round(totalHab),
+              desc_afp: descAfp, desc_salud: descSalud, desc_cesantia: descCesantia,
+              renta_liquida_imponible: Math.round(rentaLiq),
+              impuesto_unico: impUnico,
+              total_descuentos: totalDesc, liquido_pagar: liquido,
+              estado: "procesado", visible_portal: false,
               creado: firebase.firestore.FieldValue.serverTimestamp()
-            }, {merge:true});
+            }, { merge: true });
+          });
 
-            // Marcar movimientos como procesados
-            movSnap.forEach(mv3 => {
-              if (mv3.data().empleado_id === d.id) {
-                batch2.update(db.collection("movimientos_personal").doc(mv3.id), { procesado: true, periodo_liquidacion: periodo });
-              }
-            });
+          // ── Centralización Contable Automática ──
+          const refAsiento = db.collection("asientos_contables").doc();
+          batch2.set(refAsiento, {
+            entityId: empId,
+            fecha: new Date().toISOString().slice(0,10),
+            numero_asiento: "REM-" + periodo.replace("-",""),
+            glosa: `Centralización Remuneraciones ${periodo}`,
+            cuenta_debe: "4101 Sueldos y Remuneraciones",
+            debe: totalHaberes,
+            cuenta_haber: "2105 Sueldos por Pagar",
+            haber: totalHaberes,
+            cuadrado: true,
+            origen: "RRHH_AUTOMATICO",
+            creado: firebase.firestore.FieldValue.serverTimestamp()
           });
 
           await batch2.commit();
+
+          // Marcar movimientos como procesados
+          const movSnap2 = await db.collection("movimientos_personal")
+            .where("entityId","==",empId).where("periodo","==",periodo).get();
+          const batchMov = db.batch();
+          movSnap2.forEach(mv => batchMov.update(mv.ref, { procesado:true }));
+          await batchMov.commit();
+
           document.getElementById("modal-novedades-rem").remove();
-          alert(`✓ Remuneraciones procesadas para ${empSnap.size} trabajadores.\nPeríodo: ${periodo}\nTotal Haberes: ${formatMonto(totalH)}\nTotal Descuentos: ${formatMonto(totalD)}\nTotal Líquido: ${formatMonto(totalL)}`);
+          alert(`✅ Remuneraciones procesadas y centralizadas
+
+Total Haberes: ${formatMonto(totalHaberes)}
+Total Descuentos: ${formatMonto(totalDescuentos)}
+Total Líquido: ${formatMonto(totalLiquido)}
+
+💼 Asiento generado: REM-${periodo.replace("-","")}`);
           renderRRHH_Remuneraciones(zone, empId);
-        };
+        } catch(errEngine) {
+          btn.disabled = false; btn.textContent = "✓ Confirmar y Procesar Remuneraciones";
+          alert("Error al procesar: " + errEngine.message);
+        }
+      };
       };
 
       // Cálculo en tiempo real por fila (misma lógica legal que al confirmar)
@@ -7948,7 +7971,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           : `<div class="pc2-empty">Sin liquidaciones registradas aún</div>`;
 
         // Vacaciones
-        let vacsHtml = vacDocs.length ? vacDocs.slice(0,6).map(r=>`
+        let vacsHtml = vacDocs.length ? vacDocs.filter(r=>r.estado!=="eliminada"&&r.estado!=="rechazada").slice(0,6).map(r=>`
           <div class="pc2-sol-card">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div><div class="pc2-sol-titulo">🏖️ ${r.dias_solicitados||0} días hábiles</div>
@@ -7958,7 +7981,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           : `<div class="pc2-empty">Sin solicitudes previas</div>`;
 
         // Permisos
-        let permHtml = permDocs.length ? permDocs.slice(0,6).map(r=>`
+        let permHtml = permDocs.length ? permDocs.filter(r=>r.estado!=="eliminada"&&r.estado!=="rechazada").slice(0,6).map(r=>`
           <div class="pc2-sol-card">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div><div class="pc2-sol-titulo">${r.tipo||"Permiso"}</div>
@@ -8428,10 +8451,16 @@ Si necesita clave, edita el cliente y agrega una.`;
                 <div style="font-size:13px;font-weight:800;color:#0369a1">📄 ${TIPOS[r.tipo]||r.tipo||"Documento"}</div>
                 <div style="font-size:10px;color:#6b7280;margin-top:2px">Emitido: ${r.fecha_inicio||r.creado?.toDate?.().toLocaleDateString("es-CL")||"—"}</div>
               </div>
-              <button onclick="pc2FirmarDocumento('${d.id}','${empDocId}','${empId}')"
-                style="background:#0369a1;color:#fff;border:none;font-family:var(--font);font-size:12px;font-weight:700;padding:9px 18px;border-radius:20px;cursor:pointer;">
-                ✍️ Firmar
-              </button>
+              <div style="display:flex;gap:6px;">
+                <button onclick="pc2VerDocAntesDeFirmar('${d.id}','${empDocId}','${empId}')"
+                  style="background:rgba(14,165,233,0.12);color:#0369a1;border:1px solid #0369a1;font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:20px;cursor:pointer;">
+                  👁️ Ver
+                </button>
+                <button onclick="pc2FirmarDocumento('${d.id}','${empDocId}','${empId}')"
+                  style="background:#0369a1;color:#fff;border:none;font-family:var(--font);font-size:12px;font-weight:700;padding:9px 18px;border-radius:20px;cursor:pointer;">
+                  ✍️ Firmar
+                </button>
+              </div>
             </div>
           </div>`;
         }).join("");
@@ -10412,97 +10441,96 @@ Si necesita clave, edita el cliente y agrega una.`;
     };
 
     window.abrirFormularioNuevaEntidad = (tipo) => {
-      // Reusar el formulario de Nueva Entidad del SA Panel pero para el cliente
       const uid = STATE.user?.uid;
       const modal2 = document.createElement("div");
       modal2.id = "modal-nueva-entidad-cliente";
       modal2.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:4000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      const tipoLabel = tipo === "empresa" ? "Empresa" : "Condominio";
+      const fld = (lbl,inp) => `<div style="margin-bottom:10px"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${lbl}</label>${inp}</div>`;
+      const ni = (id,ph,type="text") => `<input id="${id}" type="${type||'text'}" placeholder="${ph||''}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">`;
+      const fileRow = (fid,uid2,pid,lbl) => `<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;margin-bottom:6px">${lbl}</div><div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius);padding:10px"><input type="file" id="${fid}" accept="image/*" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;padding:5px 7px;border-radius:var(--radius);cursor:pointer;margin-bottom:6px"><img id="${pid}" src="" style="display:none;height:44px;border-radius:6px;border:1px solid var(--c-border);object-fit:contain;margin-bottom:6px"><input id="${uid2}" type="url" placeholder="https://... (o URL directa)" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;" oninput="const i=document.getElementById('${pid}');i.src=this.value;i.style.display=this.value?'block':'none'"></div></div>`;
       modal2.innerHTML = `
-        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:580px;margin:auto;">
-          <div style="background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:15px;font-weight:800;color:#fff;">🏢 Registrar ${tipo==="empresa"?"Empresa":"Condominio"}</div>
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:620px;margin:auto;">
+          <div style="background:linear-gradient(135deg,var(--c-accent),#0ea5e9);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:15px;font-weight:800;color:#fff;">🏢 Registrar ${tipoLabel}</div>
             <button onclick="document.getElementById('modal-nueva-entidad-cliente').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
           </div>
-          <div style="padding:20px;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-              <div>${formField("Nombre / Razón Social *", inp("nec-nombre","text",""))}</div>
-              <div>${formField("RUT *", inp("nec-rut","text","76.XXX.XXX-X"))}</div>
-            </div>
-            ${formField("Giro / Actividad", inp("nec-giro","text",""))}
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-              <div>${formField("Dirección", inp("nec-dir","text",""))}</div>
-              <div>${formField("Ciudad", inp("nec-ciudad","text",""))}</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-              <div>${formField("Teléfono", inp("nec-tel","tel",""))}</div>
-              <div>${formField("Correo de contacto", inp("nec-correo","email",""))}</div>
-            </div>
+          <div style="padding:20px;max-height:85vh;overflow-y:auto;">
+            <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">📋 Datos de la ${tipoLabel}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">${fld("Nombre / Razón Social *",ni("nec-nombre","Ej: Mi Empresa SpA"))}${fld("RUT *",ni("nec-rut","76.XXX.XXX-X"))}</div>
+            ${fld("Giro / Actividad Económica",ni("nec-giro","Ej: Construcción, Servicios..."))}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">${fld("Dirección",ni("nec-dir","Calle y número"))}${fld("Ciudad",ni("nec-ciudad","Ej: Santiago"))}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">${fld("Teléfono",ni("nec-tel","+56 9 XXXX XXXX","tel"))}${fld("Correo de Contacto",ni("nec-correo","empresa@mail.com","email"))}</div>
+            <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;margin-top:4px;">👤 Representante Legal</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">${fld("Nombre Representante Legal",ni("nec-rep-nombre","Nombre completo"))}${fld("RUT Representante Legal",ni("nec-rep-rut","XX.XXX.XXX-X"))}</div>
             <div style="background:rgba(21,101,192,0.08);border:1px solid rgba(21,101,192,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
-              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:8px;">🏦 Datos Bancarios</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-                <div>${formField("Banco", inp("nec-banco","text","Ej: Santander"))}</div>
-                <div>${formField("N° Cuenta Corriente", inp("nec-cuenta","text",""))}</div>
+              <div style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:8px;">🏦 Datos Bancarios</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">${fld("Banco",ni("nec-banco","Ej: Banco Santander"))}${fld("N° Cuenta Corriente",ni("nec-cuenta","Número de cuenta"))}</div>
+            </div>
+            ${fileRow("nec-logo-file","nec-logo","nec-logo-prev","🖼️ Logo de la Empresa")}
+            ${fileRow("nec-firma-file","nec-firma","nec-firma-prev","✍️ Firma Representante Legal")}
+            <div style="font-size:10px;color:var(--c-muted);margin:-6px 0 14px">El logo y firma aparecen en liquidaciones, contratos y certificados.</div>
+            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:12px;margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">⚙️ Configuración de Remuneraciones</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="nec-gratif" checked style="accent-color:var(--c-accent)">Paga Gratificación Legal</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="nec-colacion" style="accent-color:var(--c-accent)">Paga Colación</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="nec-movil" style="accent-color:var(--c-accent)">Paga Movilización</label>
               </div>
             </div>
-            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
-              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:8px;">⚙️ Configuración de Remuneraciones</div>
-              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:6px;">
-                <input type="checkbox" id="nec-gratif" checked style="accent-color:var(--c-accent)">
-                Paga gratificación legal mensual
-              </label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:6px;">
-                <input type="checkbox" id="nec-colacion" style="accent-color:var(--c-accent)">
-                Paga asignación de colación
-              </label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-                <input type="checkbox" id="nec-movil" style="accent-color:var(--c-accent)">
-                Paga asignación de movilización
-              </label>
-            </div>
-            <button id="btn-save-nec" class="btn-entrar" style="width:100%">💾 Registrar ${tipo==="empresa"?"Empresa":"Condominio"}</button>
+            <button id="btn-save-nec" class="btn-entrar" style="width:100%">💾 Registrar ${tipoLabel}</button>
             <p id="nec-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:14px;"></p>
           </div>
         </div>`;
       document.body.appendChild(modal2);
+      function nec_fileToBase64(fid,uid2,pid) {
+        const fi=document.getElementById(fid); if(!fi?.files?.length) return;
+        const file=fi.files[0]; if(!file.type.startsWith("image/")) return;
+        if(file.size>2097152){alert("Máximo 2 MB");return;}
+        const r=new FileReader(); r.onload=e=>{const u=document.getElementById(uid2);const p=document.getElementById(pid);if(u)u.value=e.target.result;if(p){p.src=e.target.result;p.style.display="block";}};
+        r.readAsDataURL(file);
+      }
+      document.getElementById("nec-logo-file").onchange  = () => nec_fileToBase64("nec-logo-file","nec-logo","nec-logo-prev");
+      document.getElementById("nec-firma-file").onchange = () => nec_fileToBase64("nec-firma-file","nec-firma","nec-firma-prev");
       document.getElementById("btn-save-nec").onclick = async () => {
-        const nombre = document.getElementById("nec-nombre").value.trim();
-        const rut    = document.getElementById("nec-rut").value.trim();
-        if (!nombre) { document.getElementById("nec-msg").textContent="El nombre es obligatorio"; return; }
-        const coleccion = tipo==="empresa" ? "empresas" : "condominios";
+        const btn=document.getElementById("btn-save-nec");
+        const nombre=document.getElementById("nec-nombre").value.trim();
+        const rut=document.getElementById("nec-rut").value.trim();
+        if(!nombre){document.getElementById("nec-msg").textContent="El nombre es obligatorio";return;}
+        if(!rut){document.getElementById("nec-msg").textContent="El RUT es obligatorio";return;}
+        btn.disabled=true; btn.textContent="Guardando…";
+        const coleccion = tipo==="empresa"?"empresas":"condominios";
         const data = {
           nombre, rut,
-          giro:      document.getElementById("nec-giro").value.trim(),
-          direccion: document.getElementById("nec-dir").value.trim(),
-          ciudad:    document.getElementById("nec-ciudad").value.trim(),
-          telefono:  document.getElementById("nec-tel").value.trim(),
-          correo:    document.getElementById("nec-correo").value.trim().toLowerCase(),
-          banco:     document.getElementById("nec-banco").value.trim(),
-          num_cuenta:document.getElementById("nec-cuenta").value.trim(),
-          config_rem:{
-            paga_gratificacion: document.getElementById("nec-gratif")?.checked ?? true,
-            paga_colacion:      document.getElementById("nec-colacion")?.checked ?? false,
-            paga_movilizacion:  document.getElementById("nec-movil")?.checked ?? false,
-          },
-          uid_owner: uid, activa: true, tipo,
-          creado: firebase.firestore.FieldValue.serverTimestamp()
+          giro:             document.getElementById("nec-giro").value.trim(),
+          direccion:        document.getElementById("nec-dir").value.trim(),
+          ciudad:           document.getElementById("nec-ciudad").value.trim(),
+          telefono:         document.getElementById("nec-tel").value.trim(),
+          correo:           document.getElementById("nec-correo").value.trim().toLowerCase(),
+          rep_legal_nombre: document.getElementById("nec-rep-nombre").value.trim(),
+          rep_legal_rut:    document.getElementById("nec-rep-rut").value.trim(),
+          banco:            document.getElementById("nec-banco").value.trim(),
+          num_cuenta:       document.getElementById("nec-cuenta").value.trim(),
+          logo_url:         document.getElementById("nec-logo").value.trim()||"",
+          firma_url:        document.getElementById("nec-firma").value.trim()||"",
+          config_rem:{ paga_gratificacion:document.getElementById("nec-gratif")?.checked??true, paga_colacion:document.getElementById("nec-colacion")?.checked??false, paga_movilizacion:document.getElementById("nec-movil")?.checked??false },
+          uid_owner:uid, activa:true, tipo,
+          creado:firebase.firestore.FieldValue.serverTimestamp()
         };
         try {
           await db.collection(coleccion).add(data);
           document.getElementById("nec-msg").style.color="var(--c-accent)";
           document.getElementById("nec-msg").textContent=`✓ ${nombre} registrado correctamente.`;
-          setTimeout(()=>{
-            document.getElementById("modal-nueva-entidad-cliente")?.remove();
-            document.getElementById("modal-mis-empresas")?.remove();
-            abrirGestionEmpresasCliente();
-          }, 1000);
+          setTimeout(()=>{ document.getElementById("modal-nueva-entidad-cliente")?.remove(); document.getElementById("modal-mis-empresas")?.remove(); abrirGestionEmpresasCliente(); }, 1000);
         } catch(e) {
+          btn.disabled=false; btn.textContent=`💾 Registrar ${tipoLabel}`;
           document.getElementById("nec-msg").style.color="var(--c-danger)";
           document.getElementById("nec-msg").textContent="Error: "+e.message;
         }
       };
     };
 
-    // ── EDITAR ENTIDAD CLIENTE — formulario completo (logo + firma + rem config) ──
+    
     window.editarEntidadCliente = async (docId, coleccion) => {
       // Normalizar nombre de colección (acepta con o sin 's' al final)
       const col = coleccion === "empresa" ? "empresas" :
@@ -12673,6 +12701,13 @@ Si necesita clave, edita el cliente y agrega una.`;
         ? "⚠️ Este movimiento ya fue procesado en una liquidación.\n¿Seguro que deseas eliminarlo? Podría afectar la coherencia contable."
         : "¿Eliminar este movimiento?";
       if (!confirm(msg)) return;
+      // Si tiene referencia a solicitud portal, marcarla como eliminada para que desaparezca del portal
+      if (r.solicitud_ref && r.origen === "portal") {
+        try {
+          const col = r.tipo === "vacaciones" ? "vacaciones" : "permisos";
+          await db.collection(col).doc(r.solicitud_ref).update({ estado: "eliminada" });
+        } catch(e2) {}
+      }
       await db.collection("movimientos_personal").doc(docId).delete();
       document.getElementById("btn-cargar-mov")?.click();
     };
@@ -13974,6 +14009,101 @@ Este finiquito se suscribe de conformidad al Artículo 177 del Código del Traba
       if (!confirm(msg)) return;
       await db.collection("movimientos_personal").doc(docId).update({ estado: nuevoEstado });
       document.getElementById("btn-cargar-mov")?.click();
+    };
+
+    // ── Ver documento antes de firmar (genera PDF para revisar) ──
+    window.pc2VerDocAntesDeFirmar = async (docId, empDocId, empId) => {
+      try {
+        const [dDoc, empDoc] = await Promise.all([
+          db.collection("contratos").doc(docId).get(),
+          db.collection("empleados").doc(empDocId).get()
+        ]);
+        if (!dDoc.exists) { alert("No se encontró el documento"); return; }
+        const r = dDoc.data();
+        const emp = empDoc.exists ? empDoc.data() : {};
+        const empresa = await getEmpresaActiva(empId || r.entityId) || {};
+
+        const hoy = new Date();
+        const fechaStr = hoy.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+        const ciudad = empresa.ciudad || "Alto Hospicio";
+
+        const logoH = empresa.logo_url
+          ? `<img src="${empresa.logo_url}" style="height:48px;object-fit:contain;" onerror="this.remove()">`
+          : `<div style="width:48px;height:48px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">${(empresa.nombre||"E").charAt(0)}</div>`;
+        const firmaEmpImg = empresa.firma_url
+          ? `<img src="${empresa.firma_url}" style="height:40px;object-fit:contain;display:block;margin:0 auto 4px" onerror="this.remove()">` : "";
+
+        // Si tiene cuerpo de plantilla, usarlo; si no, mostrar datos básicos
+        let cuerpoHTML = "";
+        if (r.cuerpo_documento) {
+          cuerpoHTML = r.cuerpo_documento.split("\n\n").map(p =>
+            `<p style="margin-bottom:10px;line-height:1.7;text-align:justify">${p.replace(/\n/g,"<br>")}</p>`
+          ).join("");
+        } else {
+          const TIPOS = { plazo_fijo:"Contrato Plazo Fijo", indefinido:"Contrato Indefinido",
+            anexo_renovacion:"Anexo de Renovación", finiquito:"Finiquito",
+            carta_amonestacion:"Carta de Amonestación" };
+          cuerpoHTML = `
+            <p><strong>${empresa.nombre||"—"}</strong> (RUT ${empresa.rut||"—"}) certifica que:</p>
+            <p>Don/Doña <strong>${r.nombre||emp.nombre||"—"}</strong>, RUT <strong>${r.rut||emp.rut||"—"}</strong>, cargo <strong>${r.cargo||emp.cargo||"—"}</strong>, ha suscrito el presente documento de tipo <strong>${r.tipo_label||TIPOS[r.tipo]||r.tipo||"—"}</strong>.</p>
+            ${r.fecha_inicio ? `<p>Fecha de inicio: <strong>${r.fecha_inicio}</strong></p>` : ""}
+            ${r.sueldo_base ? `<p>Remuneración base: <strong>$${(r.sueldo_base||0).toLocaleString("es-CL")}</strong></p>` : ""}
+            <p>Se firma en ${ciudad}, a ${fechaStr}.</p>`;
+        }
+
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+          <meta name="color-scheme" content="light">
+          <title>${r.tipo_label||"Documento"} — ${r.nombre||""}</title>
+          <style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:40px;max-width:760px;margin:0 auto}
+            .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b4332;padding-bottom:14px;margin-bottom:24px}
+            h1{font-size:16px;font-weight:800;text-align:center;text-transform:uppercase;letter-spacing:1px;color:#1b4332;margin-bottom:5px}
+            .sub{text-align:center;font-size:11px;color:#6b7280}
+            .firmas{margin-top:60px;display:flex;justify-content:space-between;align-items:flex-end}
+            .firma-box{text-align:center;width:44%}
+            .firma-line{border-top:1.5px solid #374151;padding-top:8px;margin-top:6px}
+            .firma-label{font-size:11px;font-weight:700;color:#1b4332}
+            .firma-sub{font-size:10px;color:#6b7280;margin-top:2px}
+            .aviso{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px;margin-top:20px;font-size:11px;color:#92400e;text-align:center}
+            @media print{@page{size:A4;margin:16mm}body{padding:0}html,body,*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}
+          </style></head><body>
+          <div class="hdr">
+            ${logoH}
+            <div style="flex:1;text-align:center;padding:0 16px">
+              <h1>${r.tipo_label||"Documento Laboral"}</h1>
+              <div class="sub">${empresa.nombre||"—"} · RUT ${empresa.rut||"—"}</div>
+            </div>
+            <div style="font-size:10px;color:#6b7280;text-align:right">${fechaStr}</div>
+          </div>
+          <div style="text-align:right;font-size:11px;color:#6b7280;margin-bottom:16px;border-bottom:1px solid #e5e7eb;padding-bottom:10px">${ciudad}, ${fechaStr}</div>
+          ${cuerpoHTML}
+          <div class="firmas">
+            <div class="firma-box">
+              ${firmaEmpImg}
+              <div class="firma-line">
+                <div class="firma-label">Firma Empleador</div>
+                <div class="firma-sub">${empresa.nombre||"—"}</div>
+                <div class="firma-sub">RUT: ${empresa.rut||"—"}</div>
+              </div>
+            </div>
+            <div class="firma-box">
+              <div class="firma-line">
+                <div class="firma-label">Firma Colaborador</div>
+                <div class="firma-sub">${r.nombre||emp.nombre||"—"}</div>
+                <div class="firma-sub">RUT: ${r.rut||emp.rut||"—"}</div>
+              </div>
+            </div>
+          </div>
+          <div class="aviso">⚠️ Este documento está pendiente de firma digital. Para firmarlo, cierra esta ventana y presiona "✍️ Firmar" en tu portal.</div>
+          <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:9px;color:#9ca3af">Documento generado por Martinez Services ERP · ${new Date().toLocaleString("es-CL")}</div>
+          </body></html>`;
+        const w = window.open("","_blank");
+        w.document.write(html);
+        w.document.close();
+      } catch(e) {
+        alert("Error al generar vista previa: " + e.message);
+      }
     };
   })();
   </script>
