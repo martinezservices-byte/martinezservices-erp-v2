@@ -5267,7 +5267,12 @@ Total Líquido: ${formatMonto(totalLiquido)}
       renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
     };
     window.rechazarVac = async (docId, empId) => {
-      await db.collection("vacaciones").doc(docId).update({estado:"rechazada"});
+      if (!confirm("¿Rechazar esta solicitud? El colaborador verá el estado en su portal.")) return;
+      await db.collection("vacaciones").doc(docId).update({
+        estado: "rechazada",
+        rechazado_por: STATE.user?.email || "admin",
+        fecha_rechazo: firebase.firestore.FieldValue.serverTimestamp()
+      });
       renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
     };
     window.deleteVac = async (docId, empId) => {
@@ -7928,9 +7933,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         // Solo liquidaciones publicadas en el portal (visible_portal:true)
         const [remSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
           db.collection("remuneraciones").where("empleado_id","==",empDocId).where("visible_portal","==",true).limit(12).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
-          db.collection("vacaciones").where("empleado_id","==",empDocId).where("estado","in",["pendiente","aprobada"]).limit(30).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
-          db.collection("permisos").where("empleado_id","==",empDocId).where("estado","in",["pendiente","aprobada"]).limit(20).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
-          db.collection("anticipos").where("empleado_id","==",empDocId).where("estado","in",["pendiente","aprobada"]).limit(15).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("vacaciones").where("empleado_id","==",empDocId).limit(30).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("permisos").where("empleado_id","==",empDocId).limit(20).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("anticipos").where("empleado_id","==",empDocId).limit(15).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
         ]);
 
         // ── Calcular días de vacaciones ──
@@ -8010,13 +8015,16 @@ Si necesita clave, edita el cliente y agrega una.`;
           : `<div class="pc2-empty">Sin solicitudes previas</div>`;
 
         // Permisos
-        let permHtml = permDocs.length ? permDocs.filter(r=>r.estado!=="eliminada"&&r.estado!=="rechazada").slice(0,6).map(r=>`
-          <div class="pc2-sol-card">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div><div class="pc2-sol-titulo">${r.tipo||"Permiso"}</div>
-              <div class="pc2-sol-fecha">${fmtF(r.desde)} → ${fmtF(r.hasta)}${r.motivo?" · "+r.motivo:""}</div></div>
-              <span class="${badgeCls(r.estado)}">${r.estado||"pendiente"}</span>
-            </div></div>`).join("")
+        let permHtml = permDocs.length ? permDocs.filter(r=>r.estado!=="eliminada"&&r.estado!=="rechazada").slice(0,6).map(r=>{
+          const TIPO_P = {vacaciones:"🏖️ Vacaciones Legales",con_goce:"📅 Permiso Con Goce",sin_goce:"📅 Permiso Sin Goce",medico:"🏥 Licencia Médica",fallecimiento:"🙏 Por Fallecimiento",matrimonio:"💒 Por Matrimonio",nacimiento:"👶 Por Nacimiento",examen_medico:"🩺 Examen Médico",tramite:"📋 Trámite",otro:"📋 Administrativo"};
+          const lbl = r.tipo_label || TIPO_P[r.tipo] || r.tipo || "Permiso";
+          const fi = r.fecha_inicio||r.desde||""; const ff = r.fecha_fin||r.hasta||"";
+          return `<div class="pc2-sol-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
+              <div><div class="pc2-sol-titulo">${lbl}</div>
+              <div class="pc2-sol-fecha">${fi?fmtF(fi):"—"}${ff&&ff!==fi?" → "+fmtF(ff):""}${r.motivo?" · "+r.motivo:""}</div></div>
+              <span class="${badgeCls(r.estado)}" style="flex-shrink:0">${r.estado||"pendiente"}</span>
+            </div></div>`;}).join("")
           : `<div class="pc2-empty">Sin solicitudes previas</div>`;
 
         // Anticipos
@@ -10618,12 +10626,31 @@ Si necesita clave, edita el cliente y agrega una.`;
               <input id="ec-firma" type="url" value="${r.firma_url||''}" placeholder="https://... (o URL directa)" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;" oninput="const i=document.getElementById('ec-firma-prev-img');i.src=this.value;i.style.display=this.value?'block':'none'">
               <div style="font-size:10px;color:var(--c-muted);margin-top:4px;">Aparece en liquidaciones, contratos y certificados.</div>
             </div>
-            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
-              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:10px;">⚙️ Configuración de Remuneraciones</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
+            <div style="background:rgba(46,168,79,0.08);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:14px;margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:12px;">⚙️ Configuración de Remuneraciones</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:10px;">
                 <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="ec-gratif" ${r.config_rem?.paga_gratificacion!==false?'checked':''} style="accent-color:var(--c-accent)">Paga Gratificación Legal</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="ec-colacion" ${r.config_rem?.paga_colacion?'checked':''} style="accent-color:var(--c-accent)">Paga Colación</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;"><input type="checkbox" id="ec-movil" ${r.config_rem?.paga_movilizacion?'checked':''} style="accent-color:var(--c-accent)">Paga Movilización</label>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+                <div>
+                  <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Tipo Gratificación</label>
+                  <select id="ec-tipo-grat" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                    <option value="art47_mensual" ${(r.config_rem?.tipo_gratificacion||"art47_mensual")==="art47_mensual"?"selected":""}>Art.47 — 25% mensual</option>
+                    <option value="art50_anual" ${(r.config_rem?.tipo_gratificacion||"")==="art50_anual"?"selected":""}>Art.50 — Anual (4.75 IMM)</option>
+                    <option value="no_paga" ${(r.config_rem?.tipo_gratificacion||"")==="no_paga"?"selected":""}>No paga gratificación</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Mutual de Seguridad</label>
+                  <select id="ec-mutual" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+                    <option value="achs" ${(r.config_rem?.mutual||"achs")==="achs"?"selected":""}>ACHS</option>
+                    <option value="museg" ${(r.config_rem?.mutual||"")==="museg"?"selected":""}>Mutual de Seguridad</option>
+                    <option value="ist" ${(r.config_rem?.mutual||"")==="ist"?"selected":""}>IST</option>
+                    <option value="chuquicamata" ${(r.config_rem?.mutual||"")==="chuquicamata"?"selected":""}>Chuquicamata</option>
+                  </select>
+                </div>
               </div>
             </div>
             <button id="btn-save-ec" class="btn-entrar" style="width:100%">💾 Guardar Cambios</button>
@@ -10679,6 +10706,8 @@ Si necesita clave, edita el cliente y agrega una.`;
               paga_gratificacion: document.getElementById("ec-gratif").checked,
               paga_colacion:      document.getElementById("ec-colacion").checked,
               paga_movilizacion:  document.getElementById("ec-movil").checked,
+              tipo_gratificacion: document.getElementById("ec-tipo-grat")?.value || "art47_mensual",
+              mutual:             document.getElementById("ec-mutual")?.value || "achs",
             },
             actualizado: firebase.firestore.FieldValue.serverTimestamp()
           });
@@ -12506,7 +12535,7 @@ Si necesita clave, edita el cliente y agrega una.`;
 
           <div id="mov-tabla-wrap">
             ${tableWrap("tbl-mov","Movimientos del Personal","Novedades del período activo",
-              ["Trabajador","Tipo de Movimiento","Código DT","Cantidad / Monto","Período","Origen","Estado","Acciones"])}
+              ["Trabajador","Tipo de Movimiento","Cód.DT","Fecha Inicio","Fecha Fin","Días/Monto","Período","Origen","Estado","Acciones"])}
           </div>
 
           <div id="mov-form-nuevo" style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:16px;margin-top:14px;">
@@ -12594,11 +12623,11 @@ Si necesita clave, edita el cliente y agrega una.`;
         const periodo = document.getElementById("mov-periodo").value;
         const empDocId = document.getElementById("mov-emp-sel").value;
         const tb = document.getElementById("tbl-mov-tbody");
-        if (!periodo || !empId) { tb.innerHTML = emptyRow(8,"Selecciona período"); return; }
+        if (!periodo || !empId) { tb.innerHTML = emptyRow(10,"Selecciona período"); return; }
         let q = db.collection("movimientos_personal").where("entityId","==",empId).where("periodo","==",periodo);
         if (empDocId) q = q.where("empleado_id","==",empDocId);
         const snap = await q.get();
-        if (snap.empty) { tb.innerHTML = emptyRow(8,"Sin movimientos para este período. Usa el formulario de abajo para agregar."); return; }
+        if (snap.empty) { tb.innerHTML = emptyRow(10,"Sin movimientos para este período. Usa el formulario de abajo para agregar."); return; }
         const COD_DT = { licencia:"1116", ausencia:"1115", vacaciones:"1117", bono:"2111", aguinaldo:"2110", horas_extra:"2102", anticipo:"3185" };
         const TIPO_LABEL = { licencia:"🏥 Licencia Médica", ausencia:"🚫 Inasistencia/Permiso s/goce", vacaciones:"🏖️ Vacaciones", bono:"💰 Bono Variable", aguinaldo:"🎁 Aguinaldo", horas_extra:"⏰ Horas Extra", anticipo:"💵 Anticipo/Préstamo" };
         tb.innerHTML = "";
@@ -12608,8 +12637,10 @@ Si necesita clave, edita el cliente y agrega una.`;
           tb.innerHTML += `<tr>
             <td>${r.nombre_emp||"—"}</td>
             <td><span class="badge badge-${tipoCls}" style="font-size:10px">${TIPO_LABEL[r.tipo]||r.tipo}</span></td>
-            <td style="font-family:var(--mono);font-size:11px;text-align:center">${COD_DT[r.tipo]||"—"}</td>
-            <td style="font-weight:700;text-align:right">${["bono","aguinaldo","anticipo"].includes(r.tipo) ? formatMonto(r.monto||0) : (r.cantidad||0)+" días"}</td>
+            <td style="font-family:var(--mono);font-size:11px;text-align:center">${COD_DT[r.tipo]||r.cod_dt||"—"}</td>
+            <td style="font-size:11px;color:var(--c-muted)">${r.fecha_inicio||r.desde||"—"}</td>
+            <td style="font-size:11px;color:var(--c-muted)">${r.fecha_fin||r.hasta||"—"}</td>
+            <td style="font-weight:700;text-align:right">${["bono","aguinaldo","anticipo","prestamo"].includes(r.tipo) ? formatMonto(r.monto||0) : (r.cantidad||0)+" días"}</td>
             <td>${r.periodo||"—"}</td>
             <td><span class="badge badge-${r.origen==="portal"?"warn":"gray"}" style="font-size:10px">${r.origen==="portal"?"🔗 Portal":"✏️ Manual"}</span></td>
             <td><span class="badge badge-${r.procesado?"green":"warn"}" style="font-size:10px">${r.procesado?"✅ Procesado":"⏳ Pendiente"}</span></td>
@@ -12731,12 +12762,19 @@ Si necesita clave, edita el cliente y agrega una.`;
         ? "⚠️ Este movimiento ya fue procesado en una liquidación.\n¿Seguro que deseas eliminarlo? Podría afectar la coherencia contable."
         : "¿Eliminar este movimiento?";
       if (!confirm(msg)) return;
-      // Si tiene referencia a solicitud portal, marcarla como eliminada para que desaparezca del portal
+      // Si tiene referencia a solicitud portal, marcarla como eliminada
       if (r.solicitud_ref && r.origen === "portal") {
         try {
-          const col = r.tipo === "vacaciones" ? "vacaciones" : "permisos";
-          await db.collection(col).doc(r.solicitud_ref).update({ estado: "eliminada" });
-        } catch(e2) {}
+          // Determinar colección correcta
+          let solCol = "permisos";
+          if (r.tipo === "vacaciones") solCol = "vacaciones";
+          else if (r.tipo === "anticipo" || r.tipo === "prestamo") solCol = "anticipos";
+          await db.collection(solCol).doc(r.solicitud_ref).update({
+            estado: "eliminada",
+            eliminado_por: STATE.user?.email || "admin",
+            fecha_eliminacion: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } catch(e2) { console.warn("No se pudo marcar solicitud:", e2); }
       }
       await db.collection("movimientos_personal").doc(docId).delete();
       document.getElementById("btn-cargar-mov")?.click();
