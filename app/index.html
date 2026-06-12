@@ -4114,7 +4114,35 @@ Clave: ${clavePortal}`);
       // ── PASO 1: Seleccionar período y cargar novedades ──
       document.getElementById("btn-procesar-rem").onclick = async () => {
         if (!empId) { alert("Sin entidad activa"); return; }
-        const periodo = prompt("Período a procesar (YYYY-MM):", new Date().toISOString().slice(0,7));
+        // Mostrar modal para seleccionar período (reemplaza el prompt del navegador)
+        const periodoDefault = new Date().toISOString().slice(0,7);
+        const periodo = await new Promise(resolve => {
+          const modalPer = document.createElement("div");
+          modalPer.id = "modal-periodo-rem";
+          modalPer.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;";
+          modalPer.innerHTML = `
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:400px;padding:28px;">
+              <div style="font-size:16px;font-weight:800;color:var(--c-accent);margin-bottom:6px;">⚙️ Proceso de Remuneraciones</div>
+              <div style="font-size:13px;color:var(--c-muted);margin-bottom:18px;">Selecciona el período a procesar</div>
+              <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:6px;">Período (AAAA-MM)</label>
+              <input id="inp-periodo-rem" type="month" value="${periodoDefault}"
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:14px;padding:10px 12px;border-radius:var(--radius);outline:none;margin-bottom:18px;">
+              <div style="display:flex;gap:10px;">
+                <button id="btn-per-ok" class="btn-entrar" style="flex:1;">✓ Continuar</button>
+                <button onclick="document.getElementById('modal-periodo-rem').remove()" style="flex:1;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;font-weight:600;padding:10px;border-radius:var(--radius);cursor:pointer;">Cancelar</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modalPer);
+          document.getElementById("btn-per-ok").onclick = () => {
+            const val = document.getElementById("inp-periodo-rem").value;
+            document.getElementById("modal-periodo-rem").remove();
+            resolve(val);
+          };
+          // Si cierran sin aceptar
+          modalPer.addEventListener("click", e => {
+            if (e.target === modalPer) { modalPer.remove(); resolve(null); }
+          });
+        });
         if (!periodo) return;
 
         const empSnap = await db.collection("empleados").where("entityId","==",empId).where("estado","==","activo").get();
@@ -7900,9 +7928,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         // Solo liquidaciones publicadas en el portal (visible_portal:true)
         const [remSnap, vacSnap, permSnap, anticSnap] = await Promise.all([
           db.collection("remuneraciones").where("empleado_id","==",empDocId).where("visible_portal","==",true).limit(12).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
-          db.collection("vacaciones").where("empleado_id","==",empDocId).limit(20).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
-          db.collection("permisos").where("empleado_id","==",empDocId).limit(10).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
-          db.collection("anticipos").where("empleado_id","==",empDocId).limit(10).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("vacaciones").where("empleado_id","==",empDocId).where("estado","in",["pendiente","aprobada"]).limit(30).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("permisos").where("empleado_id","==",empDocId).where("estado","in",["pendiente","aprobada"]).limit(20).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
+          db.collection("anticipos").where("empleado_id","==",empDocId).where("estado","in",["pendiente","aprobada"]).limit(15).get().catch(()=>({empty:true,docs:[],forEach:()=>{}})),
         ]);
 
         // ── Calcular días de vacaciones ──
@@ -7932,9 +7960,10 @@ Si necesita clave, edita el cliente y agrega una.`;
 
         // ── Ordenar vacaciones/permisos/anticipos por fecha desc ──
         const vacDocs=[], permDocs=[], anticDocs=[];
-        vacSnap.forEach(d=>vacDocs.push({id:d.id,...d.data()}));
-        permSnap.forEach(d=>permDocs.push({id:d.id,...d.data()}));
-        anticSnap.forEach(d=>anticDocs.push({id:d.id,...d.data()}));
+        // Filter out eliminada/rechazada STRICTLY
+        vacSnap.forEach(d=>{ const r=d.data(); if(r.estado!=="eliminada"&&r.estado!=="rechazada") vacDocs.push({id:d.id,...r}); });
+        permSnap.forEach(d=>{ const r=d.data(); if(r.estado!=="eliminada"&&r.estado!=="rechazada") permDocs.push({id:d.id,...r}); });
+        anticSnap.forEach(d=>{ const r=d.data(); if(r.estado!=="eliminada"&&r.estado!=="rechazada") anticDocs.push({id:d.id,...r}); });
         vacDocs.sort((a,b)=>(b.desde||"").localeCompare(a.desde||""));
         permDocs.sort((a,b)=>(b.desde||"").localeCompare(a.desde||""));
         anticDocs.sort((a,b)=>((b.creado?.seconds||0)-(a.creado?.seconds||0)));
@@ -12585,6 +12614,7 @@ Si necesita clave, edita el cliente y agrega una.`;
             <td><span class="badge badge-${r.origen==="portal"?"warn":"gray"}" style="font-size:10px">${r.origen==="portal"?"🔗 Portal":"✏️ Manual"}</span></td>
             <td><span class="badge badge-${r.procesado?"green":"warn"}" style="font-size:10px">${r.procesado?"✅ Procesado":"⏳ Pendiente"}</span></td>
             <td style="display:flex;gap:4px;flex-wrap:wrap;">
+              ${r.solicitud_ref ? `<button onclick="verDocMovimiento('${r.solicitud_ref}','${r.tipo}','${empId}')" style="background:rgba(14,165,233,0.1);border:1px solid #0369a1;color:#0369a1;padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;" title="Ver documento">📄 Ver</button>` : ""}
               <button onclick="editarMov('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;" title="Editar">✏️</button>
               <button onclick="toggleActivoMov('${d.id}','${r.estado||"activo"}','${empId}')"
                 style="background:none;border:1px solid ${r.estado==='inactivo'?'var(--c-accent)':'#d97706'};color:${r.estado==='inactivo'?'var(--c-accent)':'#d97706'};padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;"
@@ -14103,6 +14133,138 @@ Este finiquito se suscribe de conformidad al Artículo 177 del Código del Traba
         w.document.close();
       } catch(e) {
         alert("Error al generar vista previa: " + e.message);
+      }
+    };
+
+    // ── Ver documento de movimiento (vacación, permiso, etc.) ──
+    window.verDocMovimiento = async (solicitudRef, tipoMov, empId) => {
+      try {
+        const col = tipoMov === "vacaciones" ? "vacaciones" : "permisos";
+        const dSol = await db.collection(col).doc(solicitudRef).get();
+        if (!dSol.exists) {
+          // Buscar en contratos
+          const cSnap = await db.collection("contratos")
+            .where("doc_origen_id","==",solicitudRef).limit(1).get();
+          if (!cSnap.empty) {
+            await imprimirContratoPDF(cSnap.docs[0].id);
+            return;
+          }
+          alert("No se encontró el documento. Puede que aún no se haya generado el comprobante.");
+          return;
+        }
+        const sol = dSol.data();
+        const empresa = await getEmpresaActiva(empId || sol.entityId) || {};
+        const empDoc = sol.empleado_id
+          ? await db.collection("empleados").doc(sol.empleado_id).get()
+          : { exists: false, data: () => ({}) };
+        const emp = empDoc.exists ? empDoc.data() : {};
+
+        const hoy = new Date();
+        const fechaStr = hoy.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+        const ciudad = empresa.ciudad || "Alto Hospicio";
+
+        const TIPO_LABELS = {
+          vacaciones:"Comprobante de Vacaciones Legales",
+          con_goce:"Comprobante de Permiso Con Goce de Sueldo",
+          sin_goce:"Comprobante de Permiso Sin Goce de Sueldo",
+          medico:"Comprobante de Licencia Médica",
+          fallecimiento:"Permiso por Fallecimiento Familiar (3 días)",
+          matrimonio:"Permiso por Matrimonio (5 días)",
+          nacimiento:"Permiso por Nacimiento de Hijo (5 días)",
+          examen_medico:"Permiso para Examen Médico",
+          tramite:"Permiso para Trámite Personal",
+          otro:"Permiso Administrativo"
+        };
+        const titulo = TIPO_LABELS[sol.tipo || tipoMov] || "Comprobante Laboral";
+        const esVac = sol.tipo === "vacaciones" || tipoMov === "vacaciones";
+
+        const logoH = empresa.logo_url
+          ? `<img src="${empresa.logo_url}" style="height:48px;object-fit:contain;" onerror="this.remove()">`
+          : `<div style="width:48px;height:48px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;">${(empresa.nombre||"E").charAt(0)}</div>`;
+        const firmaEmpImg = empresa.firma_url
+          ? `<img src="${empresa.firma_url}" style="height:40px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">` : "";
+
+        let cuerpo = "";
+        if (esVac) {
+          cuerpo = `<p>La empresa <strong>${empresa.nombre||"—"}</strong>, RUT <strong>${empresa.rut||"—"}</strong>, representada por <strong>${empresa.rep_legal_nombre||"—"}</strong>, autoriza el uso de vacaciones legales al siguiente colaborador:</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+            <tr style="background:#f0fdf4"><td style="padding:8px;border:1px solid #d1fae5;font-weight:700">Colaborador</td><td style="padding:8px;border:1px solid #d1fae5;">${sol.nombre||emp.nombre||"—"}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:700">RUT</td><td style="padding:8px;border:1px solid #e5e7eb;">${sol.rut||emp.rut||"—"}</td></tr>
+            <tr style="background:#f0fdf4"><td style="padding:8px;border:1px solid #d1fae5;font-weight:700">Cargo</td><td style="padding:8px;border:1px solid #d1fae5;">${sol.cargo||emp.cargo||"—"}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:700">Período de Vacaciones</td><td style="padding:8px;border:1px solid #e5e7eb;">${sol.desde||sol.fecha_inicio||"—"} al ${sol.hasta||sol.fecha_fin||"—"}</td></tr>
+            <tr style="background:#f0fdf4"><td style="padding:8px;border:1px solid #d1fae5;font-weight:700">Días hábiles</td><td style="padding:8px;border:1px solid #d1fae5;">${sol.dias_solicitados||"—"} días</td></tr>
+          </table>
+          <p>El empleador otorga el presente beneficio de vacaciones legales de conformidad con el Artículo 67 y siguientes del Código del Trabajo de Chile.</p>`;
+        } else {
+          cuerpo = `<p>La empresa <strong>${empresa.nombre||"—"}</strong> otorga el presente permiso a:</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+            <tr style="background:#f0fdf4"><td style="padding:8px;border:1px solid #d1fae5;font-weight:700">Colaborador</td><td style="padding:8px;border:1px solid #d1fae5;">${sol.nombre||emp.nombre||"—"}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:700">RUT</td><td style="padding:8px;border:1px solid #e5e7eb;">${sol.rut||emp.rut||"—"}</td></tr>
+            <tr style="background:#f0fdf4"><td style="padding:8px;border:1px solid #d1fae5;font-weight:700">Tipo de Permiso</td><td style="padding:8px;border:1px solid #d1fae5;">${TIPO_LABELS[sol.tipo]||sol.tipo_label||"—"}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:700">Fecha</td><td style="padding:8px;border:1px solid #e5e7eb;">${sol.fecha_inicio||sol.desde||"—"} al ${sol.fecha_fin||sol.hasta||"—"}</td></tr>
+            <tr style="background:#f0fdf4"><td style="padding:8px;border:1px solid #d1fae5;font-weight:700">Con/Sin Goce de Sueldo</td><td style="padding:8px;border:1px solid #d1fae5;">${sol.tipo==="con_goce"?"Con Goce de Sueldo":"Sin Goce de Sueldo"}</td></tr>
+            ${sol.observacion?`<tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:700">Motivo</td><td style="padding:8px;border:1px solid #e5e7eb;">${sol.observacion}</td></tr>`:""}
+          </table>
+          <p>El presente permiso se otorga de conformidad con las disposiciones del Código del Trabajo de Chile y las políticas internas de la empresa.</p>`;
+        }
+
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="color-scheme" content="light">
+          <title>${titulo}</title>
+          <style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:44px;max-width:760px;margin:0 auto}
+            .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b4332;padding-bottom:14px;margin-bottom:24px}
+            h1{font-size:16px;font-weight:800;text-align:center;text-transform:uppercase;letter-spacing:1px;color:#1b4332;margin-bottom:5px}
+            .sub{text-align:center;font-size:11px;color:#6b7280}
+            p{line-height:1.8;margin-bottom:12px;text-align:justify}
+            .estado{display:inline-block;background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;margin-bottom:14px}
+            .firmas{margin-top:60px;display:flex;justify-content:space-between;align-items:flex-end}
+            .firma-box{text-align:center;width:44%}
+            .firma-line{border-top:1.5px solid #374151;padding-top:8px;margin-top:6px}
+            .firma-label{font-size:11px;font-weight:700;color:#1b4332}
+            .firma-sub{font-size:10px;color:#6b7280;margin-top:2px}
+            footer{margin-top:30px;border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:9px;color:#9ca3af}
+            @media print{@page{size:A4;margin:16mm}body{padding:0}html,body,*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}
+          </style></head><body>
+          <div class="hdr">
+            ${logoH}
+            <div style="flex:1;text-align:center;padding:0 16px">
+              <h1>${titulo}</h1>
+              <div class="sub">${empresa.nombre||"—"} · RUT ${empresa.rut||"—"}</div>
+            </div>
+            <div style="font-size:10px;color:#6b7280;text-align:right">${fechaStr}</div>
+          </div>
+          <div style="text-align:center;margin-bottom:16px">
+            <span class="estado">✅ APROBADO</span>
+          </div>
+          ${cuerpo}
+          <div class="firmas">
+            <div class="firma-box">
+              ${firmaEmpImg}
+              <div class="firma-line">
+                <div class="firma-label">Firma Empleador</div>
+                <div class="firma-sub">${empresa.nombre||"—"}</div>
+                <div class="firma-sub">RUT: ${empresa.rut||"—"}</div>
+                ${empresa.rep_legal_nombre?`<div class="firma-sub">${empresa.rep_legal_nombre}</div>`:""}
+              </div>
+            </div>
+            <div class="firma-box">
+              <div class="firma-line">
+                <div class="firma-label">Firma Colaborador</div>
+                <div class="firma-sub">${sol.nombre||emp.nombre||"—"}</div>
+                <div class="firma-sub">RUT: ${sol.rut||emp.rut||"—"}</div>
+              </div>
+            </div>
+          </div>
+          <footer>Documento generado por Martinez Services ERP · ${new Date().toLocaleString("es-CL")} · CSV: ${[...Array(8)].map(()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("")}</footer>
+          </body></html>`;
+
+        const w = window.open("","_blank");
+        w.document.write(html);
+        w.document.close();
+        setTimeout(()=>w.print(), 600);
+      } catch(e) {
+        alert("Error al generar documento: " + e.message);
       }
     };
   })();
