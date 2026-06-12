@@ -1528,6 +1528,65 @@
                 <div style="margin-top:8px"><label style="display:block;font-size:10px;color:var(--c-muted);margin-bottom:3px;">SIS — Seg. Invalidez (%)</label><input id="cfg-sis" type="number" step="0.01" value="1.62" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:6px 8px;border-radius:var(--radius);outline:none;"></div>
               </div>
               <div style="font-size:9px;color:var(--c-muted);margin-bottom:12px;">SIS es cargo del empleador. Tasas a actualizar en julio de cada año según Previred.</div>
+
+              <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">⚙️ Factores Horas Extra — Jornada Legal Progresiva Chile</div>
+              <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius);padding:14px;margin-bottom:12px;">
+                <div style="font-size:11px;color:#d97706;margin-bottom:10px;line-height:1.6">
+                  <strong>Ley 21.561 — Reducción progresiva jornada laboral Chile:</strong><br>
+                  2024: 44 hrs → 2026: 42 hrs → 2028: 40 hrs. Actualiza cuando cambie la ley.<br>
+                  Las HE se calculan sobre el <strong>sueldo base pactado</strong> (no proporcional). El factor <strong>ya incluye el recargo</strong>.
+                </div>
+
+                <!-- Selector rápido por jornada -->
+                <div style="margin-bottom:12px;">
+                  <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Seleccionar Jornada Legal (auto-rellena los factores)</label>
+                  <select id="cfg-jornada-sel" onchange="cfgAutoFactoresHE(this.value)"
+                    style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                    <option value="">— Seleccionar jornada —</option>
+                    <option value="40">40 hrs/semana (vigente desde 2028)</option>
+                    <option value="42" selected>42 hrs/semana ✅ VIGENTE 2026</option>
+                    <option value="44">44 hrs/semana (hasta 2025)</option>
+                    <option value="45">45 hrs/semana (histórico)</option>
+                    <option value="custom">Jornada especial / contrato colectivo</option>
+                  </select>
+                </div>
+
+                <!-- Tabla de referencia -->
+                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;">
+                  <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                    <thead><tr style="background:#1b4332;color:#fff;">
+                      <th style="padding:6px 8px;text-align:left">Jornada</th>
+                      <th style="padding:6px 8px;text-align:center">Factor HE 50%</th>
+                      <th style="padding:6px 8px;text-align:center">Factor HE 100%</th>
+                      <th style="padding:6px 8px;text-align:center">HE 50% / $539k</th>
+                      <th style="padding:6px 8px;text-align:left">Estado</th>
+                    </tr></thead>
+                    <tbody>
+                      <tr style="border-bottom:1px solid var(--c-border)"><td style="padding:5px 8px;font-weight:700">40 hrs</td><td style="padding:5px 8px;text-align:center;font-family:monospace">0.00865451</td><td style="padding:5px 8px;text-align:center;font-family:monospace">0.01153935</td><td style="padding:5px 8px;text-align:center">$4.665</td><td style="padding:5px 8px;font-size:10px;color:#6b7280">Desde 2028</td></tr>
+                      <tr style="border-bottom:1px solid var(--c-border);background:rgba(46,168,79,0.08)"><td style="padding:5px 8px;font-weight:800;color:#1b4332">42 hrs ✅</td><td style="padding:5px 8px;text-align:center;font-family:monospace;font-weight:700">0.00824239</td><td style="padding:5px 8px;text-align:center;font-family:monospace;font-weight:700">0.01098986</td><td style="padding:5px 8px;text-align:center;font-weight:700">$4.443</td><td style="padding:5px 8px;font-size:10px;font-weight:700;color:#1b4332">VIGENTE 2026</td></tr>
+                      <tr style="border-bottom:1px solid var(--c-border)"><td style="padding:5px 8px">44 hrs</td><td style="padding:5px 8px;text-align:center;font-family:monospace">0.00786774</td><td style="padding:5px 8px;text-align:center;font-family:monospace">0.01049032</td><td style="padding:5px 8px;text-align:center">$4.241</td><td style="padding:5px 8px;font-size:10px;color:#9ca3af">Hasta 2025</td></tr>
+                      <tr><td style="padding:5px 8px">45 hrs</td><td style="padding:5px 8px;text-align:center;font-family:monospace">0.00769290</td><td style="padding:5px 8px;text-align:center;font-family:monospace">0.01025720</td><td style="padding:5px 8px;text-align:center">$4.146</td><td style="padding:5px 8px;font-size:10px;color:#9ca3af">Histórico</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Campos manuales -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+                  <div>
+                    <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Factor HE 50% activo</label>
+                    <input id="cfg-factor-he50" type="number" step="0.00000001" value="0.00824239"
+                      style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:monospace;font-size:12px;padding:7px 9px;border-radius:var(--radius);outline:none;">
+                    <div style="font-size:9px;color:var(--c-muted);margin-top:2px">sueldo × factor × hrs = $HE 50%</div>
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:3px;">Factor HE 100% activo</label>
+                    <input id="cfg-factor-he100" type="number" step="0.00000001" value="0.01098986"
+                      style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:monospace;font-size:12px;padding:7px 9px;border-radius:var(--radius);outline:none;">
+                    <div style="font-size:9px;color:var(--c-muted);margin-top:2px">sueldo × factor × hrs = $HE 100%</div>
+                  </div>
+                </div>
+              </div>
+
               <button id="btn-save-valores" class="btn-entrar" style="width:100%;">💾 Guardar Indicadores Previsionales</button>
               <p id="cfg-valores-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
             </div>
@@ -3930,10 +3989,21 @@ Clave: ${clavePortal}`);
     function calcTopeGratifArt47(imm) {
       return Math.round((imm * 4.75) / 12);
     }
-    function calcGratificacionLegal(imponibleSinGratif, tipoGratif, imm) {
+    function calcGratificacionLegal(imponibleSinGratif, tipoGratif, imm, diasTrab) {
+      // diasTrab: días trabajados en el mes (sobre base 30 comerciales Chile)
+      const dt = diasTrab || 30;
       if (tipoGratif === "no_paga") return 0;
-      if (tipoGratif === "art50_25") return Math.round(imponibleSinGratif * 0.25 / 12);
-      return Math.min(Math.round(imponibleSinGratif * 0.25), calcTopeGratifArt47(imm));
+      // Art.47: 25% del imponible, tope 4.75 IMM/12 proporcional
+      // Art.50: 25% mensual del imponible, igualmente con tope proporcional
+      const topeMensualBase = Math.round((4.75 * (imm || 539000)) / 12); // tope mes 30 días
+      const topeProporcional = Math.round(topeMensualBase * dt / 30);    // proporcional a días trabajados
+      const gratif25pct = Math.round(imponibleSinGratif * 0.25);
+      if (tipoGratif === "art50_25") {
+        // Pago mensual del 25%: aplica el tope proporcional
+        return Math.min(gratif25pct, topeProporcional);
+      }
+      // Art.47 (por defecto): menor entre 25% del imponible y tope proporcional
+      return Math.min(gratif25pct, topeProporcional);
     }
     function calcBaseTopeAfp(totalImpon, cfg) {
       const tope = cfg.tope_afp || Math.round((cfg.tope_uf || 78) * (cfg.uf || 40610));
@@ -4123,7 +4193,7 @@ Clave: ${clavePortal}`);
             }
           });
 
-          const diasMes = new Date(parseInt(periodo.split("-")[0]), parseInt(periodo.split("-")[1]), 0).getDate();
+          const diasMes = 30; // Chile: mes comercial SIEMPRE 30 días (DT Art. 55 CT)
 
           empSnap.forEach(d => {
             const r = d.data();
@@ -4143,26 +4213,38 @@ Clave: ${clavePortal}`);
             const diasAus  = mv2.dias_ausencia  || 0;
             const diasVac  = mv2.dias_vacaciones|| 0;
             const diasAust = diasLic + diasAus + diasVac;
-            const diasTrab = Math.max(0, diasMes - diasAust);
+            const diasTrab = Math.max(0, 30 - diasAust); // Base 30 comerciales Chile
 
-            // Proporcionar sueldo base si hay ausentismo
-            const propBase = diasAust > 0 ? Math.round(base * diasTrab / diasMes) : base;
+            // ── Proporcionalizar según días trabajados (Art. 55 CT Chile) ──
+            // EXCEPTO horas extra que van sobre base contractual completa
+            // Factor proporcional: Chile usa base 30 días comerciales (DT)
+            // diasMes ya es 30, así que factor = diasTrab / 30
+            const factor = diasAust > 0 ? (diasTrab / 30) : 1;
+            const propBase  = diasAust > 0 ? Math.round(base  * factor) : base;
+            const propBonoa = Math.round(bonoa * factor);   // Bono asistencia proporcional
+            const propCol   = Math.round(col   * factor);   // Colación proporcional
+            const propMov   = Math.round(mov   * factor);   // Movilización proporcional
+            const propViat  = viat;   // Viáticos NO proporcional — es monto manual
 
-            // Valor hora = sueldo/180 (mes 45 hrs semanales Chile)
-            // DT Chile: HE sobre base contractual, NO proporcional
-            const valHoraC = Math.round(base * 0.00777778);
-            const montoH50  = Math.round(valHoraC * 1.5 * h50n);
-            const montoH100 = Math.round(valHoraC * 2   * h100n);
+            // HE siempre sobre base contractual completa (DT Chile)
+            // DT Chile: HE sobre sueldo base contractual (no proporcional)
+            // Factor YA incluye el recargo: 0.00777778 = HE 50% / 0.01555556 = HE 100%
+            // NO multiplicar por 1.5/2.0 adicional
+            const factorHE50  = parseFloat(cfgProc?.factor_he50  || 0.00824239);
+            const factorHE100 = parseFloat(cfgProc?.factor_he100 || 0.01098986);
+            const montoH50  = Math.round(base * factorHE50  * h50n);
+            const montoH100 = Math.round(base * factorHE100 * h100n);
 
-            // Bonos variables del módulo movimientos + del modal
-            const bonoVarMov = (mv2.bono_variable||0) + (mv2.comision||0) + (mv2.aguinaldo||0);
+            // Bonos variables del módulo movimientos (NO proporcionales — son devengados)
+            const bonoVarMov  = (mv2.bono_variable||0) + (mv2.comision||0) + (mv2.aguinaldo||0);
             const anticipoMov = mv2.anticipo || 0;
 
-            // Imponible devengado sin gratificación
-            const imponibleSinGratif = propBase + bonoa + montoH50 + montoH100 + bonoVarMov;
-            const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratifEmp, cfgProc.imm);
+            // Imponible = base proporcional + bono proporcional + HE (contractual) + bonos variables
+            const imponibleSinGratif = propBase + propBonoa + montoH50 + montoH100 + bonoVarMov;
+            const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratifEmp, cfgProc.imm, diasTrab);
             const totalImpon = imponibleSinGratif + gratif;
-            const totalNoImpon = col + mov + viat;
+            // No imponibles proporcionales
+            const totalNoImpon = propCol + propMov + propViat;
             const totalHaberes = totalImpon + totalNoImpon;
 
             // Descuentos previsionales con topes legales
@@ -4191,8 +4273,9 @@ Clave: ${clavePortal}`);
               afp:r.afp, salud:r.salud,
               sueldo_base:base, sueldo_base_proporcional:propBase,
               gratificacion:Math.round(gratif),
-              asig_colacion:col, asig_movilizacion:mov,
-              bono_asistencia:bonoa, bono_variable:bonoVarMov,
+              asig_colacion:propCol, asig_movilizacion:propMov,
+              asig_colacion_contrato:col, asig_movilizacion_contrato:mov,
+              bono_asistencia:propBonoa, bono_variable:bonoVarMov,
               horas_extra_50:montoH50, horas_extra_50_hrs:h50n,
               horas_extra_100:montoH100, horas_extra_100_hrs:h100n,
               viaticos:viat,
@@ -4239,13 +4322,24 @@ Clave: ${clavePortal}`);
         const h100n = parseFloat(document.getElementById(`nv-h100-${empDocId}`)?.value)||0;
         const viat  = parseFloat(document.getElementById(`nv-viat-${empDocId}`)?.value)||0;
         const otros = parseFloat(document.getElementById(`nv-otros-${empDocId}`)?.value)||0;
-        const valHoraC = Math.round(base * 0.00777778);
-        const montoH50  = Math.round(valHoraC * 1.5 * h50n);
-        const montoH100 = Math.round(valHoraC * 2   * h100n);
-        const imponibleSinGratif = base + bonoa + montoH50 + montoH100;
-        const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratif, cfg.imm);
+        // Proporcionalizar TODO según días trabajados (excepto HE)
+        const diasMesP = new Date(parseInt(periodo.split("-")[0]), parseInt(periodo.split("-")[1]), 0).getDate() || 30;
+        const diasTrabP = parseFloat(document.getElementById("nv-dtrab-"+empDocId)?.value) || diasMesP;
+        const factorP = diasTrabP < diasMesP ? (diasTrabP / diasMesP) : 1;
+        const propBaseP  = Math.round(base   * factorP);
+        const propBonoaP = Math.round(bonoa  * factorP);
+        const propColP   = Math.round(col    * factorP);
+        const propMovP   = Math.round(mov    * factorP);
+        const propViatP  = Math.round(viat   * factorP);
+        // Factor HE configurable: 0.00777778 ya incluye ×1.5 (DT Chile)
+        const factorHE50p  = parseFloat(cfg?.factor_he50  || 0.00824239);
+        const factorHE100p = parseFloat(cfg?.factor_he100 || 0.01098986);
+        const montoH50  = Math.round(base * factorHE50p  * h50n);
+        const montoH100 = Math.round(base * factorHE100p * h100n);
+        const imponibleSinGratif = propBaseP + propBonoaP + montoH50 + montoH100;
+        const gratif = calcGratificacionLegal(imponibleSinGratif, tipoGratif, cfg.imm, diasTrabP || 30);
         const totalImpon = imponibleSinGratif + gratif;
-        const totalNoImpon = col + mov + viat;
+        const totalNoImpon = propColP + propMovP + propViatP;
         const totalHab = totalImpon + totalNoImpon;
         const baseAfp = calcBaseTopeAfp(totalImpon, cfg);
         const afpPct = getAfpPctTrabajador(afp, cfg);
@@ -7806,7 +7900,7 @@ Si necesita clave, edita el cliente y agrega una.`;
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                 <div class="pc2-avatar">${inicial}</div>
-                <button class="pc2-salir" onclick="auth.signOut()">Salir</button>
+                <!-- Botón Salir oculto — usar "Cerrar sesión" del header ERP -->
               </div>
             </div>
           </div>
@@ -8551,7 +8645,8 @@ Si necesita clave, edita el cliente y agrega una.`;
       const periodoTexto = yy && mm ? `${meses[parseInt(mm)-1]} de ${yy}` : (r.periodo||"—");
       // Calcular tope imponible (UF aprox)
       const tope = Math.round(r.total_imponible||0);
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="color-scheme" content="light">
+        <style>html,body{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}</style>
         <title>Liquidación ${r.periodo}</title>
         <style>
           *{box-sizing:border-box;margin:0;padding:0}
@@ -8584,7 +8679,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           .cert-row{display:flex;align-items:center;gap:18px;margin-top:20px;
             background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px 14px}
           .cert-txt{font-size:10px;color:#555;line-height:1.5;max-width:400px}
-          @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+          @media print{@page{size:A4;margin:16mm}body{padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}
         </style></head><body>
 
         <div class="hdr">
@@ -8922,7 +9017,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           .firma-box{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px}
           .firma{text-align:center;width:220px}
           .firma-line{border-top:1.5px solid #333;padding-top:8px;font-size:10px;color:#333;margin-top:56px;line-height:1.5}
-          @media print{@page{size:A4;margin:15mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+          @media print{@page{size:A4;margin:15mm}body{padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}
         </style></head><body>
 
         <div class="hdr">
@@ -8995,7 +9090,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px}
         .firma{text-align:center;width:220px}
         .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
-        @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
+        @media print{@page{size:A4;margin:16mm}body{padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}</style></head><body>
 
         <div class="hdr">
           <div><h1>Comprobante de Vacaciones</h1><p style="font-size:11px;color:#555">${empresa.nombre||"—"} · RUT: ${empresa.rut||"—"}</p></div>
@@ -9053,7 +9148,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px}
         .firma{text-align:center;width:220px}
         .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
-        @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
+        @media print{@page{size:A4;margin:16mm}body{padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}</style></head><body>
 
         <div class="hdr">
           <div><h1>${esAnticipo?"Comprobante de Anticipo de Sueldo":"Comprobante de Permiso Administrativo"}</h1>
@@ -10712,13 +10807,13 @@ Si necesita clave, edita el cliente y agrega una.`;
           .kpi2-l{font-size:8.5px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-top:1px}
           .hab-desc{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
           table{width:100%;border-collapse:collapse}
-          table th{background:#1b4332;color:#fff;padding:6px 8px;text-align:left;font-size:9.5px;font-weight:700}
+          table th{background:#1b4332 !important;color:#fff !important;padding:6px 8px;text-align:left;font-size:9.5px;font-weight:700;-webkit-print-color-adjust:exact !important}
           table td{padding:5px 8px;border-bottom:1px solid #f0f0f0;font-size:10.5px}
           table td:last-child{text-align:right;font-weight:600}
           tr.subtot td{background:#f0fdf4;font-weight:800;border-top:1.5px solid #86efac}
           tr.subtot td:last-child{color:#1b4332}
           tr.nogimp td{color:#0ea5e9}
-          .alcance{background:#1b4332;color:#fff;border-radius:8px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+          .alcance{background:#1b4332 !important;color:#fff !important;border-radius:8px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;-webkit-print-color-adjust:exact !important}
           .alcance-lbl{font-size:13px;font-weight:700}
           .alcance-val{font-size:24px;font-weight:900}
           .cert-caja{display:flex;align-items:flex-start;gap:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin-bottom:16px}
@@ -10731,6 +10826,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           .firma-img{height:38px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;}
           @media print{
             @page{size:A4;margin:14mm}
+            html,body,*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
             body{padding:0}
             -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;
             -webkit-print-color-adjust:exact !important;
@@ -11271,7 +11367,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       { cod: 5564, hdr: "Total indemnizaciones tributables(5564)" }
     ];
     function buildFilaLRE(r, emp, empresa, periodo) {
-      const diasMes = calcDiasMesPeriodo(periodo);
+      const diasMes = 30; // Chile: mes comercial siempre 30 días
       const region = mapRegionCodigoDT(empresa.region || empresa.direccion_region);
       const comuna = empresa.comuna_codigo_dt || "13101";
       const mutual = empresa.config_rem?.mutual || "achs";
@@ -11855,7 +11951,10 @@ Si necesita clave, edita el cliente y agrega una.`;
         if (cfg.afp_modelo) document.getElementById("cfg-afp-modelo").value = cfg.afp_modelo;
         if (cfg.afp_uno) document.getElementById("cfg-afp-uno").value = cfg.afp_uno;
         const s = (id,v) => { const el = document.getElementById(id); if(el && v!==undefined) el.value = v; };
-        s("cfg-sis", cfg.sis); s("cfg-af-a", cfg.af_tramo_a); s("cfg-af-b", cfg.af_tramo_b);
+        s("cfg-sis", cfg.sis);
+        s("cfg-factor-he50",  cfg.factor_he50);
+        s("cfg-factor-he100", cfg.factor_he100);
+        s("cfg-af-a", cfg.af_tramo_a); s("cfg-af-b", cfg.af_tramo_b);
         s("cfg-af-c", cfg.af_tramo_c); s("cfg-af-d", cfg.af_tramo_d);
         s("cfg-afc-ind-trab", cfg.afc_ind_trab); s("cfg-afc-ind-emp", cfg.afc_ind_emp);
         s("cfg-afc-pf-emp", cfg.afc_pf_emp); s("cfg-imm-men", cfg.imm_menores); s("cfg-imm-casa", cfg.imm_casa);
@@ -11917,6 +12016,8 @@ Si necesita clave, edita el cliente y agrega una.`;
           afp_modelo: parseFloat(document.getElementById("cfg-afp-modelo")?.value)||10.58,
           afp_uno: parseFloat(document.getElementById("cfg-afp-uno")?.value)||10.46,
           sis: parseFloat(document.getElementById("cfg-sis")?.value)||1.62,
+          factor_he50:  parseFloat(document.getElementById("cfg-factor-he50")?.value)||0.00824239,  // 42 hrs default 2026
+          factor_he100: parseFloat(document.getElementById("cfg-factor-he100")?.value)||0.01098986, // 42 hrs default 2026
           af_tramo_a: parseFloat(document.getElementById("cfg-af-a")?.value)||22007,
           af_tramo_b: parseFloat(document.getElementById("cfg-af-b")?.value)||13505,
           af_tramo_c: parseFloat(document.getElementById("cfg-af-c")?.value)||4267,
@@ -12073,7 +12174,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         .firma-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:70px}
         .firma{text-align:center;width:220px}
         .firma-line{border-top:1.5px solid #333;padding-top:8px;margin-top:56px;font-size:10px;color:#333;line-height:1.5}
-        @media print{@page{size:A4;margin:16mm}body{padding:0}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
+        @media print{@page{size:A4;margin:16mm}body{padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}</style></head><body>
         <div class="hdr">${logoH}<h1>${doc.nombre}</h1><div style="font-size:10px;color:#666;text-align:right">${ciudad}<br>${hoy}</div></div>
         <p>${cuerpoFinal.replace(/\n/g,"</p><p>")}</p>
         <div class="firma-row">
@@ -12840,6 +12941,30 @@ Si necesita clave, edita el cliente y agrega una.`;
       setTimeout(function(){ w.print(); }, 600);
     };
 
+
+    // ── Auto-rellenar factores HE según jornada seleccionada ──
+    window.cfgAutoFactoresHE = (jornada) => {
+      const FACTORES = {
+        "40": { he50: 0.00865451, he100: 0.01153935 },
+        "42": { he50: 0.00824239, he100: 0.01098986 },
+        "44": { he50: 0.00786774, he100: 0.01049032 },
+        "45": { he50: 0.00769290, he100: 0.01025720 },
+      };
+      if (!jornada || jornada === "custom") return; // manual — no modificar
+      const f = FACTORES[jornada];
+      if (!f) return;
+      const el50  = document.getElementById("cfg-factor-he50");
+      const el100 = document.getElementById("cfg-factor-he100");
+      if (el50)  el50.value  = f.he50;
+      if (el100) el100.value = f.he100;
+      // Mostrar confirmación
+      const msg = document.getElementById("cfg-valores-msg");
+      if (msg) {
+        msg.style.color = "var(--c-accent)";
+        msg.textContent = `✓ Factores actualizados para jornada ${jornada} hrs. Recuerda guardar.`;
+        setTimeout(()=>{ if(msg) msg.textContent=""; }, 3000);
+      }
+    };
   })();
   </script>
 </body>
