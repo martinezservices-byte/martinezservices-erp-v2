@@ -4871,7 +4871,7 @@ Clave: ${clavePortal}`);
       snap.forEach(d => {
         const r = d.data();
         const eCls = {vigente:"green",vencido:"red",terminado:"gray"}[r.estado]||"gray";
-        const tipoLabel = TIPOS_LABEL[r.tipo]||r.tipo||"—";
+        const tipoLabel = r.tipo_label || TIPOS_LABEL[r.tipo]||r.tipo||"—";
         const esAnexo = (r.tipo||"").startsWith("anexo");
         const esOtro  = ["finiquito","carta_amonestacion","acuerdo_confidencialidad","otro"].includes(r.tipo);
         tb.innerHTML += `<tr>
@@ -4962,11 +4962,22 @@ Clave: ${clavePortal}`);
       // Generar CSV único (función local por si pc2GenerarCSV no está en scope)
       const _genCSV = () => { const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s=""; for(let i=0;i<8;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; };
       const csv_doc = (typeof pc2GenerarCSV === 'function') ? pc2GenerarCSV() : _genCSV();
-      await db.collection("contratos").doc(docId).update({
+      // Asegurar que empleado_id esté guardado para que el portal pueda encontrarlo
+      const updateData = {
         requiere_firma_trab: true,
         csv_documento: csv_doc,
         fecha_envio_firma: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      };
+      // Si no tiene empleado_id, intentar agregarlo
+      if (!r.empleado_id && r.rut) {
+        try {
+          const empSnap = await db.collection("empleados")
+            .where("entityId","==",empId)
+            .where("rut","==",r.rut).limit(1).get();
+          if (!empSnap.empty) updateData.empleado_id = empSnap.docs[0].id;
+        } catch(e3) {}
+      }
+      await db.collection("contratos").doc(docId).update(updateData);
       renderRRHH_Contratos(document.getElementById("module-dynamic-zone"), empId);
       
       const toast = document.createElement("div");
@@ -5179,6 +5190,29 @@ Clave: ${clavePortal}`);
     }
     window.aprobarVac = async (docId, empId) => {
       await db.collection("vacaciones").doc(docId).update({estado:"aprobada"});
+      // Crear comprobante en contratos para historial y firma digital
+      try {
+        const vd = await db.collection("vacaciones").doc(docId).get();
+        const vr = vd.exists ? vd.data() : {};
+        await db.collection("contratos").add({
+          entityId:    empId,
+          empleado_id: vr.empleado_id || vr.solicitud_uid || "",
+          nombre:      vr.nombre || "—",
+          rut:         vr.rut || "—",
+          cargo:       vr.cargo || "—",
+          tipo:        "otro",
+          tipo_label:  "📅 Comprobante de Vacaciones",
+          doc_origen:  "vacaciones",
+          doc_origen_id: docId,
+          fecha_inicio: vr.fecha_inicio || "",
+          fecha_fin:    vr.fecha_fin || "",
+          dias_aprobados: vr.dias_solicitados || 0,
+          estado:      "vigente",
+          requiere_firma_trab: true,
+          firmado_trab: false,
+          creado:      firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch(e2) { console.warn("No se pudo crear comprobante:", e2); }
       renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
     };
     window.rechazarVac = async (docId, empId) => {
@@ -8357,11 +8391,27 @@ Si necesita clave, edita el cliente y agrega una.`;
       const sec = document.getElementById("pc2-sec-perfil");
       if (sec) { sec.dataset.empDocId = empDocId; sec.dataset.empId = empId; }
       try {
-        const snap = await db.collection("contratos")
-          .where("empleado_id","==",empDocId)
-          .where("requiere_firma_trab","==",true)
-          .where("firmado_trab","!=",true)
-          .limit(10).get();
+        // Cargar datos del empleado para tener el RUT
+        let empRut = "";
+        try {
+          const empDoc = await db.collection("empleados").doc(empDocId).get();
+          if (empDoc.exists) empRut = empDoc.data().rut || "";
+        } catch(e2) {}
+        // Buscar contratos pendientes de firma por empleado_id O por RUT
+        const [snapEmp, snapRut] = await Promise.all([
+          db.collection("contratos")
+            .where("empleado_id","==",empDocId)
+            .where("requiere_firma_trab","==",true)
+            .limit(20).get(),
+          empRut ? db.collection("contratos")
+            .where("rut","==",empRut)
+            .where("requiere_firma_trab","==",true)
+            .limit(10).get() : Promise.resolve({ docs: [] })
+        ]);
+        const docsMap = {};
+        [...snapEmp.docs, ...snapRut.docs].forEach(d => { docsMap[d.id] = d; });
+        const snap = { docs: Object.values(docsMap).filter(d => !d.data().firmado_trab), empty: false };
+        snap.empty = snap.docs.length === 0;
 
         if (snap.empty) {
           cont.innerHTML = `<div style="text-align:center;padding:14px;color:#6b7280;font-size:12px;">✅ Sin documentos pendientes de firma</div>`;
@@ -8872,31 +8922,75 @@ Si necesita clave, edita el cliente y agrega una.`;
       const ing = emp.fecha_ingreso ? new Date(emp.fecha_ingreso+"T12:00:00") : null;
       const mesesTotal = ing ? Math.floor((hoy-ing)/2629800000) : 0;
       const años = Math.floor(mesesTotal/12); const meses = mesesTotal%12;
+      const fechaStr = hoy.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+      const ciudad = empresa.ciudad || "Alto Hospicio";
       const logoH = empresa.logo_url
-        ? `<img src="${empresa.logo_url}" style="height:50px;object-fit:contain;">`:"";
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Certificado Antigüedad</title>
-        <style>body{font-family:Arial;font-size:12px;padding:50px;max-width:700px;margin:0 auto}
-        h1{font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:1px;color:#1b4332}
-        p{line-height:1.9;margin-bottom:12px}
-        .firma{margin-top:60px;border-top:1px solid #000;width:200px;padding-top:6px;font-size:10px}
-        @media print{@page{size:A4;margin:20mm}-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}</style></head><body>
-        <div style="text-align:center;border-bottom:2px solid #1b4332;padding-bottom:14px;margin-bottom:22px">
+        ? `<img src="${empresa.logo_url}" style="height:52px;object-fit:contain;" onerror="this.remove()">`
+        : `<div style="width:52px;height:52px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900;">${(empresa.nombre||"E").charAt(0)}</div>`;
+      const firmaEmpImg = empresa.firma_url
+        ? `<img src="${empresa.firma_url}" style="height:44px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">` : "";
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <meta name="color-scheme" content="light">
+        <title>Certificado Antigüedad — ${emp.nombre||""}</title>
+        <style>
+          *{box-sizing:border-box;margin:0;padding:0}
+          body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:44px;max-width:760px;margin:0 auto}
+          .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b4332;padding-bottom:16px;margin-bottom:28px}
+          h1{font-size:16px;font-weight:800;text-align:center;text-transform:uppercase;letter-spacing:1.5px;color:#1b4332;margin-bottom:6px}
+          .sub{text-align:center;font-size:11px;color:#6b7280}
+          p{line-height:1.8;margin-bottom:14px;text-align:justify}
+          .firmas{margin-top:70px;display:flex;justify-content:space-between;align-items:flex-end}
+          .firma-box{text-align:center;width:44%}
+          .firma-line{border-top:1.5px solid #374151;padding-top:8px;margin-top:6px}
+          .firma-label{font-size:11px;font-weight:700;color:#1b4332}
+          .firma-sub{font-size:10px;color:#6b7280;margin-top:3px}
+          .footer{margin-top:36px;border-top:1px solid #e5e7eb;padding-top:10px;text-align:center;font-size:9px;color:#9ca3af}
+          @media print{
+            @page{size:A4;margin:18mm}
+            body{padding:0}
+            html,body,*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+          }
+        </style></head><body>
+        <div class="hdr">
           ${logoH}
-          <h1>Certificado de Antigüedad Laboral</h1>
-          <p style="font-size:11px;color:#555;margin:0">${empresa.nombre||"—"} · RUT: ${empresa.rut||"—"}</p>
+          <div style="flex:1;text-align:center;padding:0 16px">
+            <h1>Certificado de Antigüedad Laboral</h1>
+            <p class="sub" style="margin:0">${empresa.nombre||"—"} · RUT: ${empresa.rut||"—"}</p>
+          </div>
+          <div style="font-size:10px;color:#6b7280;text-align:right">${fechaStr}</div>
         </div>
+
         <p>Por medio del presente documento, <strong>${empresa.nombre||"—"}</strong> certifica que:</p>
-        <p><strong>${emp.nombre||"—"}</strong>, RUT <strong>${emp.rut||"—"}</strong>, se desempeña en el cargo de
-        <strong>${emp.cargo||"—"}</strong> con contrato <strong>${emp.tipo_contrato||"indefinido"}</strong>.</p>
-        <p>Su fecha de ingreso es el <strong>${emp.fecha_ingreso||"—"}</strong>, acumulando a la fecha
-        <strong>${años} año(s) y ${meses} mes(es)</strong> de antigüedad (${mesesTotal} meses totales).</p>
+
+        <p><strong>${emp.nombre||"—"}</strong>, RUT <strong>${emp.rut||"—"}</strong>, se desempeña en el cargo de <strong>${emp.cargo||"—"}</strong> con contrato <strong>${emp.tipo_contrato||"indefinido"}</strong>.</p>
+
+        <p>Su fecha de ingreso es el <strong>${emp.fecha_ingreso||"—"}</strong>, acumulando a la fecha <strong>${años} año(s) y ${meses} mes(es)</strong> de antigüedad (${mesesTotal} meses totales).</p>
+
         <p>Su remuneración base mensual es de <strong>${fmt(emp.sueldo_base)}</strong>.</p>
-        <p>Se extiende a solicitud del interesado, en Alto Hospicio, a
-        ${hoy.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"})}.</p>
-        <div style="margin-top:50px;display:flex;gap:60px">
-          <div class="firma">Firma Empleador<br><span style="color:#555">${empresa.nombre||"—"}</span></div>
-          <div class="firma">Firma Colaborador<br><span style="color:#555">${emp.nombre||"—"}</span></div>
-        </div></body></html>`;
+
+        <p>Se extiende a solicitud del interesado, en ${ciudad}, a ${fechaStr}.</p>
+
+        <div class="firmas">
+          <div class="firma-box">
+            ${firmaEmpImg}
+            <div class="firma-line">
+              <div class="firma-label">Firma Empleador</div>
+              <div class="firma-sub">${empresa.nombre||"—"}</div>
+              <div class="firma-sub">RUT: ${empresa.rut||"—"}</div>
+              ${empresa.rep_legal_nombre ? `<div class="firma-sub">${empresa.rep_legal_nombre}</div>` : ""}
+            </div>
+          </div>
+          <div class="firma-box">
+            <div class="firma-line">
+              <div class="firma-label">Firma Colaborador</div>
+              <div class="firma-sub">${emp.nombre||"—"}</div>
+              <div class="firma-sub">RUT: ${emp.rut||"—"}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">Certificado generado por Martinez Services ERP · ${new Date().toLocaleString("es-CL")}</div>
+        </body></html>`;
       const w = window.open("","_blank"); w.document.write(html); w.document.close();
       setTimeout(()=>w.print(), 600);
     };
@@ -9061,7 +9155,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         carta_amonestacion:"Carta de Amonestación", acuerdo_confidencialidad:"Acuerdo de Confidencialidad",
         otro:"Documento Contractual"
       };
-      const tipoDoc = tipos[r.tipo]||r.tipo||"Indefinido";
+      const tipoDoc = TIPOS_LABEL[r.tipo]||r.tipo||"Indefinido";
       const tituloPDF = TIPOS_LABEL[r.tipo]||"Contrato Individual de Trabajo";
       const esAnexo = (r.tipo||"").startsWith("anexo");
       const esOtro  = ["finiquito","carta_amonestacion","acuerdo_confidencialidad","otro"].includes(r.tipo);
@@ -10496,8 +10590,14 @@ Si necesita clave, edita el cliente y agrega una.`;
         };
         reader.readAsDataURL(file);
       }
-      document.getElementById("ec-logo-file").onchange  = () => ec_fileToBase64("ec-logo-file","ec-logo","ec-logo-prev-img");
-      document.getElementById("ec-firma-file").onchange = () => ec_fileToBase64("ec-firma-file","ec-firma","ec-firma-prev-img");
+      // Conectar file inputs después de insertar en DOM
+      const logoInput  = document.getElementById("ec-logo-file");
+      const firmaInput = document.getElementById("ec-firma-file");
+      if (logoInput)  logoInput.onchange  = () => ec_fileToBase64("ec-logo-file","ec-logo","ec-logo-prev-img");
+      if (firmaInput) firmaInput.onchange = () => ec_fileToBase64("ec-firma-file","ec-firma","ec-firma-prev-img");
+      // También conectar via inline para redundancia
+      if (logoInput)  logoInput.addEventListener("change", () => ec_fileToBase64("ec-logo-file","ec-logo","ec-logo-prev-img"));
+      if (firmaInput) firmaInput.addEventListener("change", () => ec_fileToBase64("ec-firma-file","ec-firma","ec-firma-prev-img"));
       document.getElementById("btn-save-ec").onclick = async () => {
         const nombre = document.getElementById("ec-nombre").value.trim();
         if (!nombre) { document.getElementById("ec-msg").textContent="El nombre es obligatorio"; return; }
@@ -12456,7 +12556,13 @@ Si necesita clave, edita el cliente y agrega una.`;
             <td>${r.periodo||"—"}</td>
             <td><span class="badge badge-${r.origen==="portal"?"warn":"gray"}" style="font-size:10px">${r.origen==="portal"?"🔗 Portal":"✏️ Manual"}</span></td>
             <td><span class="badge badge-${r.procesado?"green":"warn"}" style="font-size:10px">${r.procesado?"✅ Procesado":"⏳ Pendiente"}</span></td>
-            <td><button onclick="deleteMov('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;" ${r.procesado?"disabled":""}>🗑</button></td>
+            <td style="display:flex;gap:4px;flex-wrap:wrap;">
+              <button onclick="editarMov('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;" title="Editar">✏️</button>
+              <button onclick="toggleActivoMov('${d.id}','${r.estado||"activo"}','${empId}')"
+                style="background:none;border:1px solid ${r.estado==='inactivo'?'var(--c-accent)':'#d97706'};color:${r.estado==='inactivo'?'var(--c-accent)':'#d97706'};padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;"
+                title="${r.estado==='inactivo'?'Reactivar':'Desactivar'}">${r.estado==='inactivo'?'▶️ Activar':'⏸ Pausar'}</button>
+              <button onclick="deleteMov('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:3px 7px;border-radius:4px;cursor:pointer;font-size:11px;" title="Eliminar">🗑</button>
+            </td>
           </tr>`;
         });
       };
@@ -12561,7 +12667,12 @@ Si necesita clave, edita el cliente y agrega una.`;
     };
 
     window.deleteMov = async (docId, empId) => {
-      if (!confirm("¿Eliminar este movimiento?")) return;
+      const d = await db.collection("movimientos_personal").doc(docId).get();
+      const r = d.exists ? d.data() : {};
+      const msg = r.procesado
+        ? "⚠️ Este movimiento ya fue procesado en una liquidación.\n¿Seguro que deseas eliminarlo? Podría afectar la coherencia contable."
+        : "¿Eliminar este movimiento?";
+      if (!confirm(msg)) return;
       await db.collection("movimientos_personal").doc(docId).delete();
       document.getElementById("btn-cargar-mov")?.click();
     };
@@ -12695,6 +12806,32 @@ Si necesita clave, edita el cliente y agrega una.`;
           estado: "activo",
           creado: firebase.firestore.FieldValue.serverTimestamp()
         });
+
+        // 4) Crear comprobante en contratos para historial y firma digital
+        try {
+          const solDoc = await db.collection(coleccion).doc(solicitudId).get();
+          const sol = solDoc.exists ? solDoc.data() : {};
+          const tipoLabel = TIPO_LABEL[tipo] || tipo;
+          const esVac = tipo === "vacaciones";
+          await db.collection("contratos").add({
+            entityId:    empId,
+            empleado_id: empDocId,
+            nombre:      emp.nombre || "—",
+            rut:         emp.rut || "—",
+            cargo:       emp.cargo || "—",
+            tipo:        "otro",
+            tipo_label:  `${esVac?"🏖️":"📅"} Comprobante de ${tipoLabel}`,
+            doc_origen:  coleccion,
+            doc_origen_id: solicitudId,
+            fecha_inicio: sol.fecha_inicio || sol.fecha || "",
+            fecha_fin:    sol.fecha_fin || "",
+            dias_aprobados: esVac ? Number(cantidad) : 0,
+            estado:      "vigente",
+            requiere_firma_trab: true,
+            firmado_trab: false,
+            creado:      firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } catch(e3) { console.warn("No se pudo crear comprobante en contratos:", e3); }
 
         // Recargar lista
         await cargarSolicitudesPend(empId);
@@ -13690,6 +13827,31 @@ Este finiquito se suscribe de conformidad al Artículo 177 del Código del Traba
           </div>
           </body></html>`;
 
+        // Guardar en colección contratos para historial y firma digital
+        try {
+          await db.collection("contratos").add({
+            entityId:    empId || emp.entityId,
+            empleado_id: empDocId,
+            nombre:      emp.nombre || "—",
+            rut:         emp.rut || "—",
+            cargo:       emp.cargo || "—",
+            tipo:        "otro",
+            tipo_label:  plt.nombre,
+            plantilla_id: plt.id,
+            fecha_inicio: hoy.toISOString().split("T")[0],
+            sueldo_base:  emp.sueldo_base || 0,
+            estado:      "vigente",
+            requiere_firma_trab: false,
+            firmado_trab: false,
+            creado:      firebase.firestore.FieldValue.serverTimestamp()
+          });
+          // Refrescar la vista de contratos si está abierta
+          const zone = document.getElementById("module-dynamic-zone");
+          if (zone && document.querySelector(".sidebar-item.active")?.textContent?.includes("Contrato")) {
+            renderRRHH_Contratos(zone, empId);
+          }
+        } catch(saveErr) { console.warn("No se pudo guardar en historial:", saveErr); }
+
         const w = window.open("", "_blank");
         w.document.write(html);
         w.document.close();
@@ -13744,6 +13906,75 @@ Este finiquito se suscribe de conformidad al Artículo 177 del Código del Traba
       document.body.appendChild(modal);
     };
 
+
+    // ── Editar movimiento del personal ──
+    window.editarMov = async (docId, empId) => {
+      const d = await db.collection("movimientos_personal").doc(docId).get();
+      if (!d.exists) { alert("No encontrado"); return; }
+      const r = d.data();
+      const esMonto = ["bono","aguinaldo","anticipo","prestamo"].includes(r.tipo);
+      const modal = document.createElement("div");
+      modal.id = "modal-edit-mov";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;";
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:460px;">
+          <div style="background:linear-gradient(135deg,var(--c-accent),#0ea5e9);padding:14px 18px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:800;color:#fff;">✏️ Editar Movimiento — ${r.nombre_emp||"—"}</div>
+            <button onclick="document.getElementById('modal-edit-mov').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;">✕</button>
+          </div>
+          <div style="padding:18px;">
+            <div style="font-size:11px;color:var(--c-muted);margin-bottom:12px;">Tipo: <strong>${r.tipo_label||r.tipo}</strong> · Período: <strong>${r.periodo}</strong></div>
+            <div style="margin-bottom:10px;">
+              <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">${esMonto?"Monto ($)":"Cantidad (días)"}</label>
+              <input id="em-valor" type="number" min="0" value="${esMonto?r.monto||0:r.cantidad||0}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:14px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Observación</label>
+              <input id="em-obs" type="text" value="${r.observacion||""}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+                <input type="checkbox" id="em-procesado" ${r.procesado?"checked":""} style="accent-color:var(--c-accent)">
+                Marcar como procesado (incluido en liquidación)
+              </label>
+            </div>
+            <button id="btn-save-mov-edit" class="btn-entrar" style="width:100%">💾 Guardar Cambios</button>
+            <p id="em-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      document.getElementById("btn-save-mov-edit").onclick = async () => {
+        const esMonto2 = ["bono","aguinaldo","anticipo","prestamo"].includes(r.tipo);
+        const valor = parseFloat(document.getElementById("em-valor").value)||0;
+        const obs   = document.getElementById("em-obs").value.trim();
+        const proc  = document.getElementById("em-procesado").checked;
+        try {
+          const upd = { observacion: obs, procesado: proc, actualizado: firebase.firestore.FieldValue.serverTimestamp() };
+          if (esMonto2) upd.monto = valor; else upd.cantidad = valor;
+          await db.collection("movimientos_personal").doc(docId).update(upd);
+          document.getElementById("em-msg").style.color = "var(--c-accent)";
+          document.getElementById("em-msg").textContent = "✓ Guardado.";
+          setTimeout(() => {
+            document.getElementById("modal-edit-mov")?.remove();
+            document.getElementById("btn-cargar-mov")?.click();
+          }, 700);
+        } catch(e) {
+          document.getElementById("em-msg").style.color = "var(--c-danger)";
+          document.getElementById("em-msg").textContent = "Error: "+e.message;
+        }
+      };
+    };
+
+    // ── Activar / Desactivar movimiento ──
+    window.toggleActivoMov = async (docId, estadoActual, empId) => {
+      const nuevoEstado = estadoActual === "inactivo" ? "activo" : "inactivo";
+      const msg = nuevoEstado === "inactivo"
+        ? "¿Desactivar este movimiento? No se incluirá en el próximo proceso de remuneraciones."
+        : "¿Reactivar este movimiento? Se incluirá en el próximo proceso de remuneraciones.";
+      if (!confirm(msg)) return;
+      await db.collection("movimientos_personal").doc(docId).update({ estado: nuevoEstado });
+      document.getElementById("btn-cargar-mov")?.click();
+    };
   })();
   </script>
 </body>
