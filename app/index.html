@@ -1636,7 +1636,7 @@
                 <button onclick="cfgFmtTab('cont')" id="cfgfmt-cont" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">📝 Contratos</button>
                 <button onclick="cfgFmtTab('vac')" id="cfgfmt-vac" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">🏖️ Vacaciones</button>
                 <button onclick="cfgFmtTab('perm')" id="cfgfmt-perm" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">📅 Permisos</button>
-                <button onclick="cfgFmtTab('custom')" id="cfgfmt-custom" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">➕ Nuevo Documento</button>
+                <button onclick="cfgFmtTab('custom')" id="cfgfmt-custom" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">📚 Biblioteca de Plantillas</button>
               </div>
 
               <!-- LIQUIDACIONES -->
@@ -1677,20 +1677,65 @@
                 <textarea id="cfg-texto-fin" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo. La firma implica la aceptación de todas las estipulaciones contenidas en él.</textarea></div>
               </div>
 
-              <!-- NUEVO DOCUMENTO PERSONALIZADO -->
+              <!-- BIBLIOTECA DE PLANTILLAS DE DOCUMENTOS -->
               <div id="cfgfmt-sec-custom" style="display:none;">
-                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Crear Nuevo Tipo de Documento Legal</div>
-                <p style="font-size:12px;color:var(--c-muted);margin-bottom:12px;">Define un documento personalizado (Anexo de Confidencialidad, Carta de Amonestación, Protocolo, etc.) que podrá generar en PDF desde las fichas del personal.</p>
-                <div id="lista-docs-custom" style="margin-bottom:14px;"></div>
-                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:14px;">
-                  <div style="font-size:12px;font-weight:700;color:var(--c-accent);margin-bottom:12px;">➕ Agregar Nuevo Tipo de Documento</div>
-                  <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Nombre del documento</label>
-                  <input id="custom-doc-nombre" type="text" placeholder="Ej: Carta de Amonestación, Anexo Confidencialidad..." style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"></div>
-                  <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Contenido / cuerpo del documento</label>
-                  <div style="font-size:10px;color:var(--c-muted);margin-bottom:4px;">Variables disponibles: <code>{{nombre}}</code> <code>{{rut}}</code> <code>{{cargo}}</code> <code>{{empresa}}</code> <code>{{fecha}}</code> <code>{{ciudad}}</code></div>
-                  <textarea id="custom-doc-cuerpo" rows="8" placeholder="En {{ciudad}}, a {{fecha}}, la empresa {{empresa}} notifica a don/ña {{nombre}}, RUT {{rut}}, cargo {{cargo}}, lo siguiente:&#10;&#10;[ESCRIBE AQUÍ EL CUERPO DEL DOCUMENTO]&#10;&#10;Se firma en conformidad." style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea></div>
-                  <button id="btn-save-custom-doc" class="btn-entrar" style="width:100%;">💾 Guardar Tipo de Documento</button>
-                  <p id="custom-doc-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:var(--c-accent);">📚 Biblioteca de Plantillas Laborales</div>
+                    <div style="font-size:11px;color:var(--c-muted);margin-top:2px">Todos los documentos precargados. Edita, elimina o agrega nuevos. Se generan en PDF con datos del trabajador.</div>
+                  </div>
+                  <button onclick="mostrarFormPlantilla()" class="btn-entrar" style="font-size:11px;padding:8px 14px;flex-shrink:0;">➕ Nueva Plantilla</button>
+                </div>
+
+                <!-- Variables disponibles -->
+                <div style="background:rgba(46,168,79,0.07);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:10px;margin-bottom:14px;font-size:11px;color:var(--c-muted);">
+                  <strong style="color:var(--c-accent)">Variables disponibles en el cuerpo del documento:</strong><br>
+                  <code style="font-size:10px">{{nombre}}</code> {{rut}} {{cargo}} {{empresa}} {{rut_empresa}} {{rep_legal}} {{rut_rep}} {{ciudad}} {{fecha}} {{sueldo_base}} {{fecha_inicio}} {{tipo_contrato}} {{jornada}} {{afp}} {{salud}}
+                </div>
+
+                <!-- Lista de plantillas -->
+                <div id="lista-plantillas-docs" style="margin-bottom:16px;"></div>
+
+                <!-- Formulario nueva/editar plantilla -->
+                <div id="form-plantilla-doc" style="display:none;background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:16px;">
+                  <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:14px;" id="form-plantilla-titulo">📝 Nueva Plantilla</div>
+                  <input type="hidden" id="plt-id">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-bottom:10px;">
+                    <div>
+                      <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Nombre del Documento *</label>
+                      <input id="plt-nombre" type="text" placeholder="Ej: Carta de Amonestación" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                    </div>
+                    <div>
+                      <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Categoría</label>
+                      <select id="plt-categoria" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;">
+                        <option value="contrato">Contratos</option>
+                        <option value="anexo">Anexos</option>
+                        <option value="carta">Cartas / Comunicaciones</option>
+                        <option value="certificado">Certificados</option>
+                        <option value="permiso">Permisos</option>
+                        <option value="finiquito">Finiquitos</option>
+                        <option value="reglamento">Reglamentos</option>
+                        <option value="formulario">Formularios / Fichas</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style="margin-bottom:10px;">
+                    <label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Cuerpo del Documento</label>
+                    <div style="font-size:10px;color:var(--c-muted);margin-bottom:4px;">Usa las variables para personalizar automáticamente: {{nombre}}, {{rut}}, {{cargo}}, {{empresa}}, {{fecha}}, {{ciudad}}, etc.</div>
+                    <textarea id="plt-cuerpo" rows="12" placeholder="En {{ciudad}}, a {{fecha}}, la empresa {{empresa}} (RUT {{rut_empresa}})...&#10;&#10;[ESCRIBE AQUÍ EL CUERPO]&#10;&#10;Se firma en conformidad." style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:10px;border-radius:var(--radius);outline:none;resize:vertical;line-height:1.6;"></textarea>
+                  </div>
+                  <div style="margin-bottom:12px;">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+                      <input type="checkbox" id="plt-requiere-firma" checked style="accent-color:var(--c-accent)">
+                      Requiere firmas (Firma Empleador + Firma Colaborador)
+                    </label>
+                  </div>
+                  <div style="display:flex;gap:8px;">
+                    <button onclick="guardarPlantilla()" class="btn-entrar" style="flex:1;">💾 Guardar Plantilla</button>
+                    <button onclick="document.getElementById('form-plantilla-doc').style.display='none'" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 18px;border-radius:var(--radius);cursor:pointer;">Cancelar</button>
+                  </div>
+                  <p id="plt-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
                 </div>
               </div>
 
@@ -3892,6 +3937,7 @@ Clave: ${clavePortal}`);
             <td style="white-space:nowrap">
               <button onclick="editEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;" title="Editar ficha">✏️</button>
               <button onclick="imprimirFichaEmpleado('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Ver ficha PDF">🖨️</button>
+              <button onclick="abrirSelectorPlantilla('${d.id}','${empId}')" style="background:none;border:1px solid #7c3aed;color:#7c3aed;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Generar documento laboral">📄 Doc</button>
               <button onclick="deleteEmpleado('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Eliminar">🗑</button>
             </td>
           </tr>`;
@@ -7343,7 +7389,7 @@ Si necesita clave, edita el cliente y agrega una.`;
             </div>
           </div>
           <div class="firma">
-            <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Firma Trabajador — ${r.nombre}</div></div>
+            <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Firma Colaborador — ${r.nombre}</div></div>
             <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Representante Legal — ${empresa.nombre||'Empresa'}</div></div>
           </div>
         </div>`;
@@ -7445,7 +7491,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           "</div>" +
         "</div>" +
         "<div class='firma'>" +
-          "<div class='fl'><div class='fl-line'>Firma del Trabajador<br>" + (r.nombre||"—") + "<br>RUT: " + (r.rut||"—") + "</div></div>" +
+          "<div class='fl'><div class='fl-line'>Firma del Colaborador<br>" + (r.nombre||"—") + "<br>RUT: " + (r.rut||"—") + "</div></div>" +
           "<div class='fl'><div class='fl-line'>Representante Legal<br>" + (empresa.nombre||"Empresa") + "<br>RUT: " + (empresa.rut||"—") + "</div></div>" +
         "</div></body></html>";
       const w = window.open("","_blank");
@@ -7500,7 +7546,7 @@ Si necesita clave, edita el cliente y agrega una.`;
       <div class="total"><h3>TOTAL A PAGAR POR FINIQUITO</h3><div class="monto">${fmt(r.monto_total)}</div></div>
       <div class="legal">El presente finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo. La firma del presente instrumento implica la aceptación de todas las estipulaciones contenidas en él, declarando el trabajador estar en pleno conocimiento de sus derechos. Este documento tiene mérito ejecutivo una vez firmado ante Notario Público o ante el Inspector del Trabajo.</div>
       <div class="firmas">
-        <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Firma Trabajador<br>${r.nombre||'—'}<br>RUT: ${r.rut||'—'}</div></div>
+        <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Firma Colaborador<br>${r.nombre||'—'}<br>RUT: ${r.rut||'—'}</div></div>
         <div class="firma-box"><div class="firma-line"></div><div class="firma-label">Representante Legal<br>Martinez Services SPA<br>RUT: 76.782.954-K</div></div>
       </div></body></html>`;
       const w = window.open('','_blank'); w.document.write(html); w.document.close();
@@ -8799,7 +8845,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         </div>
 
         <div class="firma-row">
-          <div class="firma-box">Firma Trabajador<br><span>${(emp.nombre||r.nombre||"—").toUpperCase()}</span></div>
+          <div class="firma-box">Firma Colaborador<br><span>${(emp.nombre||r.nombre||"—").toUpperCase()}</span></div>
           <div class="firma-box">Firma Empleador<br><span>${empresa.nombre||"—"}</span></div>
         </div>
 
@@ -8849,7 +8895,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         ${hoy.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"})}.</p>
         <div style="margin-top:50px;display:flex;gap:60px">
           <div class="firma">Firma Empleador<br><span style="color:#555">${empresa.nombre||"—"}</span></div>
-          <div class="firma">Firma Trabajador<br><span style="color:#555">${emp.nombre||"—"}</span></div>
+          <div class="firma">Firma Colaborador<br><span style="color:#555">${emp.nombre||"—"}</span></div>
         </div></body></html>`;
       const w = window.open("","_blank"); w.document.write(html); w.document.close();
       setTimeout(()=>w.print(), 600);
@@ -9070,7 +9116,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         ${clausulasExtra}
 
         <div class="firma-box">
-          <div class="firma"><div class="firma-line">Firma del Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div></div>
+          <div class="firma"><div class="firma-line">Firma del Colaborador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div></div>
           <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:40px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong><br>RUT: ${empresa.rut||"—"}</div></div>
         </div>
         </body></html>`;
@@ -9133,7 +9179,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         <p style="font-size:10px;color:#9ca3af;margin-top:6px">${pieVac}</p>
 
         <div class="firma-row">
-          <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${r.nombre||"—"}</strong></div></div>
+          <div class="firma"><div class="firma-line">Firma Colaborador/a<br><strong>${r.nombre||"—"}</strong></div></div>
           <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:38px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Jefatura / RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
         </div>
         <p style="font-size:8px;color:#9ca3af;text-align:center;margin-top:20px">Emitido: ${hoy} · Martinez Services ERP</p>
@@ -9193,7 +9239,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         <p style="font-size:11px;color:#555;line-height:1.6">${textoPerm}</p>
 
         <div class="firma-row">
-          <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${r.nombre||"—"}</strong></div></div>
+          <div class="firma"><div class="firma-line">Firma Colaborador/a<br><strong>${r.nombre||"—"}</strong></div></div>
           <div class="firma">${empresa.firma_url?`<img src="${empresa.firma_url}" style="height:38px;object-fit:contain;display:block;margin:0 auto 4px;" onerror="this.remove()">`:""}<div class="firma-line">Autorizado por RRHH<br><strong>${empresa.nombre||"—"}</strong></div></div>
         </div>
         <p style="font-size:8px;color:#9ca3af;text-align:center;margin-top:20px">Emitido: ${hoy} · Martinez Services ERP</p>
@@ -10949,7 +10995,7 @@ Si necesita clave, edita el cliente y agrega una.`;
 
         <div class="firma-row">
           <div class="firma">
-            <div class="firma-line">Firma Trabajador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div>
+            <div class="firma-line">Firma Colaborador<br><strong>${r.nombre||"—"}</strong><br>RUT: ${r.rut||"—"}</div>
           </div>
           <div class="firma">
             ${empresa.firma_url ? `<img src="${empresa.firma_url}" class="firma-img" onerror="this.remove()">` : ""}
@@ -12229,7 +12275,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         <div class="hdr">${logoH}<h1>${doc.nombre}</h1><div style="font-size:10px;color:#666;text-align:right">${ciudad}<br>${hoy}</div></div>
         <p>${cuerpoFinal.replace(/\n/g,"</p><p>")}</p>
         <div class="firma-row">
-          <div class="firma"><div class="firma-line">Firma Trabajador/a<br><strong>${empData.nombre||"—"}</strong><br>RUT: ${empData.rut||rut}</div></div>
+          <div class="firma"><div class="firma-line">Firma Colaborador/a<br><strong>${empData.nombre||"—"}</strong><br>RUT: ${empData.rut||rut}</div></div>
           <div class="firma"><div class="firma-line">Representante Legal<br><strong>${empresa.nombre||"—"}</strong></div></div>
         </div></body></html>`;
       const w = window.open("","_blank"); w.document.write(html); w.document.close();
@@ -12890,7 +12936,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         "</div>" +
         "<p style='margin-top:16px;font-size:11px;color:#555;text-align:justify'>El presente comprobante certifica la " + tipoDoc.toLowerCase() + " del trabajador señalado, según lo establecido en el Código del Trabajo de Chile y en conformidad a las normas internas de la empresa.</p>" +
         "<div class='firma-box'>" +
-          "<div class='firma'><div class='firma-line'>Firma del Trabajador<br><strong>" + (r.nombre||"—") + "</strong><br>RUT: " + (r.rut||"—") + "</div></div>" +
+          "<div class='firma'><div class='firma-line'>Firma del Colaborador<br><strong>" + (r.nombre||"—") + "</strong><br>RUT: " + (r.rut||"—") + "</div></div>" +
           "<div class='firma'><div class='firma-line'>Representante Legal<br><strong>" + (empresa.nombre||"Empresa") + "</strong><br>RUT: " + (empresa.rut||"—") + "</div></div>" +
         "</div>" +
         "</body></html>";
@@ -13020,6 +13066,684 @@ Si necesita clave, edita el cliente y agrega una.`;
         setTimeout(()=>{ if(msg) msg.textContent=""; }, 3000);
       }
     };
+
+    // ══════════════════════════════════════════════════════
+    // BIBLIOTECA DE PLANTILLAS — Documentos Laborales Chile
+    // ══════════════════════════════════════════════════════
+
+    // 19 plantillas precargadas basadas en documentos reales
+    const PLANTILLAS_DEFAULT = [
+      {
+        id: "plt_contrato_plazo_fijo",
+        nombre: "Contrato Plazo Fijo",
+        categoria: "contrato",
+        requiere_firma: true,
+        cuerpo: `En {{ciudad}}, a {{fecha}}, entre las personas individualizadas a continuación, denominadas "Colaborador" y "Empleador", se ha acordado el siguiente contrato individual de trabajo.
+
+I.- IDENTIFICACIÓN DE LAS PARTES
+
+Colaborador: {{nombre}} · RUT: {{rut}} · Cargo: {{cargo}}
+Empleador: {{empresa}} · RUT: {{rut_empresa}} · Representante Legal: {{rep_legal}}
+
+II.- FUNCIÓN O LABOR
+El Colaborador desempeñará la función de "{{cargo}}".
+
+III.- REMUNERACIONES
+Sueldo base mensual: {{sueldo_base}}
+
+IV.- VIGENCIA
+El presente contrato tendrá duración de PLAZO FIJO. Fecha inicio: {{fecha_inicio}}.
+
+V.- JORNADA
+La jornada de trabajo será de 42 horas semanales (Ley 21.561, vigente 2026).
+
+Se firma en dos ejemplares, declarando el Colaborador haber recibido copia de él.`
+      },
+      {
+        id: "plt_contrato_indefinido",
+        nombre: "Contrato Indefinido",
+        categoria: "contrato",
+        requiere_firma: true,
+        cuerpo: `En {{ciudad}}, a {{fecha}}, entre las personas individualizadas a continuación, denominadas "Colaborador" y "Empleador", se ha acordado el siguiente contrato individual de trabajo.
+
+I.- IDENTIFICACIÓN DE LAS PARTES
+
+Colaborador: {{nombre}} · RUT: {{rut}} · Cargo: {{cargo}}
+Empleador: {{empresa}} · RUT: {{rut_empresa}} · Representante Legal: {{rep_legal}}
+
+II.- FUNCIÓN O LABOR
+El Colaborador desempeñará la función de "{{cargo}}".
+
+III.- REMUNERACIONES
+Sueldo base mensual: {{sueldo_base}}
+
+IV.- VIGENCIA
+El presente contrato tendrá duración INDEFINIDA a partir del {{fecha_inicio}}.
+
+V.- JORNADA
+La jornada de trabajo será de 42 horas semanales (Ley 21.561, vigente 2026).
+
+Se firma en dos ejemplares, declarando el Colaborador haber recibido copia de él.`
+      },
+      {
+        id: "plt_contrato_dia",
+        nombre: "Contrato por Día / Obra",
+        categoria: "contrato",
+        requiere_firma: true,
+        cuerpo: `En {{ciudad}}, a {{fecha}}, la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, en adelante "Empleador", y don/ña {{nombre}}, RUT {{rut}}, en adelante "Colaborador", acuerdan el siguiente contrato por obra o faena determinada.
+
+LABOR: {{cargo}}
+REMUNERACIÓN DIARIA/OBRA: {{sueldo_base}}
+LUGAR DE TRABAJO: {{ciudad}}
+
+Las partes dejan constancia que este contrato termina al cumplirse la obra o faena para la cual fue contratado el Colaborador.
+
+Se firma en dos ejemplares, declarando el Colaborador haber recibido copia de él.`
+      },
+      {
+        id: "plt_anexo_cambio_sueldo_base",
+        nombre: "Anexo — Cambio Sueldo Base",
+        categoria: "anexo",
+        requiere_firma: true,
+        cuerpo: `ANEXO DE CONTRATO DE TRABAJO
+
+En {{ciudad}}, a {{fecha}}, entre la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, y don/ña {{nombre}}, RUT {{rut}}, cargo {{cargo}}, se acuerda lo siguiente:
+
+I. MODIFICACIÓN DEL SUELDO BASE
+
+Las partes declaran que han suscrito con anterioridad un contrato de trabajo que se encuentra plenamente vigente. El presente Anexo modifica la cláusula de Remuneraciones, estableciendo a contar de esta fecha:
+
+- Nuevo Sueldo Base mensual: {{sueldo_base}}
+
+Las partes declaran que esta modificación no afecta negativamente al Colaborador y se realiza con su consentimiento expreso.
+
+Se firma en dos ejemplares, declarando el Colaborador haber recibido copia de él.`
+      },
+      {
+        id: "plt_anexo_funciones",
+        nombre: "Anexo — Cambio de Funciones / Cargo",
+        categoria: "anexo",
+        requiere_firma: true,
+        cuerpo: `ANEXO DE CONTRATO DE TRABAJO
+
+En {{ciudad}}, a {{fecha}}, entre la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, y don/ña {{nombre}}, RUT {{rut}}, se acuerda lo siguiente:
+
+I. MODIFICACIÓN DE FUNCIONES
+
+Las partes declaran que han suscrito con anterioridad un contrato de trabajo vigente. El presente Anexo modifica la cláusula de Función o Labor, estableciendo que a partir de esta fecha el Colaborador cumplirá el cargo de:
+
+Nuevo Cargo: {{cargo}}
+
+Las partes declaran que esta modificación no afecta negativamente al Colaborador.
+
+Se firma en dos ejemplares.`
+      },
+      {
+        id: "plt_anexo_horario",
+        nombre: "Anexo — Cambio de Horario / Jornada",
+        categoria: "anexo",
+        requiere_firma: true,
+        cuerpo: `ANEXO DE CONTRATO DE TRABAJO
+
+En {{ciudad}}, a {{fecha}}, entre la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, y don/ña {{nombre}}, RUT {{rut}}, cargo {{cargo}}, se acuerda lo siguiente:
+
+I. MODIFICACIÓN DE JORNADA
+
+Las partes declaran que el contrato de trabajo suscrito con anterioridad se encuentra vigente. El presente Anexo modifica la jornada de trabajo a contar de esta fecha:
+
+Nueva Jornada: [DESCRIBIR HORARIO]
+Total horas semanales: 42 horas (Ley 21.561, vigente 2026).
+
+Sin embargo, el empleador podrá modificar eventualmente el horario, informando oportunamente al Colaborador.
+
+Se firma en dos ejemplares.`
+      },
+      {
+        id: "plt_anexo_direccion",
+        nombre: "Anexo — Cambio de Lugar de Trabajo",
+        categoria: "anexo",
+        requiere_firma: true,
+        cuerpo: `ANEXO DE CONTRATO DE TRABAJO
+
+En {{ciudad}}, a {{fecha}}, entre la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, y don/ña {{nombre}}, RUT {{rut}}, cargo {{cargo}}, se acuerda lo siguiente:
+
+I. MODIFICACIÓN LUGAR DE PRESTACIÓN DE SERVICIOS
+
+Las partes declaran que el contrato suscrito con anterioridad se encuentra vigente. El presente Anexo modifica el lugar de prestación de servicios a contar de esta fecha:
+
+Nuevo lugar de trabajo: [INDICAR DIRECCIÓN]
+
+Esta modificación se realiza de conformidad al Artículo 12 del Código del Trabajo.
+
+Se firma en dos ejemplares.`
+      },
+      {
+        id: "plt_anexo_bonos",
+        nombre: "Anexo — Incorporación de Bonos",
+        categoria: "anexo",
+        requiere_firma: true,
+        cuerpo: `ANEXO DE CONTRATO DE TRABAJO
+
+En {{ciudad}}, a {{fecha}}, entre la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, y don/ña {{nombre}}, RUT {{rut}}, cargo {{cargo}}, se acuerda lo siguiente:
+
+I. INCORPORACIÓN DE BONOS Y ASIGNACIONES
+
+Las partes declaran que el contrato de trabajo suscrito con anterioridad se encuentra vigente. A partir de la fecha del presente Anexo, se incorporan los siguientes beneficios:
+
+- Sueldo Base: {{sueldo_base}}
+- Bono de Responsabilidad: $[MONTO]
+- Asignación Movilización: $[MONTO]
+- Asignación Colación: $[MONTO]
+
+Las partes declaran que esta modificación no afecta negativamente al Colaborador y se realiza con su consentimiento.
+
+Se firma en dos ejemplares.`
+      },
+      {
+        id: "plt_anexo_firma_digital",
+        nombre: "Anexo — Uso Firma Digital y App",
+        categoria: "anexo",
+        requiere_firma: true,
+        cuerpo: `ANEXO DE CONTRATO DE TRABAJO
+Control de Asistencia y Documentación Laboral Electrónica
+
+En {{ciudad}}, a {{fecha}}, la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, y don/ña {{nombre}}, RUT {{rut}}, acuerdan lo siguiente:
+
+PRIMERO — ANTECEDENTES
+Conforme al Artículo 33 del Código del Trabajo y la Resolución Exenta N° 38 de la Dirección del Trabajo, se implementa un sistema de registro electrónico de asistencia y documentación laboral.
+
+SEGUNDO — OBJETIVO
+El Colaborador acepta el uso de firmas electrónicas y control de asistencia vía aplicación, en cumplimiento de la Ley N° 21.561.
+
+TERCERO — COMPROMISO
+El Colaborador se compromete a marcar su asistencia mediante el sistema, firmar digitalmente los documentos laborales que corresponda, y mantener sus datos de acceso en reserva.
+
+Se firma en dos ejemplares.`
+      },
+      {
+        id: "plt_carta_termino_necesidades",
+        nombre: "Carta Aviso Término Contrato — Art. 161",
+        categoria: "carta",
+        requiere_firma: true,
+        cuerpo: `{{ciudad}}, {{fecha}}
+
+Señor(a)
+{{nombre}}
+RUT: {{rut}}
+Presente.-
+
+Estimado/a Señor(a):
+
+Por medio de la presente, le comunicamos formalmente la decisión de poner término a su contrato de trabajo, suscrito con fecha {{fecha_inicio}}, con un plazo de 30 días de anticipación, en virtud de la causal establecida en el inciso primero del artículo 161 del Código del Trabajo: "Necesidades de la empresa, establecimiento o servicio".
+
+Los hechos que fundamentan la causal invocada son los siguientes:
+
+La empresa ha llevado a cabo una reestructuración de personal motivada por la actual situación económica y la disminución de la productividad, lo que ha hecho inevitable la desvinculación de sus servicios.
+
+Le informamos que el finiquito incluirá todas las prestaciones a que tenga derecho. Sus cotizaciones previsionales se encuentran al día.
+
+Agradecemos el aporte realizado durante su permanencia.`
+      },
+      {
+        id: "plt_carta_disponibilidad_finiquito",
+        nombre: "Carta Disponibilidad de Finiquito",
+        categoria: "carta",
+        requiere_firma: false,
+        cuerpo: `{{ciudad}}, {{fecha}}
+
+Señor(a)
+{{nombre}}
+RUT: {{rut}}
+Presente.-
+
+Estimado/a Señor(a):
+
+Por medio de la presente, se le informa que estará disponible su finiquito correspondiente a la terminación de su contrato de trabajo en la página web de la Dirección del Trabajo (DT).
+
+Deberá ingresar al portal y realizar el trámite para posterior cancelación en línea. Si no realiza el proceso, deberá contactarse con nosotros para coordinar la formalización en la notaría más cercana o en la Inspección del Trabajo.
+
+Le informamos que sus cotizaciones previsionales se encuentran debidamente canceladas de acuerdo a los períodos prestados en su contrato.
+
+Saluda a usted.`
+      },
+      {
+        id: "plt_carta_amonestacion",
+        nombre: "Carta de Amonestación",
+        categoria: "carta",
+        requiere_firma: true,
+        cuerpo: `{{ciudad}}, {{fecha}}
+
+Señor(a)
+{{nombre}}
+RUT: {{rut}} · Cargo: {{cargo}}
+Presente.-
+
+Por medio de la presente, la empresa {{empresa}} le hace llegar una amonestación formal por los siguientes hechos:
+
+HECHOS QUE MOTIVAN LA AMONESTACIÓN:
+[DESCRIBIR LA SITUACIÓN ESPECÍFICA]
+
+Los hechos descritos constituyen un incumplimiento de sus obligaciones laborales y de las normas internas de la empresa, de conformidad al Artículo 160 N°7 del Código del Trabajo.
+
+Se le advierte que la reiteración de conductas similares podrá dar lugar al término de su contrato de trabajo sin derecho a indemnización.
+
+La presente amonestación quedará registrada en su carpeta personal.
+
+Acuse de recibo: Declaro haber recibido y leído la presente carta.`
+      },
+      {
+        id: "plt_carta_consentimiento",
+        nombre: "Carta de Consentimiento",
+        categoria: "carta",
+        requiere_firma: true,
+        cuerpo: `{{ciudad}}, {{fecha}}
+
+CARTA DE CONSENTIMIENTO
+
+Yo, {{nombre}}, RUT {{rut}}, declaro que de manera voluntaria y sin coacción alguna, otorgo mi consentimiento para [DESCRIBIR EL OBJETO DEL CONSENTIMIENTO] en la empresa {{empresa}}, RUT {{rut_empresa}}.
+
+OBJETO: [DESCRIBIR]
+
+VIGENCIA: Desde [FECHA INICIO] hasta [FECHA TÉRMINO].
+
+Este consentimiento no modifica las condiciones establecidas en mi contrato de trabajo.
+
+Sin otro particular, y reafirmando mi acuerdo voluntario, firmo la presente en señal de conformidad.`
+      },
+      {
+        id: "plt_certificado_laboral",
+        nombre: "Certificado Laboral / Antigüedad",
+        categoria: "certificado",
+        requiere_firma: false,
+        cuerpo: `{{ciudad}}, {{fecha}}
+
+CERTIFICADO LABORAL
+
+La empresa {{empresa}}, RUT {{rut_empresa}}, certifica que el/la señor(a) {{nombre}}, RUT {{rut}}, se desempeña en el cargo de {{cargo}} desde el {{fecha_inicio}}, con contrato de trabajo vigente a {{tipo_contrato}}.
+
+Su remuneración base mensual es de {{sueldo_base}}.
+
+Se entrega el presente certificado para los fines que estime conveniente, sin posterior responsabilidad de la empresa.`
+      },
+      {
+        id: "plt_permiso_con_goce",
+        nombre: "Comprobante Permiso Con Goce de Sueldo",
+        categoria: "permiso",
+        requiere_firma: true,
+        cuerpo: `COMPROBANTE DE PERMISO CON GOCE DE SUELDO
+
+En cumplimiento a las disposiciones legales vigentes, se deja constancia que don/ña {{nombre}}, RUT {{rut}}, hará uso de un permiso CON GOCE de sueldo en el siguiente período:
+
+Fecha Inicio: [FECHA INICIO]
+Fecha Término: [FECHA TÉRMINO]
+
+[DESCRIPCIÓN DEL MOTIVO O ACUERDO]
+
+El presente permiso se otorga de conformidad a lo acordado entre las partes.`
+      },
+      {
+        id: "plt_permiso_sin_goce",
+        nombre: "Comprobante Permiso Sin Goce de Sueldo",
+        categoria: "permiso",
+        requiere_firma: true,
+        cuerpo: `COMPROBANTE DE PERMISO SIN GOCE DE SUELDO
+
+En cumplimiento a las disposiciones legales vigentes, se deja constancia que don/ña {{nombre}}, RUT {{rut}}, hará uso de un permiso SIN GOCE de sueldo en el siguiente período:
+
+Fecha Inicio: [FECHA INICIO]
+Fecha Término: [FECHA TÉRMINO]
+Hora Inicio: [HORA] hrs.
+
+Los días de ausencia serán descontados proporcionalmente de la remuneración del mes.
+
+El presente permiso se otorga de conformidad a lo acordado entre las partes.`
+      },
+      {
+        id: "plt_reglamento_interno",
+        nombre: "Acuse de Recibo Reglamento Interno (RIOHS)",
+        categoria: "reglamento",
+        requiere_firma: true,
+        cuerpo: `CONTROL DE ENTREGA Y TOMA DE CONOCIMIENTO
+REGLAMENTO INTERNO DE ORDEN, HIGIENE Y SEGURIDAD (RIOHS)
+
+Se deja expresa constancia, de acuerdo al Artículo 156 del Código del Trabajo y el DS N° 44 de la Ley 16.744, que:
+
+Yo, {{nombre}}, RUT {{rut}}, he recibido en forma gratuita un ejemplar del Reglamento Interno de Orden, Higiene y Seguridad de la empresa {{empresa}}.
+
+Declaro bajo mi firma haber recibido, leído y comprendido el presente Reglamento, del cual doy fe de conocer su contenido y me hago responsable de su estricto cumplimiento, no pudiendo alegar desconocimiento a contar de esta fecha.
+
+Cargo: {{cargo}} · Fecha: {{fecha}}
+
+Este comprobante se archivará en la carpeta personal del Colaborador.`
+      },
+      {
+        id: "plt_ficha_reclutamiento",
+        nombre: "Ficha de Reclutamiento / Ingreso",
+        categoria: "formulario",
+        requiere_firma: true,
+        cuerpo: `FICHA DE REGISTRO DE INGRESO — DEPARTAMENTO RRHH
+
+INFORMACIÓN PERSONAL
+Nombre completo: {{nombre}}
+RUT: {{rut}}
+Fecha de nacimiento: [FECHA]
+Estado civil: [ESTADO CIVIL]
+Nacionalidad: [NACIONALIDAD]
+Dirección: [DIRECCIÓN]
+Ciudad: {{ciudad}}
+Teléfono / Celular: [TELÉFONO]
+Correo electrónico: [CORREO]
+
+INFORMACIÓN PREVISIONAL
+AFP: {{afp}}
+Salud: {{salud}} — Plan (UF): [PLAN]
+Datos bancarios: [BANCO] — Cuenta: [N° CUENTA]
+
+CARGO Y CONDICIONES
+Cargo: {{cargo}}
+Tipo contrato: {{tipo_contrato}}
+Fecha de ingreso: {{fecha_inicio}}
+Sueldo base: {{sueldo_base}}
+
+TALLAS (si aplica)
+Pantalón: _____ | Polera: _____ | Overol: _____ | Calzado: _____
+
+Declaro que los datos informados son verídicos.`
+      },
+      {
+        id: "plt_finiquito",
+        nombre: "Finiquito de Contrato de Trabajo",
+        categoria: "finiquito",
+        requiere_firma: true,
+        cuerpo: `FINIQUITO DE CONTRATO DE TRABAJO
+
+En {{ciudad}}, a {{fecha}}, entre la empresa {{empresa}}, RUT {{rut_empresa}}, representada por {{rep_legal}}, y don/ña {{nombre}}, RUT {{rut}}, cargo {{cargo}}, se acuerda el siguiente finiquito:
+
+1. TÉRMINO DEL CONTRATO
+El contrato de trabajo termina en esta fecha, de conformidad al Artículo [ARTÍCULO] del Código del Trabajo.
+
+2. HABERES ADEUDADOS
+Feriado proporcional: $[MONTO]
+Indemnización por años de servicio: $[MONTO]
+Otros: $[MONTO]
+TOTAL A PAGAR: $[MONTO TOTAL]
+
+3. DECLARACIÓN FINAL
+Con el pago de los montos indicados, el Colaborador declara no tener cargo ni cobro alguno que efectuar en contra del Empleador, por cualquier concepto derivado de la relación laboral.
+
+Este finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo.`
+      },
+    ];
+
+    // ── Mostrar/ocultar formulario ──
+    window.mostrarFormPlantilla = (id) => {
+      const form = document.getElementById("form-plantilla-doc");
+      form.style.display = "block";
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (id) {
+        // Editar existente
+        db.collection("sistema_config").doc("plantillas").get().then(d => {
+          const plts = d.exists ? (d.data().lista || []) : [];
+          const plt = plts.find(p => p.id === id) || PLANTILLAS_DEFAULT.find(p => p.id === id);
+          if (!plt) return;
+          document.getElementById("plt-id").value = plt.id;
+          document.getElementById("plt-nombre").value = plt.nombre;
+          document.getElementById("plt-categoria").value = plt.categoria;
+          document.getElementById("plt-cuerpo").value = plt.cuerpo;
+          document.getElementById("plt-requiere-firma").checked = plt.requiere_firma !== false;
+          document.getElementById("form-plantilla-titulo").textContent = "✏️ Editar Plantilla";
+        });
+      } else {
+        document.getElementById("plt-id").value = "";
+        document.getElementById("plt-nombre").value = "";
+        document.getElementById("plt-cuerpo").value = "";
+        document.getElementById("plt-requiere-firma").checked = true;
+        document.getElementById("form-plantilla-titulo").textContent = "📝 Nueva Plantilla";
+      }
+    };
+
+    // ── Guardar plantilla ──
+    window.guardarPlantilla = async () => {
+      const nombre = document.getElementById("plt-nombre").value.trim();
+      const cuerpo = document.getElementById("plt-cuerpo").value.trim();
+      if (!nombre || !cuerpo) { alert("Completa nombre y cuerpo del documento."); return; }
+      const msg = document.getElementById("plt-msg");
+      msg.textContent = "Guardando…";
+      try {
+        const id = document.getElementById("plt-id").value || "plt_custom_" + Date.now();
+        const plt = {
+          id,
+          nombre,
+          categoria: document.getElementById("plt-categoria").value,
+          cuerpo,
+          requiere_firma: document.getElementById("plt-requiere-firma").checked,
+          personalizada: true,
+          fecha_mod: new Date().toISOString()
+        };
+        const d = await db.collection("sistema_config").doc("plantillas").get();
+        const lista = d.exists ? (d.data().lista || []) : [];
+        const idx = lista.findIndex(p => p.id === id);
+        if (idx >= 0) lista[idx] = plt; else lista.push(plt);
+        await db.collection("sistema_config").doc("plantillas").set({ lista });
+        msg.style.color = "var(--c-accent)";
+        msg.textContent = "✓ Plantilla guardada.";
+        document.getElementById("form-plantilla-doc").style.display = "none";
+        await cargarPlantillas();
+      } catch(e) {
+        msg.style.color = "var(--c-danger)";
+        msg.textContent = "Error: " + e.message;
+      }
+    };
+
+    // ── Eliminar plantilla ──
+    window.eliminarPlantilla = async (id) => {
+      if (!confirm("¿Eliminar esta plantilla? Solo se puede eliminar las personalizadas.")) return;
+      const d = await db.collection("sistema_config").doc("plantillas").get();
+      const lista = (d.exists ? (d.data().lista || []) : []).filter(p => p.id !== id);
+      await db.collection("sistema_config").doc("plantillas").set({ lista });
+      await cargarPlantillas();
+    };
+
+    // ── Cargar y mostrar lista ──
+    window.cargarPlantillas = async () => {
+      const cont = document.getElementById("lista-plantillas-docs");
+      if (!cont) return;
+      const d = await db.collection("sistema_config").doc("plantillas").get();
+      const personalizadas = d.exists ? (d.data().lista || []) : [];
+      // Merge: default + personalizadas (las personalizadas sobreescriben si mismo id)
+      const todas = [...PLANTILLAS_DEFAULT];
+      personalizadas.forEach(p => {
+        const idx = todas.findIndex(t => t.id === p.id);
+        if (idx >= 0) todas[idx] = p; else todas.push(p);
+      });
+
+      // Agrupar por categoría
+      const cats = { contrato:"📋 Contratos", anexo:"📎 Anexos", carta:"✉️ Cartas / Comunicaciones",
+        certificado:"🏆 Certificados", permiso:"📅 Permisos", finiquito:"📑 Finiquitos",
+        reglamento:"📘 Reglamentos", formulario:"📝 Formularios / Fichas", otro:"📄 Otros" };
+
+      let html = "";
+      Object.entries(cats).forEach(([cat, catLabel]) => {
+        const docs = todas.filter(p => p.categoria === cat);
+        if (!docs.length) return;
+        html += `<div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">${catLabel}</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            ${docs.map(p => `
+              <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:8px 12px;">
+                <div>
+                  <span style="font-size:12px;font-weight:600;">${p.nombre}</span>
+                  ${p.personalizada ? '<span style="font-size:9px;background:rgba(46,168,79,0.15);color:var(--c-accent);padding:2px 6px;border-radius:99px;margin-left:6px;font-weight:700;">PERSONALIZADA</span>' : ''}
+                  ${p.requiere_firma !== false ? '<span style="font-size:9px;color:var(--c-muted);margin-left:6px;">✍️ requiere firmas</span>' : ''}
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button onclick="mostrarFormPlantilla('${p.id}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);font-family:var(--font);font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer;">✏️ Editar</button>
+                  ${p.personalizada ? `<button onclick="eliminarPlantilla('${p.id}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);font-family:var(--font);font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer;">🗑</button>` : ''}
+                </div>
+              </div>`).join("")}
+          </div>
+        </div>`;
+      });
+      cont.innerHTML = html || "<div style='text-align:center;color:var(--c-muted);padding:20px;'>Sin plantillas</div>";
+    };
+
+    // Cargar plantillas cuando se abre la pestaña custom
+    const _origCfgFmtTab = window.cfgFmtTab;
+    window.cfgFmtTab = (tab) => {
+      if (_origCfgFmtTab) _origCfgFmtTab(tab);
+      if (tab === "custom") cargarPlantillas();
+    };
+
+    // ══════════════════════════════════════════════════════
+    // GENERAR PDF DE PLANTILLA PERSONALIZADA
+    // ══════════════════════════════════════════════════════
+    window.imprimirPlantillaPDF = async (plantillaId, empDocId, empId) => {
+      try {
+        // Cargar plantilla
+        let plt = PLANTILLAS_DEFAULT.find(p => p.id === plantillaId);
+        const d = await db.collection("sistema_config").doc("plantillas").get();
+        if (d.exists) {
+          const custom = (d.data().lista || []).find(p => p.id === plantillaId);
+          if (custom) plt = custom;
+        }
+        if (!plt) { alert("Plantilla no encontrada"); return; }
+
+        // Cargar datos del empleado
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const emp = empDoc.exists ? empDoc.data() : {};
+        const empresa = await getEmpresaActiva(empId) || {};
+
+        const hoy = new Date();
+        const fechaStr = hoy.toLocaleDateString("es-CL", { day:"numeric", month:"long", year:"numeric" });
+        const ciudadStr = empresa.ciudad || "Alto Hospicio";
+
+        // Reemplazar variables en el cuerpo
+        let cuerpo = plt.cuerpo
+          .replace(/{{nombre}}/g, emp.nombre || "—")
+          .replace(/{{rut}}/g, emp.rut || "—")
+          .replace(/{{cargo}}/g, emp.cargo || "—")
+          .replace(/{{empresa}}/g, empresa.nombre || "—")
+          .replace(/{{rut_empresa}}/g, empresa.rut || "—")
+          .replace(/{{rep_legal}}/g, empresa.rep_legal_nombre || "—")
+          .replace(/{{rut_rep}}/g, empresa.rep_legal_rut || "—")
+          .replace(/{{ciudad}}/g, ciudadStr)
+          .replace(/{{fecha}}/g, fechaStr)
+          .replace(/{{sueldo_base}}/g, emp.sueldo_base ? "$"+emp.sueldo_base.toLocaleString("es-CL") : "—")
+          .replace(/{{fecha_inicio}}/g, emp.fecha_ingreso || "—")
+          .replace(/{{tipo_contrato}}/g, emp.tipo_contrato || "—")
+          .replace(/{{jornada}}/g, emp.jornada || "42 hrs/semana")
+          .replace(/{{afp}}/g, emp.afp || "—")
+          .replace(/{{salud}}/g, emp.salud || "—");
+
+        // Convertir saltos de línea a párrafos HTML
+        const cuerpoHTML = cuerpo.split("\n\n").map(p =>
+          `<p style="margin-bottom:10px;line-height:1.6;">${p.replace(/\n/g, "<br>")}</p>`
+        ).join("");
+
+        const logoH = empresa.logo_url
+          ? `<img src="${empresa.logo_url}" style="height:48px;object-fit:contain;" onerror="this.remove()">`
+          : `<div style="width:48px;height:48px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;">${(empresa.nombre||"E").charAt(0)}</div>`;
+
+        const firmasHTML = plt.requiere_firma !== false ? `
+          <div style="margin-top:60px;display:flex;justify-content:space-between;align-items:flex-end;">
+            <div style="text-align:center;width:42%;">
+              ${empresa.firma_url ? `<img src="${empresa.firma_url}" style="height:44px;object-fit:contain;margin-bottom:4px;" onerror="this.remove()">` : ""}
+              <div style="border-top:1px solid #374151;padding-top:8px;margin-top:4px;">
+                <div style="font-size:11px;font-weight:700;color:#1b4332;">Firma Empleador</div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px;">${empresa.nombre || "—"}</div>
+                <div style="font-size:10px;color:#6b7280;">RUT: ${empresa.rut || "—"}</div>
+              </div>
+            </div>
+            <div style="text-align:center;width:42%;">
+              <div style="border-top:1px solid #374151;padding-top:8px;">
+                <div style="font-size:11px;font-weight:700;color:#1b4332;">Firma Colaborador</div>
+                <div style="font-size:10px;color:#6b7280;margin-top:2px;">${emp.nombre || "—"}</div>
+                <div style="font-size:10px;color:#6b7280;">RUT: ${emp.rut || "—"}</div>
+              </div>
+            </div>
+          </div>` : "";
+
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+          <style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto}
+            h1{font-size:16px;font-weight:800;text-align:center;color:#1b4332;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+            .sub{text-align:center;font-size:11px;color:#6b7280;margin-bottom:24px}
+            .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1b4332;padding-bottom:14px;margin-bottom:24px}
+            @media print{@page{size:A4;margin:16mm}body{padding:0}html,body,*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}
+          </style></head><body>
+          <div class="hdr">
+            ${logoH}
+            <div style="flex:1;text-align:center;padding:0 16px">
+              <h1>${plt.nombre}</h1>
+              <div class="sub">${empresa.nombre || "—"} · RUT ${empresa.rut || "—"}</div>
+            </div>
+            <div style="font-size:10px;color:#6b7280;text-align:right">${fechaStr}</div>
+          </div>
+          <div style="text-align:right;font-size:11px;color:#6b7280;margin-bottom:16px;border-bottom:1px solid #e5e7eb;padding-bottom:12px;">
+            ${ciudadStr}, ${fechaStr}
+          </div>
+          ${cuerpoHTML}
+          ${firmasHTML}
+          <div style="margin-top:40px;border-top:1px solid #e5e7eb;padding-top:10px;text-align:center;font-size:9px;color:#9ca3af;">
+            Documento generado por Martinez Services ERP · ${new Date().toLocaleString("es-CL")}
+          </div>
+          </body></html>`;
+
+        const w = window.open("", "_blank");
+        w.document.write(html);
+        w.document.close();
+        setTimeout(() => w.print(), 600);
+      } catch(e) {
+        alert("Error al generar PDF: " + e.message);
+      }
+    };
+    // ══════════════════════════════════════════════════════
+    // SELECTOR DE PLANTILLA — modal para elegir y generar doc
+    // ══════════════════════════════════════════════════════
+    window.abrirSelectorPlantilla = async (empDocId, empId) => {
+      const d = await db.collection("sistema_config").doc("plantillas").get();
+      const personalizadas = d.exists ? (d.data().lista || []) : [];
+      const todas = [...PLANTILLAS_DEFAULT];
+      personalizadas.forEach(p => {
+        const idx = todas.findIndex(t => t.id === p.id);
+        if (idx >= 0) todas[idx] = p; else todas.push(p);
+      });
+
+      const cats = { contrato:"📋 Contratos", anexo:"📎 Anexos", carta:"✉️ Cartas",
+        certificado:"🏆 Certificados", permiso:"📅 Permisos", finiquito:"📑 Finiquitos",
+        reglamento:"📘 Reglamentos", formulario:"📝 Formularios", otro:"📄 Otros" };
+
+      let optsHtml = "";
+      Object.entries(cats).forEach(([cat, catLabel]) => {
+        const docs = todas.filter(p => p.categoria === cat);
+        if (!docs.length) return;
+        optsHtml += `<optgroup label="${catLabel}">${docs.map(p =>
+          `<option value="${p.id}">${p.nombre}</option>`
+        ).join("")}</optgroup>`;
+      });
+
+      const modal = document.createElement("div");
+      modal.id = "modal-selector-plantilla";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:4000;display:flex;align-items:center;justify-content:center;padding:20px;";
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:480px;">
+          <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:800;color:#fff;">📄 Generar Documento Laboral</div>
+            <button onclick="document.getElementById('modal-selector-plantilla').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
+          </div>
+          <div style="padding:20px;">
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:8px;">Seleccionar Tipo de Documento</label>
+            <select id="sel-plantilla-id" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:10px 12px;border-radius:var(--radius);outline:none;margin-bottom:14px;">
+              <option value="">— Seleccionar plantilla —</option>
+              ${optsHtml}
+            </select>
+            <button onclick="imprimirPlantillaPDF(document.getElementById('sel-plantilla-id').value,'${empDocId}','${empId}')" class="btn-entrar" style="width:100%;">🖨️ Generar PDF</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    };
+
   })();
   </script>
 </body>
