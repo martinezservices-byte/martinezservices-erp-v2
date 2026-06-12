@@ -4913,7 +4913,9 @@ Clave: ${clavePortal}`);
       }
       if (!confirm(`¿Enviar este documento al portal del trabajador para que lo firme digitalmente?\n\nDocumento: ${r.tipo||"—"}\nTrabajador: ${r.nombre||"—"}\n\nEl trabajador verá el botón "✍️ Firmar" en su portal.`)) return;
       
-      const csv_doc = pc2GenerarCSV();
+      // Generar CSV único (función local por si pc2GenerarCSV no está en scope)
+      const _genCSV = () => { const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s=""; for(let i=0;i<8;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; };
+      const csv_doc = (typeof pc2GenerarCSV === 'function') ? pc2GenerarCSV() : _genCSV();
       await db.collection("contratos").doc(docId).update({
         requiere_firma_trab: true,
         csv_documento: csv_doc,
@@ -8992,10 +8994,11 @@ Si necesita clave, edita el cliente y agrega una.`;
 
     // ── CONTRATO PDF ──
     window.imprimirContratoPDF = async (docId) => {
+      try {
       const d = await db.collection("contratos").doc(docId).get();
-      if (!d.exists) return;
+      if (!d.exists) { alert("No se encontró el contrato"); return; }
       const r = d.data();
-      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId);
+      const empresa = await getEmpresaActiva(r.entityId||STATE.activeEntityId) || {};
       let cfgTextos = {};
       try { const cd = await db.collection("sistema_config").doc("formatos").get(); if(cd.exists) cfgTextos=cd.data(); } catch(e){}
       const textoJornada = cfgTextos.clausula_jornada || "La jornada de trabajo será de 45 horas semanales, distribuidas de lunes a viernes de 08:00 a 18:00 hrs, con 1 hora de colación de cargo del trabajador.";
@@ -9073,6 +9076,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         </body></html>`;
       const w = window.open("","_blank"); w.document.write(html); w.document.close();
       setTimeout(()=>w.print(), 600);
+      } catch(errPDF) { alert('Error al generar PDF del contrato: '+errPDF.message); }
     };
 
     // ── PDF Comprobante de Vacaciones ──
@@ -10360,8 +10364,11 @@ Si necesita clave, edita el cliente y agrega una.`;
 
     // ── EDITAR ENTIDAD CLIENTE — formulario completo (logo + firma + rem config) ──
     window.editarEntidadCliente = async (docId, coleccion) => {
-      const d = await db.collection(coleccion).doc(docId).get();
-      if (!d.exists) { alert("No se encontró la entidad"); return; }
+      // Normalizar nombre de colección (acepta con o sin 's' al final)
+      const col = coleccion === "empresa" ? "empresas" :
+                  coleccion === "condominio" ? "condominios" : coleccion;
+      const d = await db.collection(col).doc(docId).get();
+      if (!d.exists) { alert("No se encontró la entidad (col: "+col+", id: "+docId+")"); return; }
       const r = d.data();
       const modal = document.createElement("div");
       modal.id = "modal-edit-ent-cli";
@@ -10451,7 +10458,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         const btn = document.getElementById("btn-save-ec");
         btn.disabled=true; btn.textContent="Guardando…";
         try {
-          await db.collection(coleccion).doc(docId).update({
+          await db.collection(col).doc(docId).update({
             nombre,
             rut:              document.getElementById("ec-rut").value.trim(),
             giro:             document.getElementById("ec-giro").value.trim(),
@@ -11853,29 +11860,54 @@ Si necesita clave, edita el cliente y agrega una.`;
       const d = await db.collection("remuneraciones").doc(docId).get();
       if (!d.exists) { alert("No se encontró la liquidación"); return; }
       const r = d.data();
+      // Separar anticipo y préstamo
+      const montoAnticipo = r.anticipo_sueldo || r.otros_descuentos || 0;
+      const montoPrestamo = r.prestamo_empresa || 0;
       const modal = document.createElement("div");
       modal.id = "modal-edit-liq";
-      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;";
-      modal.innerHTML =
-        "<div style='background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:560px;'>" +
-          "<div style='background:var(--c-accent);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;'>" +
-            "<div style='font-weight:800;color:#fff;'>✏️ Editar Liquidación — " + (r.nombre||"—") + " | " + (r.periodo||"—") + "</div>" +
-            "<button onclick='document.getElementById(\"modal-edit-liq\").remove()' style='background:none;border:none;color:#fff;font-size:18px;cursor:pointer'>✕</button>" +
-          "</div>" +
-          "<div style='padding:20px;'>" +
-            "<div style='display:grid;grid-template-columns:1fr 1fr;gap:0 12px;'>" +
-              formField("Asig. Colación ($)", inp("el-colacion","number", String(r.asig_colacion||0))) +
-              formField("Asig. Movilización ($)", inp("el-movil","number", String(r.asig_movilizacion||0))) +
-              formField("Bono Asistencia ($)", inp("el-bonoa","number", String(r.bono_asistencia||0))) +
-              formField("Viáticos ($)", inp("el-viaticos","number", String(r.viaticos||0))) +
-              formField("Horas Extra 50% (monto $)", inp("el-h50","number", String(r.horas_extra_50||0))) +
-              formField("Horas Extra 100% (monto $)", inp("el-h100","number", String(r.horas_extra_100||0))) +
-              formField("Otros Descuentos ($)", inp("el-otros","number", String(r.otros_descuentos||0))) +
-            "</div>" +
-            "<button id='btn-save-edit-liq' class='btn-entrar' style='width:100%;margin-top:12px'>💾 Guardar Cambios y Recalcular</button>" +
-            "<p id='el-msg' style='text-align:center;font-size:12px;margin-top:6px;min-height:14px;'></p>" +
-          "</div>" +
-        "</div>";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      const fld = (lbl,inp) => `<div style="margin-bottom:10px"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${lbl}</label>${inp}</div>`;
+      const ni = (id,val) => `<input id="${id}" type="number" min="0" value="${val}" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">`;
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:600px;margin:auto;">
+          <div style="background:linear-gradient(135deg,var(--c-accent),#0ea5e9);padding:16px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:800;color:#fff;font-size:14px;">✏️ Editar — ${r.nombre||"—"} | ${r.periodo||"—"}</div>
+            <button onclick="document.getElementById('modal-edit-liq').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;">✕</button>
+          </div>
+          <div style="padding:20px;">
+            <div style="background:var(--c-bg);border-radius:var(--radius);padding:10px;margin-bottom:14px;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
+              <div><span style="color:var(--c-muted)">Base contrato:</span> <strong>${formatMonto(r.sueldo_base)}</strong></div>
+              <div><span style="color:var(--c-muted)">Días trabajados:</span> <strong>${r.dias_trabajados||30}</strong></div>
+              <div><span style="color:var(--c-muted)">AFP:</span> <strong>${r.afp||"—"}</strong></div>
+              <div><span style="color:var(--c-muted)">Contrato:</span> <strong>${r.tipo_contrato||"—"}</strong></div>
+            </div>
+            <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">💰 Haberes</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              ${fld("Bono Asistencia ($)", ni("el-bonoa", r.bono_asistencia||0))}
+              ${fld("Viáticos ($)", ni("el-viaticos", r.viaticos||0))}
+              ${fld("Colación ($)", ni("el-colacion", r.asig_colacion||0))}
+              ${fld("Movilización ($)", ni("el-movil", r.asig_movilizacion||0))}
+            </div>
+            <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">⏰ Horas Extra (montos $)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              ${fld("HE 50% ($)", ni("el-h50", r.horas_extra_50||0))}
+              ${fld("HE 100% ($)", ni("el-h100", r.horas_extra_100||0))}
+            </div>
+            <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">🔻 Descuentos</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius);padding:10px;">
+                <label style="display:block;font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">💵 Anticipo de Sueldo ($)</label>
+                <input id="el-anticipo" type="number" min="0" value="${montoAnticipo}" style="width:100%;background:var(--c-bg);border:1px solid rgba(245,158,11,0.4);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+              </div>
+              <div style="background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.25);border-radius:var(--radius);padding:10px;">
+                <label style="display:block;font-size:10px;font-weight:700;color:#dc2626;margin-bottom:4px;">🏦 Préstamo Empresa ($)</label>
+                <input id="el-prestamo" type="number" min="0" value="${montoPrestamo}" style="width:100%;background:var(--c-bg);border:1px solid rgba(220,38,38,0.3);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--radius);outline:none;">
+              </div>
+            </div>
+            <button id="btn-save-edit-liq" class="btn-entrar" style="width:100%;margin-top:14px">💾 Guardar y Recalcular</button>
+            <p id="el-msg" style="text-align:center;font-size:12px;margin-top:6px;min-height:14px;"></p>
+          </div>
+        </div>`;
       document.body.appendChild(modal);
       document.getElementById("btn-save-edit-liq").onclick = async () => {
         const base      = r.sueldo_base||0;
@@ -11886,7 +11918,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         const viat      = parseFloat(document.getElementById("el-viaticos").value)||0;
         const h50       = parseFloat(document.getElementById("el-h50").value)||0;
         const h100      = parseFloat(document.getElementById("el-h100").value)||0;
-        const otros     = parseFloat(document.getElementById("el-otros").value)||0;
+        const anticipo  = parseFloat(document.getElementById("el-anticipo").value)||0;
+        const prestamo  = parseFloat(document.getElementById("el-prestamo").value)||0;
+        const otros     = anticipo + prestamo;
         const totalImp  = base + gratif + bonoa + h50 + h100;
         const totalNoImp= col + mov + viat;
         const totalHab  = totalImp + totalNoImp;
