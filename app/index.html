@@ -9,6 +9,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- EmailJS para notificaciones por correo -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
   <style>
     /* ═══════════════════════════════════════════════
@@ -1637,6 +1639,7 @@
                 <button onclick="cfgFmtTab('vac')" id="cfgfmt-vac" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">🏖️ Vacaciones</button>
                 <button onclick="cfgFmtTab('perm')" id="cfgfmt-perm" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">📅 Permisos</button>
                 <button onclick="cfgFmtTab('custom')" id="cfgfmt-custom" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">📚 Biblioteca de Plantillas</button>
+            <button onclick="cfgFmtTab('notif')" id="cfgfmt-notif" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius);cursor:pointer;">🔔 Notificaciones</button>
               </div>
 
               <!-- LIQUIDACIONES -->
@@ -1675,6 +1678,68 @@
                 <textarea id="cfg-texto-perm" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">La empresa autoriza el permiso solicitado por el trabajador, de conformidad a lo acordado entre las partes y según las normas internas de la organización.</textarea></div>
                 <div style="margin-bottom:10px;"><label style="display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-bottom:4px;">Texto finiquito / anticipos (opcional)</label>
                 <textarea id="cfg-texto-fin" rows="3" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;resize:vertical;">El presente finiquito se suscribe de conformidad al Artículo 177 del Código del Trabajo. La firma implica la aceptación de todas las estipulaciones contenidas en él.</textarea></div>
+              </div>
+
+              <!-- NOTIFICACIONES EMAIL / MARKETING -->
+              <div id="cfgfmt-sec-notif" style="display:none;">
+                <h3 style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--c-accent);">🔔 Centro de Notificaciones y Comunicaciones</h3>
+                <p style="font-size:12px;color:var(--c-muted);margin-bottom:16px;">Configura EmailJS para enviar notificaciones automáticas a colaboradores y clientes. Gratuito hasta 200 emails/mes.</p>
+
+                <!-- EMAILJS CONFIG -->
+                <div style="background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.25);border-radius:var(--radius);padding:14px;margin-bottom:14px;">
+                  <div style="font-size:12px;font-weight:700;color:#4f46e5;margin-bottom:10px;">📧 Configuración EmailJS</div>
+                  <div style="font-size:11px;color:var(--c-muted);margin-bottom:10px;">Regístrate gratis en <a href="https://emailjs.com" target="_blank" style="color:#4f46e5">emailjs.com</a> → crea un servicio Gmail/Outlook → copia las credenciales aquí.</div>
+                  <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+                    <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Service ID</label>
+                    <input id="cfg-ej-service" type="text" placeholder="service_xxxxxxx" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;font-family:monospace"></div>
+                    <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Template ID (notificación genérica)</label>
+                    <input id="cfg-ej-template" type="text" placeholder="template_xxxxxxx" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;font-family:monospace"></div>
+                    <div><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Public Key</label>
+                    <input id="cfg-ej-key" type="text" placeholder="xxxxxxxxxxxxxxxx" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 10px;border-radius:var(--radius);outline:none;font-family:monospace"></div>
+                  </div>
+                  <div style="margin-top:10px;font-size:10px;color:var(--c-muted);background:var(--c-bg);border-radius:var(--radius);padding:8px;">
+                    <strong>Variables que usa tu template en EmailJS:</strong><br>
+                    <code>{{to_email}}</code> {{to_name}} {{subject}} {{message}} {{empresa}} {{url_portal}} {{firma_erp}}
+                  </div>
+                </div>
+
+                <!-- NOTIFICACIONES AUTOMÁTICAS -->
+                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">🤖 Notificaciones Automáticas</div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+                  <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;background:var(--c-bg);border-radius:var(--radius);padding:8px 12px;">
+                    <input type="checkbox" id="cfg-notif-firma" checked style="accent-color:var(--c-accent)">
+                    <div><strong>📄 Documento para firmar</strong><br><span style="color:var(--c-muted);font-size:11px">Avisa al colaborador cuando se sube un documento para firma digital en su portal</span></div>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;background:var(--c-bg);border-radius:var(--radius);padding:8px 12px;">
+                    <input type="checkbox" id="cfg-notif-liq" checked style="accent-color:var(--c-accent)">
+                    <div><strong>💰 Liquidación disponible</strong><br><span style="color:var(--c-muted);font-size:11px">Avisa cuando la liquidación del mes está lista en el portal</span></div>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;background:var(--c-bg);border-radius:var(--radius);padding:8px 12px;">
+                    <input type="checkbox" id="cfg-notif-vac" checked style="accent-color:var(--c-accent)">
+                    <div><strong>🏖️ Vacaciones/Permiso aprobado</strong><br><span style="color:var(--c-muted);font-size:11px">Avisa al colaborador cuando se aprueba su solicitud</span></div>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;background:var(--c-bg);border-radius:var(--radius);padding:8px 12px;">
+                    <input type="checkbox" id="cfg-notif-marketing" style="accent-color:var(--c-accent)">
+                    <div><strong>📢 Noticias y actualizaciones ERP</strong><br><span style="color:var(--c-muted);font-size:11px">Envía comunicados y novedades a todos tus clientes</span></div>
+                  </label>
+                </div>
+
+                <!-- ENVÍO MASIVO / MARKETING -->
+                <div style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">📢 Envío Masivo a Clientes</div>
+                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:12px;margin-bottom:10px;">
+                  <div style="margin-bottom:8px;"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Asunto del correo</label>
+                  <input id="cfg-mkt-asunto" type="text" placeholder="Ej: Nueva funcionalidad disponible en tu ERP" style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 11px;border-radius:var(--radius);outline:none;"></div>
+                  <div style="margin-bottom:10px;"><label style="display:block;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:4px;">Mensaje</label>
+                  <textarea id="cfg-mkt-mensaje" rows="5" placeholder="Estimado cliente, te informamos que..." style="width:100%;background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:9px 11px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea></div>
+                  <div style="display:flex;gap:8px;">
+                    <button onclick="enviarMarketingMasivo()" class="btn-entrar" style="flex:1">📢 Enviar a Todos los Clientes</button>
+                    <button onclick="enviarNotifTest()" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:9px 14px;border-radius:var(--radius);cursor:pointer;">🧪 Test</button>
+                  </div>
+                  <p id="cfg-notif-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+                </div>
+
+                <button id="btn-save-notif-cfg" class="btn-entrar" style="width:100%">💾 Guardar Configuración de Notificaciones</button>
+                <p id="cfg-notif-save-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
               </div>
 
               <!-- BIBLIOTECA DE PLANTILLAS DE DOCUMENTOS -->
@@ -4586,7 +4651,9 @@ Total Líquido: ${formatMonto(totalLiquido)}
         tb.innerHTML = "";
         snap.forEach(d => {
           const r = d.data();
-          const enPortal = r.visible_portal === true;
+          const enPortal    = r.visible_portal === true;
+          const enFirma     = r.requiere_firma_liq === true;
+          const yaFirmada   = r.firmado_liq === true;
           tb.innerHTML += `<tr>
             <td><strong>${r.periodo||"—"}</strong></td>
             <td style="font-family:var(--mono);font-size:11px">${r.rut||"—"}</td>
@@ -4599,10 +4666,19 @@ Total Líquido: ${formatMonto(totalLiquido)}
             <td style="font-size:11px">${r.salud||"—"}</td>
             <td style="white-space:nowrap">
               <button onclick="imprimirLiquidacionPorId('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
+
+              <!-- 📤 PUBLICAR: el colaborador ve la liquidación (historial, solo lectura) -->
               <button onclick="toggleLiqPortal('${d.id}','${empId}',${!enPortal})"
-                style="background:${enPortal?'rgba(46,168,79,0.15)':'var(--c-surface)'};border:1px solid ${enPortal?'var(--c-accent)':'var(--c-border)'};color:${enPortal?'var(--c-accent)':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;"
-                title="${enPortal?'Visible en portal del trabajador — clic para ocultar':'Clic para publicar en portal del trabajador'}">
-                ${enPortal?'✅ En Portal':'📤 Enviar'}
+                style="background:${enPortal?'rgba(46,168,79,0.12)':'var(--c-surface)'};border:1px solid ${enPortal?'var(--c-accent)':'var(--c-border)'};color:${enPortal?'var(--c-accent)':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;"
+                title="${enPortal?'Publicada — el colaborador la puede ver. Clic para ocultar':'Publicar en portal (solo lectura, sin firma)'}">
+                ${enPortal?'👁️ Publicada':'📤 Publicar'}
+              </button>
+
+              <!-- ✍️ ENVIAR A FIRMA: activa firma digital + notificación email -->
+              <button onclick="enviarLiqFirma('${d.id}','${empId}')"
+                style="background:${yaFirmada?'rgba(46,168,79,0.12)':enFirma?'rgba(245,158,11,0.12)':'var(--c-surface)'};border:1px solid ${yaFirmada?'var(--c-accent)':enFirma?'#d97706':'var(--c-border)'};color:${yaFirmada?'var(--c-accent)':enFirma?'#d97706':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;"
+                title="${yaFirmada?'✅ Firmada digitalmente':'Enviar para firma digital (notifica al colaborador por email)'}">
+                ${yaFirmada?'✅ Firmada':enFirma?'⏳ Pendiente firma':'✍️ Enviar firma'}
               </button>
               <button onclick="editarLiquidacion('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;" title="Editar novedades">✏️</button>
               <button onclick="eliminarLiq('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
@@ -5036,6 +5112,10 @@ Total Líquido: ${formatMonto(totalLiquido)}
       toast.textContent = `✍️ Documento enviado al portal de ${r.nombre||"el trabajador"} para firma digital.`;
       document.body.appendChild(toast);
       setTimeout(()=>toast.remove(), 4000);
+      // Notificación email al colaborador
+      if (r.empleado_id) {
+        notificarDocumentoFirma(r.empleado_id, empId, r.tipo_label || TIPOS_LABEL[r.tipo] || "Documento laboral");
+      }
     };
 
     // ── 6. VACACIONES Y PERMISOS ──
@@ -5265,6 +5345,12 @@ Total Líquido: ${formatMonto(totalLiquido)}
         });
       } catch(e2) { console.warn("No se pudo crear comprobante:", e2); }
       renderRRHH_Vacaciones(document.getElementById("module-dynamic-zone"), empId);
+      // Notificación email al colaborador
+      try {
+        const vd2 = await db.collection("vacaciones").doc(docId).get();
+        const vr2 = vd2.exists ? vd2.data() : {};
+        if (vr2.empleado_id) notificarAprobacion(vr2.empleado_id, empId, "vacaciones", `${vr2.desde||""} → ${vr2.hasta||""}`);
+      } catch(e2) {}
     };
     window.rechazarVac = async (docId, empId) => {
       if (!confirm("¿Rechazar esta solicitud? El colaborador verá el estado en su portal.")) return;
@@ -7996,8 +8082,16 @@ Si necesita clave, edita el cliente y agrega una.`;
             </div>
             <div style="text-align:right">
               <div class="pc2-liq-val">${fmt(r.liquido_pagar)}</div>
-              <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:3px">
-                <span class="pc2-badge-ok">Pagada</span>
+              <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:3px;flex-wrap:wrap">
+                ${r.firmado_liq
+                  ? '<span class="pc2-badge-ok">✅ Firmada</span>'
+                  : r.requiere_firma_liq
+                    ? `<button onclick="pc2FirmarLiquidacion('${r.id}','${empDocId}','${empId}')"
+                        style="background:#0369a1;color:#fff;border:none;font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;cursor:pointer;">✍️ Firmar</button>`
+                    : '<span class="pc2-badge-ok">Pagada</span>'
+                }
+                <button onclick="pc2VerLiqAntesFirmar('${r.id}','${empDocId}','${empId}')"
+                  style="background:#f0fdf4;border:1px solid #bbf7d0;color:#1b4332;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;cursor:pointer;">👁️ Ver</button>
                 <button onclick="pc2ImprimirLiq('${r.id}','${empDocId}','${empId}')"
                   style="background:#f0fdf4;border:1px solid #bbf7d0;color:#1b4332;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;cursor:pointer;">📄 PDF</button>
               </div>
@@ -11236,8 +11330,12 @@ Si necesita clave, edita el cliente y agrega una.`;
                 <td style="white-space:nowrap">
                   <button onclick="imprimirLiquidacionPorId('${d.id}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;">🖨️ PDF</button>
                   <button onclick="toggleLiqPortal('${d.id}','${empId}',${!enPortal})"
-                    style="background:${enPortal?'rgba(46,168,79,0.15)':'var(--c-surface)'};border:1px solid ${enPortal?'var(--c-accent)':'var(--c-border)'};color:${enPortal?'var(--c-accent)':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">
-                    ${enPortal?'✅ En Portal':'📤 Enviar'}
+                    style="background:${enPortal?'rgba(46,168,79,0.12)':'var(--c-surface)'};border:1px solid ${enPortal?'var(--c-accent)':'var(--c-border)'};color:${enPortal?'var(--c-accent)':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">
+                    ${enPortal?'👁️ Publicada':'📤 Publicar'}
+                  </button>
+                  <button onclick="enviarLiqFirma('${d.id}','${empId}')"
+                    style="background:${r.firmado_liq?'rgba(46,168,79,0.12)':r.requiere_firma_liq?'rgba(245,158,11,0.12)':'var(--c-surface)'};border:1px solid ${r.firmado_liq?'var(--c-accent)':r.requiere_firma_liq?'#d97706':'var(--c-border)'};color:${r.firmado_liq?'var(--c-accent)':r.requiere_firma_liq?'#d97706':'var(--c-muted)'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">
+                    ${r.firmado_liq?'✅ Firmada':r.requiere_firma_liq?'⏳ Pendiente':'✍️ Firma'}
                   </button>
                   <button onclick="editarLiquidacion('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">✏️</button>
                   <button onclick="eliminarLiq('${d.id}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:3px;">🗑</button>
@@ -11253,7 +11351,57 @@ Si necesita clave, edita el cliente y agrega una.`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
       } catch(e) { alert("Error: " + e.message); }
+    }
+
+    // ── Enviar liquidación para firma digital al colaborador ──
+    window.enviarLiqFirma = async (docId, empId) => {
+      const d = await db.collection("remuneraciones").doc(docId).get();
+      if (!d.exists) { alert("No se encontró la liquidación"); return; }
+      const r = d.data();
+
+      if (r.firmado_liq) {
+        // Ya firmada — mostrar info
+        alert(`✅ Esta liquidación ya fue firmada digitalmente.\n\nFirmada por: ${r.firma_liq_nombre||"—"}\nFecha: ${r.firma_liq_utc||"—"}\nCSV: ${r.firma_liq_csv||"—"}`);
+        return;
+      }
+
+      if (r.requiere_firma_liq) {
+        // Ya enviada — preguntar si cancelar
+        if (confirm("Esta liquidación ya fue enviada para firma. ¿Cancelar el envío?")) {
+          await db.collection("remuneraciones").doc(docId).update({ requiere_firma_liq: false });
+          renderRRHH_Liquidaciones(document.getElementById("module-dynamic-zone"), empId);
+        }
+        return;
+      }
+
+      // Confirmar envío a firma
+      const empNombre = r.nombre || "el colaborador";
+      if (!confirm(`¿Enviar la liquidación de ${r.periodo} de ${empNombre} para firma digital?\n\nEl colaborador recibirá notificación por email y verá el botón "✍️ Firmar" en su portal.`)) return;
+
+      // 1. Publicar automáticamente si no está publicada
+      const updateData = {
+        requiere_firma_liq: true,
+        visible_portal: true,  // publicar también para que la pueda ver
+        fecha_envio_firma_liq: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await db.collection("remuneraciones").doc(docId).update(updateData);
+
+      // 2. Enviar notificación email
+      try {
+        if (r.empleado_id) {
+          notificarLiquidacion(r.empleado_id, empId, r.periodo);
+        }
+      } catch(e2) { console.warn("Notif email:", e2); }
+
+      // 3. Toast + refrescar
+      const toast = document.createElement("div");
+      toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0369a1;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;";
+      toast.textContent = `✍️ Liquidación enviada a ${empNombre} para firma digital. Se notificó por email.`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+      renderRRHH_Liquidaciones(document.getElementById("module-dynamic-zone"), empId);
     };
+;
 
     // ── HELPER: Obtener datos de la empresa/entidad activa correcta ──
     async function getEmpresaActiva(entityId) {
@@ -14303,6 +14451,373 @@ Este finiquito se suscribe de conformidad al Artículo 177 del Código del Traba
         setTimeout(()=>w.print(), 600);
       } catch(e) {
         alert("Error al generar documento: " + e.message);
+      }
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // SISTEMA DE NOTIFICACIONES POR EMAIL — Martinez Services ERP
+    // Usa EmailJS (gratis hasta 200/mes) + Firestore para configuración
+    // ══════════════════════════════════════════════════════════════
+
+    // Cargar configuración EmailJS desde Firestore
+    async function loadEmailJSConfig() {
+      try {
+        const d = await db.collection("sistema_config").doc("notificaciones").get();
+        if (!d.exists) return null;
+        return d.data();
+      } catch(e) { return null; }
+    }
+
+    // Inicializar EmailJS con la config guardada
+    async function initEmailJS() {
+      const cfg = await loadEmailJSConfig();
+      if (cfg?.ej_key && typeof emailjs !== "undefined") {
+        emailjs.init({ publicKey: cfg.ej_key });
+        return cfg;
+      }
+      return null;
+    }
+
+    // Enviar email de notificación (función central)
+    async function sendNotifEmail({ to_email, to_name, subject, message, empresa = "", url_portal = "" }) {
+      if (!to_email) return { ok: false, err: "Sin email" };
+      const cfg = await initEmailJS();
+      if (!cfg?.ej_service || !cfg?.ej_template) {
+        console.warn("EmailJS no configurado en SA Panel → Config → Notificaciones");
+        return { ok: false, err: "EmailJS no configurado" };
+      }
+      try {
+        const result = await emailjs.send(cfg.ej_service, cfg.ej_template, {
+          to_email, to_name: to_name || to_email,
+          subject, message,
+          empresa: empresa || "Martinez Services ERP",
+          url_portal: url_portal || "https://martinezservices-byte.github.io/martinezservices-erp-v2/app/",
+          firma_erp: "Martinez Services ERP · Powered by Martinez & Pajuelo Arriendos SpA"
+        });
+        // Log en Firestore
+        await db.collection("notificaciones_log").add({
+          to_email, subject, estado: "enviado",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(()=>{});
+        return { ok: true };
+      } catch(e) {
+        console.error("EmailJS error:", e);
+        return { ok: false, err: e.text || e.message };
+      }
+    }
+
+    // ── 1. Notificación: Documento para firmar ──
+    window.notificarDocumentoFirma = async (empDocId, empId, tituloDoc) => {
+      const cfg = await loadEmailJSConfig();
+      if (!cfg?.notif_firma) return; // Notificación desactivada
+      try {
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        if (!empDoc.exists) return;
+        const emp = empDoc.data();
+        const email = emp.correo || emp.correo_portal;
+        if (!email) return;
+        const empresa = await getEmpresaActiva(empId) || {};
+        await sendNotifEmail({
+          to_email:   email,
+          to_name:    emp.nombre,
+          subject:    `✍️ Tienes un documento pendiente de firma — ${empresa.nombre||"tu empleador"}`,
+          message:    `Hola ${emp.nombre||"colaborador"},
+
+Tienes el siguiente documento pendiente de firma digital en tu portal:
+
+📄 ${tituloDoc}
+
+Ingresa a tu portal para leerlo y firmarlo. Recuerda que la firma tiene validez legal bajo la Ley 19.799 de Chile.
+
+Tu firma genera un código CSV único e irrepetible como respaldo.`,
+          empresa:    empresa.nombre,
+          url_portal: "https://martinezservices-byte.github.io/martinezservices-erp-v2/app/"
+        });
+      } catch(e) { console.warn("notificarDocumentoFirma:", e); }
+    };
+
+    // ── 2. Notificación: Liquidación disponible ──
+    window.notificarLiquidacion = async (empDocId, empId, periodo) => {
+      const cfg = await loadEmailJSConfig();
+      if (!cfg?.notif_liq) return;
+      try {
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        if (!empDoc.exists) return;
+        const emp = empDoc.data();
+        const email = emp.correo || emp.correo_portal;
+        if (!email) return;
+        const empresa = await getEmpresaActiva(empId) || {};
+        const perStr = periodo ? periodo.replace("-", "/") : "este mes";
+        await sendNotifEmail({
+          to_email: email,
+          to_name:  emp.nombre,
+          subject:  `💰 Tu liquidación de sueldo ${perStr} está disponible — ${empresa.nombre||""}`,
+          message:  `Hola ${emp.nombre||"colaborador"},
+
+Tu liquidación de remuneraciones del período ${perStr} ya está disponible en tu portal.
+
+Puedes revisarla, descargarla en PDF y firmarla digitalmente.
+
+Antes de firmar, asegúrate de revisar todos los valores. Si tienes alguna consulta, comunícate con RRHH.`,
+          empresa:  empresa.nombre,
+          url_portal: "https://martinezservices-byte.github.io/martinezservices-erp-v2/app/"
+        });
+      } catch(e) { console.warn("notificarLiquidacion:", e); }
+    };
+
+    // ── 3. Notificación: Vacaciones/Permiso aprobado ──
+    window.notificarAprobacion = async (empDocId, empId, tipoSol, fechas) => {
+      const cfg = await loadEmailJSConfig();
+      if (!cfg?.notif_vac) return;
+      try {
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        if (!empDoc.exists) return;
+        const emp = empDoc.data();
+        const email = emp.correo || emp.correo_portal;
+        if (!email) return;
+        const empresa = await getEmpresaActiva(empId) || {};
+        const TIPOS = {vacaciones:"Vacaciones Legales", con_goce:"Permiso Con Goce de Sueldo",
+          sin_goce:"Permiso Sin Goce de Sueldo", medico:"Licencia Médica",
+          matrimonio:"Permiso por Matrimonio", nacimiento:"Permiso por Nacimiento"};
+        const tipoLabel = TIPOS[tipoSol] || tipoSol;
+        await sendNotifEmail({
+          to_email: email,
+          to_name:  emp.nombre,
+          subject:  `✅ Tu solicitud de ${tipoLabel} fue aprobada — ${empresa.nombre||""}`,
+          message:  `Hola ${emp.nombre||"colaborador"},
+
+Tu solicitud de ${tipoLabel}${fechas ? ` (${fechas})` : ""} ha sido APROBADA.
+
+El comprobante está disponible en tu portal para que lo puedas revisar y firmar digitalmente.
+
+Si tienes alguna duda, comunícate con RRHH.`,
+          empresa:  empresa.nombre,
+          url_portal: "https://martinezservices-byte.github.io/martinezservices-erp-v2/app/"
+        });
+      } catch(e) { console.warn("notificarAprobacion:", e); }
+    };
+
+    // ── 4. Envío masivo a clientes (marketing/actualizaciones ERP) ──
+    window.enviarMarketingMasivo = async () => {
+      const asunto  = document.getElementById("cfg-mkt-asunto")?.value.trim();
+      const mensaje = document.getElementById("cfg-mkt-mensaje")?.value.trim();
+      const msgEl   = document.getElementById("cfg-notif-msg");
+      if (!asunto || !mensaje) { if(msgEl) msgEl.textContent="Completa asunto y mensaje"; return; }
+      if (!confirm(`¿Enviar este comunicado a TODOS tus clientes registrados?
+
+Asunto: ${asunto}`)) return;
+      if (msgEl) msgEl.textContent = "Enviando...";
+      try {
+        // Obtener todos los usuarios clientes (uid_owner de empresas/condominios)
+        const [empSnap, condoSnap] = await Promise.all([
+          db.collection("empresas").get(),
+          db.collection("condominios").get()
+        ]);
+        const emails = new Set();
+        const addEmails = (snap) => snap.forEach(d => {
+          const r = d.data();
+          if (r.correo) emails.add({ email: r.correo, nombre: r.nombre || "Cliente" });
+        });
+        addEmails(empSnap);
+        addEmails(condoSnap);
+        // También usuarios directos
+        const usersSnap = await db.collection("usuarios").where("rol","!=","superadmin").get();
+        usersSnap.forEach(d => {
+          const r = d.data();
+          if (r.email) emails.add({ email: r.email, nombre: r.nombre || "Cliente" });
+        });
+
+        let enviados = 0, errores = 0;
+        for (const dest of emails) {
+          const result = await sendNotifEmail({
+            to_email: dest.email,
+            to_name:  dest.nombre,
+            subject:  asunto,
+            message:  mensaje,
+            empresa:  "Martinez Services ERP",
+            url_portal: "https://martinezservices-byte.github.io/martinezservices-erp-v2/app/"
+          });
+          if (result.ok) enviados++; else errores++;
+          await new Promise(r => setTimeout(r, 300)); // Pausa para no sobrecargar EmailJS
+        }
+        if (msgEl) {
+          msgEl.style.color = enviados > 0 ? "var(--c-accent)" : "var(--c-danger)";
+          msgEl.textContent = `✓ Enviados: ${enviados} · Errores: ${errores}`;
+        }
+      } catch(e) {
+        if (msgEl) { msgEl.style.color="var(--c-danger)"; msgEl.textContent="Error: "+e.message; }
+      }
+    };
+
+    // ── 5. Test de notificación ──
+    window.enviarNotifTest = async () => {
+      const msgEl = document.getElementById("cfg-notif-msg");
+      if (msgEl) msgEl.textContent = "Enviando test...";
+      const result = await sendNotifEmail({
+        to_email: STATE.user?.email,
+        to_name:  "Gaudy (Test)",
+        subject:  "🧪 Test de notificaciones — Martinez Services ERP",
+        message:  "Este es un correo de prueba para verificar que las notificaciones funcionan correctamente. EmailJS esta configurado y operativo.",
+        empresa:  "Martinez Services ERP"
+      });
+      if (msgEl) {
+        msgEl.style.color = result.ok ? "var(--c-accent)" : "var(--c-danger)";
+        msgEl.textContent = result.ok ? "✓ Test enviado a " + STATE.user?.email : "Error: " + result.err;
+      }
+    };
+
+    // ── 6. Guardar/Cargar config notificaciones ──
+    document.addEventListener("DOMContentLoaded", () => {
+      const btnSave = document.getElementById("btn-save-notif-cfg");
+      if (btnSave) {
+        btnSave.addEventListener("click", async () => {
+          const cfg = {
+            ej_service:    document.getElementById("cfg-ej-service")?.value.trim(),
+            ej_template:   document.getElementById("cfg-ej-template")?.value.trim(),
+            ej_key:        document.getElementById("cfg-ej-key")?.value.trim(),
+            notif_firma:   document.getElementById("cfg-notif-firma")?.checked,
+            notif_liq:     document.getElementById("cfg-notif-liq")?.checked,
+            notif_vac:     document.getElementById("cfg-notif-vac")?.checked,
+            notif_marketing: document.getElementById("cfg-notif-marketing")?.checked,
+            actualizado:   firebase.firestore.FieldValue.serverTimestamp()
+          };
+          const msgEl = document.getElementById("cfg-notif-save-msg");
+          try {
+            await db.collection("sistema_config").doc("notificaciones").set(cfg, { merge: true });
+            // Reinit EmailJS con nueva config
+            if (cfg.ej_key && typeof emailjs !== "undefined") emailjs.init({ publicKey: cfg.ej_key });
+            if (msgEl) { msgEl.style.color="var(--c-accent)"; msgEl.textContent="✓ Configuración guardada."; }
+          } catch(e) {
+            if (msgEl) { msgEl.style.color="var(--c-danger)"; msgEl.textContent="Error: "+e.message; }
+          }
+        });
+      }
+    });
+
+    // ── Cargar config notificaciones al abrir el tab ──
+    const _origCfgFmtTabNotif = window.cfgFmtTab;
+    window.cfgFmtTab = (tab) => {
+      if (_origCfgFmtTabNotif) _origCfgFmtTabNotif(tab);
+      if (tab === "notif") {
+        loadEmailJSConfig().then(cfg => {
+          if (!cfg) return;
+          const s = (id, v) => { const el=document.getElementById(id); if(el&&v!==undefined) el.value=v; };
+          const c = (id, v) => { const el=document.getElementById(id); if(el&&v!==undefined) el.checked=v; };
+          s("cfg-ej-service", cfg.ej_service);
+          s("cfg-ej-template", cfg.ej_template);
+          s("cfg-ej-key", cfg.ej_key);
+          c("cfg-notif-firma", cfg.notif_firma);
+          c("cfg-notif-liq", cfg.notif_liq);
+          c("cfg-notif-vac", cfg.notif_vac);
+          c("cfg-notif-marketing", cfg.notif_marketing);
+        });
+      }
+    };
+
+    // ── Firmar liquidación digitalmente desde el portal ──
+    window.pc2FirmarLiquidacion = async (docId, empDocId, empId) => {
+      const d = await db.collection("remuneraciones").doc(docId).get();
+      if (!d.exists) { alert("No se encontró la liquidación"); return; }
+      const r = d.data();
+
+      const confirmado = confirm(
+        "¿Confirmas tu firma digital en esta liquidación de remuneraciones?\n\n" +
+        "Período: " + (r.periodo||"—") + "\n" +
+        "Líquido a pagar: $" + (r.liquido_pagar||0).toLocaleString("es-CL") + "\n\n" +
+        "Al aceptar, quedará registrado tu RUT, correo, hora UTC y código CSV único.\n" +
+        "Esto tiene validez legal bajo Ley 19.799 de Chile."
+      );
+      if (!confirmado) return;
+
+      try {
+        const [empDoc, empresa] = await Promise.all([
+          db.collection("empleados").doc(empDocId).get(),
+          getEmpresaActiva(empId)
+        ]);
+        const emp  = empDoc.exists ? empDoc.data() : {};
+        const emp2 = empresa || {};
+
+        const ahora = new Date();
+        const horaUTC = ahora.toISOString().replace("T"," ").replace(".000Z"," UTC");
+        // Generar CSV y Transaction ID
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        const csv = [...Array(8)].map(()=>chars[Math.floor(Math.random()*chars.length)]).join("");
+        const hex  = "0123456789ABCDEF";
+        const txId = [...Array(32)].map(()=>hex[Math.floor(Math.random()*16)]).join("");
+
+        // Guardar firma en Firestore
+        await db.collection("remuneraciones").doc(docId).update({
+          firmado_liq:       true,
+          requiere_firma_liq: false,
+          firma_liq_csv:     csv,
+          firma_liq_txid:    txId,
+          firma_liq_utc:     horaUTC,
+          firma_liq_nombre:  emp.nombre || "—",
+          firma_liq_rut:     emp.rut || "—",
+          firma_liq_email:   emp.correo || emp.correo_portal || ""
+        });
+
+        // Generar comprobante PDF de firma (igual al estilo Defontana)
+        const logoH = emp2.logo_url
+          ? `<img src="${emp2.logo_url}" style="height:48px;object-fit:contain;" onerror="this.remove()">`
+          : `<div style="width:48px;height:48px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">${(emp2.nombre||"E").charAt(0)}</div>`;
+        const validUrl = window.location.origin + "/validar/" + csv;
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante Firma Liquidación</title>
+          <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;padding:40px;max-width:760px;margin:0 auto;color:#1a1a1a}
+          .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b4332;padding-bottom:14px;margin-bottom:22px}
+          h1{font-size:16px;font-weight:800;text-align:center;color:#1b4332;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+          .sub{text-align:center;font-size:11px;color:#6b7280}
+          .doc-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-bottom:18px;text-align:center}
+          .firma-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:18px}
+          .firma-card{flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px}
+          .firma-label{font-size:11px;font-weight:700;color:#1b4332}
+          .firma-sub{font-size:10px;color:#6b7280;margin-top:3px}
+          .alert-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;font-size:11px;color:#0369a1;margin-bottom:14px}
+          .valid-box{background:#1b4332;color:#fff;border-radius:8px;padding:12px;text-align:center;font-size:11px}
+          @media print{@page{size:A4;margin:16mm}body{padding:0}html,body,*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}}</style></head><body>
+          <div class="hdr">${logoH}<div style="flex:1;text-align:center;padding:0 16px"><h1>Liquidación de Remuneraciones</h1><div class="sub">${emp2.nombre||"—"} · RUT ${emp2.rut||"—"}</div></div><div style="font-size:10px;color:#6b7280">${new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"})}</div></div>
+          <div class="doc-box"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:6px">Documento firmado digitalmente</div>
+          <div style="font-size:16px;font-weight:800;color:#1b4332">Liquidación de Remuneraciones — ${r.periodo||"—"}</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px">Líquido: $${(r.liquido_pagar||0).toLocaleString("es-CL")} · CSV: <strong>${csv}</strong></div></div>
+          <div class="firma-row">
+            <div class="firma-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:40px;height:40px;border-radius:50%;border:2px solid #1b4332;display:flex;align-items:center;justify-content:center;font-size:18px">✅</div>
+            <div><div style="font-size:13px;font-weight:800;color:#1b4332">${emp.nombre||"—"}</div><div style="font-size:10px;color:#6b7280">RUT: ${emp.rut||"—"}</div></div></div>
+            <div class="firma-sub">Email: ${emp.correo||emp.correo_portal||"—"}</div>
+            <div class="firma-sub">Firmado: ${horaUTC}</div>
+            <div class="firma-sub">CSV: <strong style="font-family:monospace">${csv}</strong></div>
+            <div class="firma-sub">Transaction ID: <span style="font-family:monospace;font-size:9px">${txId}</span></div></div>
+            ${emp2.rep_legal_nombre?`<div class="firma-card"><div class="firma-label">${emp2.rep_legal_nombre}</div><div class="firma-sub">RUT: ${emp2.rep_legal_rut||"—"}</div><div class="firma-sub">${emp2.nombre||"—"}</div></div>`:""}
+          </div>
+          <div class="alert-box">⚖️ <strong>Ley 19.799 Chile:</strong> Esta firma electrónica simple tiene validez legal plena para liquidaciones de remuneraciones.</div>
+          <div class="valid-box">Validar en: ${validUrl}</div>
+          <div style="margin-top:20px;text-align:center;font-size:9px;color:#9ca3af">Martinez Services ERP · ${new Date().toLocaleString("es-CL")}</div>
+          </body></html>`;
+
+        const w = window.open("","_blank");
+        w.document.write(html);
+        w.document.close();
+        setTimeout(()=>w.print(), 600);
+
+        // Recargar portal
+        await new Promise(r => setTimeout(r, 1500));
+        const secLiq = document.getElementById("pc2-sec-liquidaciones");
+        if (secLiq) secLiq.innerHTML = '<div class="pc2-empty">Actualizando...</div>';
+        setTimeout(() => window.renderPortalTrabajador && renderPortalTrabajador(
+          document.getElementById("module-dynamic-zone"), empId
+        ), 1000);
+
+      } catch(e) {
+        alert("Error al firmar: " + e.message);
+      }
+    };
+
+    // ── Ver liquidación antes de firmar ──
+    window.pc2VerLiqAntesFirmar = async (docId, empDocId, empId) => {
+      // Simplemente imprimir el PDF para que lo revise
+      if (window.pc2ImprimirLiq) {
+        pc2ImprimirLiq(docId, empDocId, empId);
+      } else if (window.imprimirLiquidacionPorId) {
+        imprimirLiquidacionPorId(docId);
       }
     };
   })();
