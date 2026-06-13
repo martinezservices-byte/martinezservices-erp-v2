@@ -2020,6 +2020,8 @@
     // ─────────────────────────────────────────────
     auth.onAuthStateChanged(async user => {
       hideLoading();
+      // Inicializar EmailJS al cargar
+      try { if (typeof initEmailJS === "function") setTimeout(initEmailJS, 1500); } catch(e) {}
       if (!user) {
         showHeader(false);
         showScreen("screen-login");
@@ -2496,160 +2498,416 @@
 
     // ── 2. UNIDADES ──
     async function renderCondo_Unidades(zone, condoId) {
+      let cfgCondo = {};
+      if (condoId) {
+        const cd = await db.collection("condominios").doc(condoId).get();
+        if (cd.exists) cfgCondo = cd.data();
+      }
       zone.innerHTML =
-        btnPrimary("btn-add-unidad","Nueva Unidad","＋") +
+        `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <button id="btn-add-unidad" class="btn-entrar" style="font-size:13px;padding:8px 18px;">＋ Nueva Unidad</button>
+          <select id="fil-torre" onchange="window.filtrarUnidades()" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 12px;border-radius:var(--radius);outline:none;">
+            <option value="">Todas las Torres</option>
+          </select>
+          <input id="fil-busq" type="search" placeholder="Buscar residente o unidad..." oninput="window.filtrarUnidades()"
+            style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:12px;padding:8px 12px;border-radius:var(--radius);outline:none;min-width:180px;">
+        </div>` +
         tableWrap("tbl-unidades","Unidades / Copropietarios","Registro completo de la copropiedad",
-          ["N° Unidad","Copropietario","RUT","Correo","Rol","Estado","Acciones"]) +
+          ["Torre/Bloque","N° Unidad","Copropietario","RUT","Correo","Rol","m²","Alícuota","Estado","Acciones"]) +
         modalHtml("modal-unidad","Agregar / Editar Unidad", `
-          ${formField("N° Unidad", inp("u-numero","text","Ej: 101"))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            ${formField("Torre / Bloque / Etapa", inp("u-torre","text","Ej: Torre A, Bloque 2"))}
+            ${formField("N° Unidad / Depto / Casa", inp("u-numero","text","Ej: 402, Casa 15"))}
+          </div>
           ${formField("Nombre Copropietario", inp("u-nombre","text","Nombre completo"))}
-          ${formField("RUT", inp("u-rut","text","12.345.678-9"))}
-          ${formField("Correo", inp("u-correo","email","correo@ejemplo.cl"))}
-          ${formField("Teléfono", inp("u-telefono","tel","+56 9 xxxx xxxx"))}
-          ${formField("Rol", sel("u-rol",[{v:"propietario",l:"Propietario"},{v:"arrendatario",l:"Arrendatario"},{v:"otro",l:"Otro"}]))}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            ${formField("RUT", inp("u-rut","text","12.345.678-9"))}
+            ${formField("Correo", inp("u-correo","email","correo@ejemplo.cl"))}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            ${formField("Teléfono", inp("u-telefono","tel","+56 9 xxxx xxxx"))}
+            ${formField("Rol", sel("u-rol",[{v:"propietario",l:"Propietario"},{v:"arrendatario",l:"Arrendatario"},{v:"otro",l:"Otro"}]))}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            ${formField("Metros Cuadrados (m²)", inp("u-m2","number","50"))}
+            ${formField("% Copropiedad — Alícuota", inp("u-alicuota","number","1.2534"))}
+          </div>
+          ${formField("Estacionamiento(s)", inp("u-estac","text","Ej: E-12"))}
           ${formField("Estado", sel("u-estado",[{v:"activo",l:"Activo"},{v:"inactivo",l:"Inactivo"}]))}
           <input type="hidden" id="u-docid">
-          <button id="btn-save-unidad" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Unidad</button>
+          <button id="btn-save-unidad" class="btn-entrar" style="width:100%;margin-top:10px">💾 Guardar Unidad</button>
         `);
 
+      // Poblar filtro torres
+      if (condoId) {
+        const tSnap = await db.collection("condominios").doc(condoId).collection("unidades").get();
+        const torres = [...new Set(tSnap.docs.map(d=>d.data().torre||"").filter(Boolean))].sort();
+        const sel = document.getElementById("fil-torre");
+        if (sel) torres.forEach(t => { const o=document.createElement("option"); o.value=t; o.textContent=t; sel.appendChild(o); });
+      }
+
       document.getElementById("btn-add-unidad").onclick = () => {
-        ["u-numero","u-nombre","u-rut","u-correo","u-telefono","u-docid"].forEach(id => document.getElementById(id).value="");
+        ["u-torre","u-numero","u-nombre","u-rut","u-correo","u-telefono","u-m2","u-alicuota","u-estac","u-docid"]
+          .forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+        if(document.getElementById("u-rol")) document.getElementById("u-rol").value="propietario";
+        if(document.getElementById("u-estado")) document.getElementById("u-estado").value="activo";
         document.getElementById("modal-unidad").style.display="flex";
       };
 
       document.getElementById("btn-save-unidad").onclick = async () => {
         if (!condoId) { alert("Sin condominio activo"); return; }
-        const docId = document.getElementById("u-docid").value;
+        const docId  = document.getElementById("u-docid").value;
+        const torre  = document.getElementById("u-torre").value.trim();
+        const numero = document.getElementById("u-numero").value.trim();
         const data = {
-          numero_unidad:      document.getElementById("u-numero").value.trim(),
+          torre, numero_unidad: numero,
+          display_unidad: `${torre?torre+" - ":""}${numero}`,
           nombre_propietario: document.getElementById("u-nombre").value.trim(),
           rut:                document.getElementById("u-rut").value.trim(),
           correo:             document.getElementById("u-correo").value.trim().toLowerCase(),
           telefono:           document.getElementById("u-telefono").value.trim(),
           rol:                document.getElementById("u-rol").value,
+          m2:                 parseFloat(document.getElementById("u-m2").value)||0,
+          alicuota_pct:       parseFloat(document.getElementById("u-alicuota").value)||0,
+          estacionamiento:    document.getElementById("u-estac").value.trim(),
           estado:             document.getElementById("u-estado").value,
           actualizado:        firebase.firestore.FieldValue.serverTimestamp()
         };
-        if (!data.numero_unidad || !data.nombre_propietario) { alert("Número de unidad y nombre son obligatorios"); return; }
         const ref = db.collection("condominios").doc(condoId).collection("unidades");
-        if (docId) await ref.doc(docId).update(data);
-        else       await ref.add({ ...data, creado: firebase.firestore.FieldValue.serverTimestamp() });
+        if (docId) await ref.doc(docId).set(data,{merge:true});
+        else { data.creado=firebase.firestore.FieldValue.serverTimestamp(); await ref.add(data); }
         document.getElementById("modal-unidad").style.display="none";
         renderCondo_Unidades(zone, condoId);
       };
 
-      await loadUnidadesTable(condoId, zone);
-    }
+      window.filtrarUnidades = () => {
+        const torre = document.getElementById("fil-torre")?.value.toLowerCase()||"";
+        const busq  = document.getElementById("fil-busq")?.value.toLowerCase()||"";
+        document.querySelectorAll("#tbl-unidades-tbody tr").forEach(tr => {
+          const txt = tr.textContent.toLowerCase();
+          const torreCell = tr.cells[0]?.textContent.toLowerCase()||"";
+          tr.style.display = (!torre||torreCell.includes(torre))&&(!busq||txt.includes(busq))?"":"none";
+        });
+      };
 
-    async function loadUnidadesTable(condoId, zone) {
-      if (!condoId) return;
-      const snap = await db.collection("condominios").doc(condoId).collection("unidades").orderBy("numero_unidad").get();
-      const tb = document.getElementById("tbl-unidades-tbody");
-      if (snap.empty) { tb.innerHTML = emptyRow(7); return; }
-      tb.innerHTML = "";
-      snap.forEach(d => {
+      window.editarUnidad = async (docId, condoId2) => {
+        const d = await db.collection("condominios").doc(condoId2).collection("unidades").doc(docId).get();
+        if (!d.exists) return;
         const r = d.data();
+        const s = (id,v) => { const el=document.getElementById(id); if(el&&v!==undefined) el.value=v; };
+        s("u-torre",r.torre); s("u-numero",r.numero_unidad); s("u-nombre",r.nombre_propietario);
+        s("u-rut",r.rut); s("u-correo",r.correo); s("u-telefono",r.telefono);
+        s("u-m2",r.m2); s("u-alicuota",r.alicuota_pct); s("u-estac",r.estacionamiento); s("u-docid",docId);
+        if(document.getElementById("u-rol")) document.getElementById("u-rol").value=r.rol||"propietario";
+        if(document.getElementById("u-estado")) document.getElementById("u-estado").value=r.estado||"activo";
+        document.getElementById("modal-unidad").style.display="flex";
+      };
+
+      window.eliminarUnidad = async (docId, condoId2) => {
+        if (!confirm("¿Eliminar esta unidad?")) return;
+        await db.collection("condominios").doc(condoId2).collection("unidades").doc(docId).delete();
+        renderCondo_Unidades(zone, condoId);
+      };
+
+      if (!condoId) return;
+      const snap = await db.collection("condominios").doc(condoId).collection("unidades").get();
+      const tb = document.getElementById("tbl-unidades-tbody");
+      if (!tb) return;
+      if (snap.empty) { tb.innerHTML = emptyRow(10,"Sin unidades registradas. Agrega la primera unidad."); return; }
+      tb.innerHTML = "";
+      // Sort by torre then numero
+      const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      docs.sort((a,b)=>(a.display_unidad||"").localeCompare(b.display_unidad||""));
+      docs.forEach(r => {
+        const display = r.display_unidad || `${r.torre?r.torre+" - ":""}${r.numero_unidad||"—"}`;
         tb.innerHTML += `<tr>
+          <td><span style="background:rgba(99,102,241,0.12);color:#4f46e5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">${r.torre||"—"}</span></td>
           <td><strong>${r.numero_unidad||"—"}</strong></td>
           <td>${r.nombre_propietario||"—"}</td>
-          <td style="font-family:var(--mono);font-size:12px">${r.rut||"—"}</td>
-          <td>${r.correo||"—"}</td>
-          <td>${badgeHtml(r.rol,{propietario:{cls:"green",lbl:"Propietario"},arrendatario:{cls:"warn",lbl:"Arrendatario"},_:{cls:"gray",lbl:r.rol||"—"}})}</td>
-          <td>${badgeHtml(r.estado,{activo:{cls:"green",lbl:"Activo"},inactivo:{cls:"gray",lbl:"Inactivo"},_:{cls:"gray",lbl:"—"}})}</td>
-          <td>
-            <button onclick="editUnidad('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;">✏️ Editar</button>
-            <button onclick="deleteUnidad('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;margin-left:4px;">🗑</button>
+          <td style="font-size:11px;font-family:var(--mono)">${r.rut||"—"}</td>
+          <td style="font-size:11px">${r.correo||"—"}</td>
+          <td><span class="badge badge-${r.rol==="propietario"?"green":"gray"}" style="font-size:10px">${r.rol||"—"}</span></td>
+          <td style="text-align:center;font-size:11px">${r.m2||"—"}</td>
+          <td style="text-align:center;font-size:11px;font-family:var(--mono)">${r.alicuota_pct?r.alicuota_pct.toFixed(4)+"%":"—"}</td>
+          <td><span class="badge badge-${r.estado==="activo"?"green":"gray"}" style="font-size:10px">${r.estado||"activo"}</span></td>
+          <td style="white-space:nowrap">
+            <button onclick="editarUnidad('${r.id}','${condoId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;">✏️</button>
+            <button onclick="eliminarUnidad('${r.id}','${condoId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:3px">🗑</button>
           </td>
         </tr>`;
       });
     }
-
-    window.editUnidad = async (docId, condoId) => {
-      const d = await db.collection("condominios").doc(condoId).collection("unidades").doc(docId).get();
-      const r = d.data();
-      document.getElementById("u-docid").value   = docId;
-      document.getElementById("u-numero").value  = r.numero_unidad||"";
-      document.getElementById("u-nombre").value  = r.nombre_propietario||"";
-      document.getElementById("u-rut").value     = r.rut||"";
-      document.getElementById("u-correo").value  = r.correo||"";
-      document.getElementById("u-telefono").value= r.telefono||"";
-      document.getElementById("u-rol").value     = r.rol||"propietario";
-      document.getElementById("u-estado").value  = r.estado||"activo";
-      document.getElementById("modal-unidad").style.display="flex";
-    };
-    window.deleteUnidad = async (docId, condoId) => {
-      if (!confirm("¿Eliminar esta unidad?")) return;
-      await db.collection("condominios").doc(condoId).collection("unidades").doc(docId).delete();
-      const zone = document.getElementById("module-dynamic-zone");
-      renderCondo_Unidades(zone, condoId);
-    };
-
-    // ── 3. GASTOS COMUNES ──
     async function renderCondo_Gastos(zone, condoId) {
+      // Cargar config del condo
+      let cfgCondo = {};
+      if (condoId) {
+        const cd = await db.collection("condominios").doc(condoId).get();
+        if (cd.exists) cfgCondo = cd.data();
+      }
+      const esProrrateo = cfgCondo.modalidad_cobro === "prorrateo";
+      const pctFondo    = cfgCondo.fondo_reserva_pct || 5;
+
       zone.innerHTML =
-        btnPrimary("btn-emitir-gc","Emitir Gastos Comunes del Mes","＋") +
-        tableWrap("tbl-gastos","Cobro de Gastos Comunes","Períodos emitidos",
-          ["Período","Monto Total","N° Unidades","Emitido","Estado","Acciones"]) +
-        modalHtml("modal-gc","Emitir Gastos Comunes", `
-          ${formField("Período (Mes/Año)", inp("gc-periodo","month",""))}
-          ${formField("Monto por Unidad ($)", inp("gc-monto","number","Ej: 45000"))}
-          ${formField("Fecha Vencimiento", inp("gc-vence","date",""))}
-          ${formField("Descripción", inp("gc-desc","text","Ej: Gastos comunes octubre 2025"))}
-          <button id="btn-save-gc" class="btn-entrar" style="width:100%;margin-top:8px">Emitir y Guardar</button>
-        `);
+        `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <button id="btn-emitir-gc" class="btn-entrar" style="font-size:13px;padding:8px 18px;">⚙️ Calcular y Emitir GC del Mes</button>
+          <div style="font-size:11px;color:var(--c-muted);padding:4px 8px;background:var(--c-bg);border-radius:var(--radius);border:1px solid var(--c-border);">
+            Modalidad: <strong>${esProrrateo?"📐 Prorrateo/Alícuota":"💰 Cuota Fija $"+Math.round(cfgCondo.cuota_fija||0).toLocaleString("es-CL")}</strong>
+            · Fondo Reserva: <strong>${pctFondo}%</strong>
+          </div>
+        </div>` +
+        tableWrap("tbl-gastos","Gastos Comunes Emitidos","Cobro por período",
+          ["Período","Monto/Unidad","Fondo Res.","Total","N° Unidades","Vencimiento","Estado","Acciones"]);
 
-      document.getElementById("btn-emitir-gc").onclick = () => {
-        document.getElementById("modal-gc").style.display="flex";
-      };
-
-      document.getElementById("btn-save-gc").onclick = async () => {
+      document.getElementById("btn-emitir-gc").onclick = async () => {
         if (!condoId) { alert("Sin condominio activo"); return; }
-        const periodo  = document.getElementById("gc-periodo").value;
-        const monto    = parseFloat(document.getElementById("gc-monto").value)||0;
-        const vence    = document.getElementById("gc-vence").value;
-        const desc     = document.getElementById("gc-desc").value.trim();
-        if (!periodo || !monto) { alert("Período y monto son obligatorios"); return; }
+        // 1) Pedir período
+        const periodo = prompt("Período a emitir (AAAA-MM):", new Date().toISOString().slice(0,7));
+        if (!periodo) return;
+        const vence = prompt("Fecha de vencimiento (AAAA-MM-DD):", "");
 
-        // Contar unidades activas
-        const uSnap = await db.collection("condominios").doc(condoId).collection("unidades").where("estado","==","activo").get();
-        const totalUnidades = uSnap.size;
-        const montoTotal = monto * totalUnidades;
+        // 2) Calcular monto según modalidad
+        let montoBase = 0;
+        if (esProrrateo) {
+          // Sumar todos los egresos del período
+          const egSnap = await db.collection("condominios").doc(condoId)
+            .collection("egresos").where("periodo","==",periodo).get();
+          egSnap.forEach(d => { montoBase += d.data().monto || 0; });
+          // Importar sueldos desde RRHH si hay asientos contables del período
+          try {
+            const remSnap = await db.collection("asientos_contables")
+              .where("entityId","==",condoId).where("origen","==","RRHH_AUTOMATICO")
+              .where("fecha",">=",periodo+"-01").where("fecha","<=",periodo+"-31").get();
+            if (!remSnap.empty) {
+              remSnap.forEach(d => { montoBase += d.data().debe || 0; });
+            }
+          } catch(e2) {}
+        } else {
+          montoBase = cfgCondo.cuota_fija || 0;
+        }
 
-        await db.collection("condominios").doc(condoId).collection("gastos_comunes").add({
-          periodo, monto_por_unidad: monto, monto_total: montoTotal,
-          num_unidades: totalUnidades, fecha_vencimiento: vence,
-          descripcion: desc, estado: "emitido",
-          fecha: firebase.firestore.FieldValue.serverTimestamp()
+        if (!montoBase) {
+          const manual = parseFloat(prompt("No se encontraron egresos automáticos. ¿Cuánto es el monto base por unidad ($)?","0"));
+          if (!manual) return;
+          montoBase = manual;
+        }
+
+        // 3) Obtener unidades activas
+        const uSnap = await db.collection("condominios").doc(condoId)
+          .collection("unidades").where("estado","==","activo").get();
+
+        const montoFondo = Math.round(montoBase * pctFondo / 100);
+        let totalGlobal = 0;
+        const batch = db.batch();
+
+        // 4) Emitir colilla por unidad
+        for (const uDoc of uSnap.docs) {
+          const u = uDoc.data();
+          let montoUnidad = esProrrateo
+            ? Math.round(montoBase * (u.alicuota_pct||0) / 100)
+            : montoBase;
+          const fondoUnidad = Math.round(montoUnidad * pctFondo / 100);
+          // Agregar deuda pendiente de morosidad
+          let deudaAnt = 0;
+          const morSnap = await db.collection("condominios").doc(condoId)
+            .collection("morosidad").where("unidad_id","==",uDoc.id).where("estado","==","activa").get();
+          morSnap.forEach(d => { deudaAnt += d.data().monto_total || d.data().monto || 0; });
+
+          const totalUnidad = montoUnidad + fondoUnidad + deudaAnt;
+          totalGlobal += totalUnidad;
+
+          const ref = db.collection("condominios").doc(condoId).collection("gastos_comunes").doc();
+          batch.set(ref, {
+            periodo, unidad_id: uDoc.id,
+            torre: u.torre||"", numero_unidad: u.numero_unidad||"",
+            display_unidad: u.display_unidad||u.numero_unidad||"—",
+            nombre_propietario: u.nombre_propietario||"—",
+            correo: u.correo||"",
+            monto_base: montoUnidad, monto_fondo_reserva: fondoUnidad,
+            deuda_anterior: deudaAnt, monto_total: totalUnidad,
+            fecha_vencimiento: vence||"",
+            modalidad: esProrrateo?"prorrateo":"cuota_fija",
+            alicuota_pct: u.alicuota_pct||0,
+            estado: "emitido",
+            fecha: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        await batch.commit();
+
+        // 5) Acumular fondo de reserva global
+        await db.collection("condominios").doc(condoId).collection("fondo_reserva").add({
+          periodo, concepto: `Aporte Fondo Reserva ${pctFondo}% - GC ${periodo}`,
+          monto: Math.round(totalGlobal * pctFondo / 100),
+          tipo: "ingreso", fecha: firebase.firestore.FieldValue.serverTimestamp()
         });
-        document.getElementById("modal-gc").style.display="none";
+
+        // 6) Asiento contable automático
+        await db.collection("asientos_contables").add({
+          entityId: condoId,
+          fecha: new Date().toISOString().slice(0,10),
+          numero_asiento: "GC-"+periodo.replace("-",""),
+          glosa: "Emisión Gastos Comunes "+periodo,
+          cuenta_debe: "1130 Gastos Comunes por Cobrar (Activo)",
+          debe: totalGlobal,
+          cuenta_haber: "4310 Ingresos por Gastos Comunes (Ingreso)",
+          haber: totalGlobal,
+          cuadrado: true, origen: "GC_AUTOMATICO",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert(`✅ Gastos Comunes ${periodo} emitidos para ${uSnap.size} unidades.
+Total global: $${totalGlobal.toLocaleString("es-CL")}`);
         renderCondo_Gastos(zone, condoId);
       };
 
       if (!condoId) return;
-      const snap = await db.collection("condominios").doc(condoId).collection("gastos_comunes").orderBy("fecha","desc").get();
+      // Mostrar colillas agrupadas por período
+      const snap = await db.collection("condominios").doc(condoId)
+        .collection("gastos_comunes").orderBy("fecha","desc").limit(100).get();
       const tb = document.getElementById("tbl-gastos-tbody");
-      if (snap.empty) { tb.innerHTML = emptyRow(6); return; }
-      tb.innerHTML = "";
+      if (!tb) return;
+      if (snap.empty) { tb.innerHTML = emptyRow(8,"Sin gastos comunes emitidos. Usa el botón para calcular y emitir."); return; }
+
+      // Agrupar por período
+      const periodos = {};
       snap.forEach(d => {
         const r = d.data();
+        if (!periodos[r.periodo]) periodos[r.periodo] = { docs:[], total:0, estado:"emitido" };
+        periodos[r.periodo].docs.push({id:d.id,...r});
+        periodos[r.periodo].total += r.monto_total||0;
+        if (r.estado==="pagado") periodos[r.periodo].estado="pagado";
+      });
+
+      tb.innerHTML = "";
+      Object.entries(periodos).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([per, data]) => {
+        const sample = data.docs[0];
+        const montoUnit = sample.monto_base||0;
+        const fondoUnit = sample.monto_fondo_reserva||0;
         tb.innerHTML += `<tr>
-          <td><strong>${r.periodo||"—"}</strong></td>
-          <td>${formatMonto(r.monto_total)}</td>
-          <td>${r.num_unidades||"—"}</td>
-          <td>${formatFecha(r.fecha)}</td>
-          <td>${badgeHtml(r.estado,{emitido:{cls:"warn",lbl:"Emitido"},pagado:{cls:"green",lbl:"Pagado"},_:{cls:"gray",lbl:r.estado||"—"}})}</td>
-          <td><button onclick="cerrarGC('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;">✓ Cerrar Mes</button></td>
+          <td><strong>${per}</strong></td>
+          <td>${formatMonto(montoUnit)}</td>
+          <td>${formatMonto(fondoUnit)} <span style="font-size:10px;color:var(--c-muted)">(${pctFondo}%)</span></td>
+          <td style="font-weight:700">${formatMonto(data.total)}</td>
+          <td style="text-align:center">${data.docs.length}</td>
+          <td style="font-size:11px">${sample.fecha_vencimiento||"—"}</td>
+          <td>${badgeHtml(data.estado,{emitido:{cls:"warn",lbl:"Emitido"},pagado:{cls:"green",lbl:"Pagado"},_:{cls:"gray",lbl:data.estado}})}</td>
+          <td style="white-space:nowrap">
+            <button onclick="verColillasGC('${per}','${condoId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;">📋 Colillas</button>
+            <button onclick="eliminarGC('${per}','${condoId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:3px">🗑</button>
+          </td>
         </tr>`;
       });
     }
+    window.verColillasGC = async (periodo, condoId) => {
+      const snap = await db.collection("condominios").doc(condoId)
+        .collection("gastos_comunes").where("periodo","==",periodo).get();
+      const cfgDoc = await db.collection("condominios").doc(condoId).get();
+      const cfg = cfgDoc.exists ? cfgDoc.data() : {};
+      const wa = cfg.whatsapp_admin||"";
 
-    window.cerrarGC = async (docId, condoId) => {
-      if (!confirm("¿Cerrar este período?")) return;
-      await db.collection("condominios").doc(condoId).collection("gastos_comunes").doc(docId).update({ estado:"pagado" });
+      const modal = document.createElement("div");
+      modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:4000;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;";
+      let rows = "";
+      snap.forEach(d => {
+        const r = d.data();
+        const estado = r.estado||"emitido";
+        rows += `<tr style="border-bottom:1px solid #e5e7eb">
+          <td style="padding:8px"><strong>${r.display_unidad||r.numero_unidad||"—"}</strong><br><span style="font-size:11px;color:#6b7280">${r.nombre_propietario||"—"}</span></td>
+          <td style="padding:8px;text-align:right">${formatMonto(r.monto_base)}</td>
+          <td style="padding:8px;text-align:right">${formatMonto(r.monto_fondo_reserva)}</td>
+          <td style="padding:8px;text-align:right;color:#dc2626">${r.deuda_anterior?formatMonto(r.deuda_anterior):"—"}</td>
+          <td style="padding:8px;text-align:right;font-weight:800">${formatMonto(r.monto_total)}</td>
+          <td style="padding:8px;text-align:center"><span style="background:${estado==="pagado"?"#d1fae5":"#fef3c7"};color:${estado==="pagado"?"#065f46":"#92400e"};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">${estado==="pagado"?"✅ Pagado":"⏳ Pendiente"}</span></td>
+          <td style="padding:8px;white-space:nowrap">
+            ${estado!=="pagado"?`<button onclick="registrarPagoGC('${d.id}','${condoId}','${periodo}')" style="background:#1b4332;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;">✓ Pago</button>`:""}
+            <button onclick="imprimirColillaGC('${d.id}','${condoId}')" style="background:none;border:1px solid var(--c-accent);color:var(--c-accent);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:3px">🖨️</button>
+            ${wa?`<button onclick="window.open('https://wa.me/${wa}?text=Estimado%20${encodeURIComponent(r.nombre_propietario||"")}%2C%20su%20GC%20${periodo}%20es%20de%20%24${Math.round(r.monto_total||0).toLocaleString('es-CL')}','_blank')" style="background:none;border:1px solid #25d366;color:#25d366;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:3px">💬 WA</button>`:""}
+          </td>
+        </tr>`;
+      });
+      modal.innerHTML = `<div style="background:#fff;border-radius:12px;width:100%;max-width:900px;margin:auto;overflow:hidden">
+        <div style="background:#1b4332;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+          <div><strong>📋 Colillas GC — ${periodo}</strong><span style="font-size:11px;margin-left:8px;opacity:.8">${snap.size} unidades</span></div>
+          <button onclick="this.closest('[style*=fixed]').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer">✕</button>
+        </div>
+        <div style="overflow-x:auto;padding:4px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb">
+            <th style="padding:8px;text-align:left">Unidad</th><th style="padding:8px;text-align:right">GC Base</th>
+            <th style="padding:8px;text-align:right">F.Reserva</th><th style="padding:8px;text-align:right;color:#dc2626">Deuda Ant.</th>
+            <th style="padding:8px;text-align:right">TOTAL</th><th style="padding:8px;text-align:center">Estado</th><th style="padding:8px">Acciones</th>
+          </tr></thead><tbody>${rows}</tbody>
+        </table></div></div>`;
+      document.body.appendChild(modal);
+    };
+    window.registrarPagoGC = async (docId, condoId, periodo) => {
+      const fechaPago = prompt("Fecha de pago (AAAA-MM-DD):") || new Date().toISOString().slice(0,10);
+      const refDoc = await db.collection("condominios").doc(condoId).collection("gastos_comunes").doc(docId).get();
+      const r = refDoc.data();
+      await db.collection("condominios").doc(condoId).collection("gastos_comunes").doc(docId).update({
+        estado:"pagado", fecha_pago:fechaPago, actualizado: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // Asiento contable de cobro
+      await db.collection("asientos_contables").add({
+        entityId: condoId, fecha: fechaPago,
+        numero_asiento: "PAG-"+Date.now(),
+        glosa: `Pago GC ${periodo} — Unidad ${r.display_unidad||r.numero_unidad||"—"}`,
+        cuenta_debe: "1110 Caja / Banco (Activo)", debe: r.monto_total||0,
+        cuenta_haber: "1130 Gastos Comunes por Cobrar (Activo)", haber: r.monto_total||0,
+        cuadrado:true, origen:"PAGO_GC",
+        creado: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // Si tenía deuda anterior, marcar morosidad como pagada
+      if (r.deuda_anterior > 0) {
+        const morSnap = await db.collection("condominios").doc(condoId)
+          .collection("morosidad").where("unidad_id","==",r.unidad_id||"").where("estado","==","activa").get();
+        morSnap.forEach(d => d.ref.update({estado:"pagada", fecha_pago:fechaPago}));
+      }
+      // Imprimir comprobante
+      imprimirColillaGC(docId, condoId);
+      verColillasGC(periodo, condoId);
+    };
+    window.imprimirColillaGC = async (docId, condoId) => {
+      const [dDoc, cfgDoc] = await Promise.all([
+        db.collection("condominios").doc(condoId).collection("gastos_comunes").doc(docId).get(),
+        db.collection("condominios").doc(condoId).get()
+      ]);
+      if (!dDoc.exists) return;
+      const r = dDoc.data(); const cfg = cfgDoc.data()||{};
+      const folio = "GC-"+Date.now().toString(36).toUpperCase();
+      const logoH = cfg.logo_url ? `<img src="${cfg.logo_url}" style="height:48px;object-fit:contain">` : `<div style="width:48px;height:48px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">${(cfg.nombre||"C")[0]}</div>`;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Colilla GC</title>
+        <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:40px;max-width:600px;margin:0 auto}
+        .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b4332;padding-bottom:14px;margin-bottom:20px}
+        h1{font-size:15px;font-weight:800;color:#1b4332;text-transform:uppercase;letter-spacing:1px}
+        .sub{font-size:11px;color:#6b7280}.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6}
+        .total{background:#1b4332;color:#fff;padding:10px 14px;border-radius:8px;display:flex;justify-content:space-between;margin-top:12px;font-size:14px;font-weight:800}
+        .est{display:inline-block;background:${r.estado==="pagado"?"#d1fae5":"#fef3c7"};color:${r.estado==="pagado"?"#065f46":"#92400e"};padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;margin-top:12px}
+        @media print{@page{size:A5;margin:10mm}body{padding:0}}</style></head><body>
+        <div class="hdr">${logoH}<div style="flex:1;text-align:center;padding:0 12px"><h1>Cobro de Gastos Comunes</h1><div class="sub">${cfg.nombre||"—"} · ${cfg.rut||""}</div></div><div style="font-size:10px;color:#6b7280;text-align:right">Folio: ${folio}<br>${new Date().toLocaleDateString("es-CL")}</div></div>
+        <div class="kv"><span>Unidad</span><strong>${r.display_unidad||r.numero_unidad||"—"}</strong></div>
+        <div class="kv"><span>Copropietario</span><strong>${r.nombre_propietario||"—"}</strong></div>
+        <div class="kv"><span>Período</span><strong>${r.periodo||"—"}</strong></div>
+        <div class="kv"><span>Vencimiento</span><span>${r.fecha_vencimiento||"—"}</span></div>
+        <div class="kv"><span>Gasto Común Base</span><span>$${Math.round(r.monto_base||0).toLocaleString("es-CL")}</span></div>
+        <div class="kv"><span>Fondo de Reserva (${cfg.fondo_reserva_pct||5}%)</span><span>$${Math.round(r.monto_fondo_reserva||0).toLocaleString("es-CL")}</span></div>
+        ${r.deuda_anterior?`<div class="kv"><span style="color:#dc2626">Deuda Anterior</span><span style="color:#dc2626">$${Math.round(r.deuda_anterior).toLocaleString("es-CL")}</span></div>`:""}
+        <div class="total"><span>TOTAL A PAGAR</span><span>$${Math.round(r.monto_total||0).toLocaleString("es-CL")}</span></div>
+        <div style="text-align:center"><span class="est">${r.estado==="pagado"?"✅ PAGADO":"⏳ PENDIENTE DE PAGO"}</span></div>
+        ${r.estado==="pagado"?`<div style="margin-top:10px;font-size:11px;color:#6b7280;text-align:center">Fecha de pago: ${r.fecha_pago||"—"}</div>`:""}
+        <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:9px;color:#9ca3af">Martinez Services ERP · ${new Date().toLocaleString("es-CL")}</div>
+        </body></html>`;
+      const w = window.open("","_blank"); w.document.write(html); w.document.close(); setTimeout(()=>w.print(),500);
+    };
+    window.eliminarGC = async (periodo, condoId) => {
+      if (!confirm(`¿Eliminar todos los GC del período ${periodo}? Esta acción no se puede deshacer.`)) return;
+      const snap = await db.collection("condominios").doc(condoId)
+        .collection("gastos_comunes").where("periodo","==",periodo).get();
+      const batch = db.batch();
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
       const zone = document.getElementById("module-dynamic-zone");
       renderCondo_Gastos(zone, condoId);
     };
-
     // ── 4. EGRESOS ──
     async function renderCondo_Egresos(zone, condoId) {
       zone.innerHTML =
@@ -3096,36 +3354,84 @@
         const d = await db.collection("condominios").doc(condoId).get();
         if (d.exists) cfg = d.data();
       }
+      const modalCobro = cfg.modalidad_cobro || "cuota_fija";
       zone.innerHTML = `
-        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;max-width:520px;">
-          <h3 style="font-size:14px;font-weight:700;margin-bottom:20px;">Configuración del Condominio</h3>
-          ${formField("Nombre del Condominio", inp("cfg-nombre","text","Nombre oficial", `value="${cfg.nombre||""}"`  ))}
-          ${formField("RUT del Condominio", inp("cfg-rut","text","Ej: 65.000.000-0", `value="${cfg.rut||""}"`  ))}
-          ${formField("Dirección", inp("cfg-dir","text","Dirección completa", `value="${cfg.direccion||""}"`  ))}
-          ${formField("Ciudad / Comuna", inp("cfg-ciudad","text","", `value="${cfg.ciudad||""}"`  ))}
-          ${formField("Correo de Contacto", inp("cfg-correo","email","", `value="${cfg.correo||""}"`  ))}
-          ${formField("Teléfono", inp("cfg-tel","tel","", `value="${cfg.telefono||""}"`  ))}
-          ${formField("N° Total de Unidades", inp("cfg-unidades","number","0", `value="${cfg.num_unidades||0}"`  ))}
-          <button id="btn-save-cfg" class="btn-entrar" style="width:100%;margin-top:8px">Guardar Configuración</button>
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;max-width:640px;">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:18px;color:var(--c-accent);">⚙️ Configuración del Condominio</h3>
+          <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">📋 Datos Generales</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            ${formField("Nombre del Condominio",inp("cfg-nombre","text","Nombre oficial",`value="${cfg.nombre||""}"`  ))}
+            ${formField("RUT del Condominio",    inp("cfg-rut","text","65.000.000-0",   `value="${cfg.rut||""}"`      ))}
+            ${formField("Dirección",             inp("cfg-dir","text","Dirección",      `value="${cfg.direccion||""}"`  ))}
+            ${formField("Ciudad / Comuna",       inp("cfg-ciudad","text","",            `value="${cfg.ciudad||""}"`     ))}
+            ${formField("Correo",                inp("cfg-correo","email","",           `value="${cfg.correo||""}"`     ))}
+            ${formField("Teléfono",              inp("cfg-tel","tel","",                `value="${cfg.telefono||""}"`   ))}
+            ${formField("N° Total Unidades",     inp("cfg-unidades","number","0",       `value="${cfg.num_unidades||0}"`))}
+            ${formField("N° Torres / Bloques",   inp("cfg-torres","number","1",         `value="${cfg.num_torres||1}"`  ))}
+          </div>
+          <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin:14px 0 8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">💰 Modalidad de Cobro</div>
+          <div style="background:rgba(46,168,79,0.06);border:1px solid rgba(46,168,79,0.2);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+            <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                <input type="radio" name="cfg-modalidad" value="cuota_fija" ${modalCobro==="cuota_fija"?"checked":""} onchange="window.toggleCfgCobro(this.value)" style="accent-color:var(--c-accent)">
+                💰 Cuota Fija (igual para todas las unidades)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                <input type="radio" name="cfg-modalidad" value="prorrateo" ${modalCobro==="prorrateo"?"checked":""} onchange="window.toggleCfgCobro(this.value)" style="accent-color:var(--c-accent)">
+                📐 Por Prorrateo / Alícuota (m²)
+              </label>
+            </div>
+            <div id="cfg-sec-cuota" style="display:${modalCobro==="cuota_fija"?"block":"none"}">
+              ${formField("Valor Cuota Fija Mensual ($)",inp("cfg-cuota-fija","number","30000",`value="${cfg.cuota_fija||0}"`))}
+              <div style="font-size:11px;color:var(--c-muted);margin-top:-4px">Todas las unidades pagan el mismo monto. Ideal para pasajes y loteos.</div>
+            </div>
+            <div id="cfg-sec-prorrateo" style="display:${modalCobro==="prorrateo"?"block":"none"}">
+              <div style="font-size:11px;color:var(--c-muted);padding:4px 0">El GC = total egresos del mes × alícuota (%) de cada unidad. Define el % en cada ficha.</div>
+            </div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">🏦 Fondo de Reserva y Morosidad</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+            ${formField("% Recargo Fondo Reserva",inp("cfg-fondo-pct","number","5",   `value="${cfg.fondo_reserva_pct||5}"`))}
+            ${formField("Días tolerancia mora",   inp("cfg-dias-mora","number","10",   `value="${cfg.dias_tolerancia_mora||10}"`))}
+            ${formField("% Interés mora mensual", inp("cfg-interes-mora","number","1.5",`value="${cfg.interes_mora_pct||1.5}"`))}
+            ${formField("WhatsApp Admin (+56)",   inp("cfg-wa","tel","",              `value="${cfg.whatsapp_admin||""}"`))}
+          </div>
+          <button id="btn-save-cfg" class="btn-entrar" style="width:100%;margin-top:12px">💾 Guardar Configuración</button>
+          <p id="cfg-condo-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
         </div>`;
 
+      window.toggleCfgCobro = (val) => {
+        document.getElementById("cfg-sec-cuota").style.display     = val==="cuota_fija"?"block":"none";
+        document.getElementById("cfg-sec-prorrateo").style.display = val==="prorrateo"?"block":"none";
+      };
       document.getElementById("btn-save-cfg").onclick = async () => {
         if (!condoId) { alert("Sin condominio activo"); return; }
+        const btn=document.getElementById("btn-save-cfg"); btn.disabled=true; btn.textContent="Guardando…";
+        const modalidad=document.querySelector('input[name="cfg-modalidad"]:checked')?.value||"cuota_fija";
         await db.collection("condominios").doc(condoId).set({
-          nombre:       document.getElementById("cfg-nombre").value.trim(),
-          rut:          document.getElementById("cfg-rut").value.trim(),
-          direccion:    document.getElementById("cfg-dir").value.trim(),
-          ciudad:       document.getElementById("cfg-ciudad").value.trim(),
-          correo:       document.getElementById("cfg-correo").value.trim().toLowerCase(),
-          telefono:     document.getElementById("cfg-tel").value.trim(),
-          num_unidades: parseInt(document.getElementById("cfg-unidades").value)||0,
-          uid_owner:    STATE.user?.uid||"",
-          actualizado:  firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        alert("✓ Configuración guardada correctamente.");
+          nombre:               document.getElementById("cfg-nombre").value.trim(),
+          rut:                  document.getElementById("cfg-rut").value.trim(),
+          direccion:            document.getElementById("cfg-dir").value.trim(),
+          ciudad:               document.getElementById("cfg-ciudad").value.trim(),
+          correo:               document.getElementById("cfg-correo").value.trim().toLowerCase(),
+          telefono:             document.getElementById("cfg-tel").value.trim(),
+          num_unidades:         parseInt(document.getElementById("cfg-unidades").value)||0,
+          num_torres:           parseInt(document.getElementById("cfg-torres").value)||1,
+          modalidad_cobro:      modalidad,
+          cuota_fija:           parseFloat(document.getElementById("cfg-cuota-fija").value)||0,
+          fondo_reserva_pct:    parseFloat(document.getElementById("cfg-fondo-pct").value)||5,
+          dias_tolerancia_mora: parseInt(document.getElementById("cfg-dias-mora").value)||10,
+          interes_mora_pct:     parseFloat(document.getElementById("cfg-interes-mora").value)||1.5,
+          whatsapp_admin:       document.getElementById("cfg-wa").value.trim(),
+          uid_owner:            STATE.user?.uid||"",
+          actualizado:          firebase.firestore.FieldValue.serverTimestamp()
+        },{ merge:true });
+        btn.disabled=false; btn.textContent="💾 Guardar Configuración";
+        const msg=document.getElementById("cfg-condo-msg");
+        msg.style.color="var(--c-accent)"; msg.textContent="✓ Guardado correctamente.";
+        setTimeout(()=>msg.textContent="",3000);
       };
     }
-
     function getTableConfig(modId, navId) {
       const configs = {
         residentes: {
@@ -4308,6 +4614,12 @@ Clave: ${clavePortal}`);
         btn.disabled = true;
 
         try {
+          // Verificar que hay trabajadores para procesar
+          if (!empSnap || empSnap.empty) {
+            btn.disabled = false; btn.textContent = "✓ Confirmar y Procesar Remuneraciones";
+            alert("No hay trabajadores activos para procesar. Verifica que la entidad tiene fichas registradas.");
+            return;
+          }
           const batch2 = db.batch();
           let totalSueldoBaseProp=0, totalGratif=0, totalBonoa=0, totalHE=0, totalBonoVar=0, totalNoImpon=0;
           let totalDescAfp=0, totalDescSalud=0, totalDescCes=0, totalImpUnico=0, totalOtrosDesc=0;
@@ -13013,9 +13325,10 @@ Si necesita clave, edita el cliente y agrega una.`;
         const tipoMovMap = {
           vacaciones:"vacaciones", con_goce:"ausencia", sin_goce:"ausencia",
           medico:"licencia", fallecimiento:"ausencia", matrimonio:"ausencia",
-          nacimiento:"ausencia", examen_medico:"ausencia", tramite:"ausencia", otro:"ausencia"
+          nacimiento:"ausencia", examen_medico:"ausencia", tramite:"ausencia", otro:"ausencia",
+          anticipo:"anticipo", prestamo:"prestamo"
         };
-        const tipoMov = tipoMovMap[tipo] || "ausencia";
+        const tipoMov = tipoMovMap[tipo] || (coleccion==="anticipos" ? "anticipo" : "ausencia");
         const esAnticipo = coleccion==="anticipos";
         const esMonto = esAnticipo;
 
@@ -13058,8 +13371,8 @@ Si necesita clave, edita el cliente y agrega una.`;
           creado: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // 4) Crear comprobante en contratos para historial y firma digital
-        try {
+        // 4) Crear comprobante en contratos SOLO para vacaciones y permisos (NO anticipos)
+        if (!esAnticipo) try {
           const solDoc = await db.collection(coleccion).doc(solicitudId).get();
           const sol = solDoc.exists ? solDoc.data() : {};
           const tipoLabel = TIPO_LABEL[tipo] || tipo;
