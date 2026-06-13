@@ -928,22 +928,131 @@
     /* ═══════════════════════════════════════════════
        RESPONSIVE
     ═══════════════════════════════════════════════ */
-    @media (max-width: 768px) {
-      .header-center { display: none; }
-      .header-email  { display: none; }
-      .modules-grid  { grid-template-columns: 1fr; }
+    /* ═══════ RESPONSIVE MÓVIL COMPLETO ═══════ */
+    /* Hamburger button — visible solo en móvil */
+    #btn-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+    }
 
-      #screen-level2 { flex-direction: column; }
-      .sidebar {
-        width: 100%;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--c-border);
+    /* Overlay oscuro detrás del sidebar en móvil */
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 90;
+    }
+    #sidebar-overlay.visible { display: block; }
+
+    @media (max-width: 768px) {
+      /* ── Header móvil ── */
+      .header-center  { display: none; }  /* Quitamos el centro del header */
+      .header-email   { display: none; }
+
+      /* Mostrar hamburger */
+      #btn-hamburger  { display: flex; align-items: center; }
+
+      /* Botón Mis Empresas más compacto */
+      #btn-mis-empresas-header {
+        font-size: 11px !important;
+        padding: 5px 8px !important;
       }
+
+      /* ── Panel de módulos ── */
+      .modules-grid   { grid-template-columns: 1fr; gap: 10px; }
+
+      /* ── Layout nivel 2 (sidebar + contenido) ── */
+      #screen-level2  {
+        flex-direction: row;  /* Mantenemos row */
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Sidebar: se oculta fuera de la pantalla por defecto */
+      .sidebar {
+        position: fixed;
+        top: var(--header-h);
+        left: -260px;           /* Oculto a la izquierda */
+        width: 260px !important;
+        height: calc(100vh - var(--header-h));
+        z-index: 100;
+        transition: left 0.25s ease;
+        overflow-y: auto;
+        border-right: 1px solid var(--c-border);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+      }
+
+      /* Sidebar visible cuando tiene clase .open */
+      .sidebar.open { left: 0; }
+
+      /* Zona de contenido ocupa todo el ancho */
+      #module-dynamic-zone {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden;
+        padding: 12px !important;
+      }
+
+      /* ── Tablas: scroll horizontal ── */
+      .table-wrap, [class*="table-wrap"] {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      table { min-width: 500px; }
+
+      /* ── Formularios: 1 columna ── */
+      [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+      [style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* ── KPI cards: 2 columnas en móvil ── */
+      .kpi-row { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+      .kpi-card { padding: 12px 10px !important; }
+      .kpi-value { font-size: 20px !important; }
+
+      /* ── Botones del header: solo iconos en muy pequeño ── */
+      @media (max-width: 480px) {
+        #btn-mis-empresas-header span.btn-label { display: none; }
+        .header-brand-name span { display: none; }
+      }
+
+      /* ── Modal: ancho completo en móvil ── */
+      .modal-box, [class*="modal"] > div,
+      [id*="modal"] > div:first-child {
+        max-width: 100% !important;
+        margin: 8px !important;
+        max-height: 92vh;
+        overflow-y: auto;
+      }
+
+      /* ── Sidebar nav items más grandes para touch ── */
+      .sidebar-item {
+        padding: 13px 16px !important;
+        font-size: 14px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .kpi-row { grid-template-columns: 1fr 1fr !important; }
+      #module-dynamic-zone { padding: 8px !important; }
+      .header-brand-name { font-size: 13px !important; }
     }
   </style>
 </head>
 <body>
+
+  <!-- Overlay para cerrar sidebar en móvil -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <!-- LOADING OVERLAY -->
   <div id="loading-overlay">
@@ -953,6 +1062,9 @@
 
   <!-- HEADER GLOBAL ÚNICO (oculto hasta autenticarse) -->
   <header id="global-header" class="hidden">
+    <!-- Hamburger: solo visible en móvil -->
+    <button id="btn-hamburger" onclick="toggleSidebar()" title="Menú">☰</button>
+
     <div class="header-brand">
       <div class="header-logo">MS</div>
       <span class="header-brand-name">MARTINEZ SERVICES <span>ERP</span></span>
@@ -975,6 +1087,14 @@
         <span class="dot" id="session-dot"></span>
         <span id="session-email">—</span>
       </div>
+    </div>
+
+    <!-- Entity selector compacto — visible solo en móvil -->
+    <div id="entity-select-mobile" style="display:none;align-items:center;gap:4px;">
+      <select id="entity-dropdown-mobile" onchange="switchEntityMobile(this.value)"
+        style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;font-family:var(--font);font-size:11px;padding:4px 6px;border-radius:var(--radius);outline:none;max-width:120px;">
+        <option value="">— Empresa —</option>
+      </select>
     </div>
 
     <div class="header-right">
@@ -1862,6 +1982,7 @@
     const MODULE_META = [
       {
         id: "condominios",
+        tipoEntidad: "condominio",    // Solo para condominios
         num: "01",
         icon: "🏢",
         name: "Administración de Condominio",
@@ -1883,6 +2004,7 @@
       },
       {
         id: "residentes",
+        tipoEntidad: "condominio",    // Solo para condominios
         num: "02",
         icon: "📱",
         name: "App Residentes",
@@ -1898,6 +2020,7 @@
       },
       {
         id: "rrhh",
+        tipoEntidad: "ambos",         // Aplica a empresas Y condominios
         num: "03",
         icon: "👔",
         name: "Recursos Humanos",
@@ -1919,6 +2042,7 @@
       },
       {
         id: "contabilidad",
+        tipoEntidad: "ambos",         // Aplica a ambos
         num: "04",
         icon: "📒",
         name: "Contabilidad Automatizada",
@@ -1928,11 +2052,13 @@
           { id: "balance8",      icon: "⚖️",  label: "Balance de 8 Columnas" },
           { id: "conciliacion",  icon: "🏛️", label: "Conciliación Bancaria" },
           { id: "ivaf29",        icon: "🧾", label: "Declaración IVA F29" },
+          { id: "plan_cuentas",  icon: "📋", label: "Plan de Cuentas" },
         ],
         firestoreCol: "asientos_contables"
       },
       {
         id: "facturacion",
+        tipoEntidad: "empresa",       // Solo empresas comerciales
         num: "05",
         icon: "🧾",
         name: "Facturación Comercial",
@@ -1948,6 +2074,7 @@
       },
       {
         id: "logistica",
+        tipoEntidad: "empresa",       // Solo empresas comerciales
         num: "06",
         icon: "📦",
         name: "Control Gestión y Logística",
@@ -1963,6 +2090,7 @@
       },
       {
         id: "auditoria",
+        tipoEntidad: "ambos",         // Aplica a ambos
         num: "07",
         icon: "🔍",
         name: "Auditoría e Inteligencia",
@@ -2176,7 +2304,24 @@
         });
         STATE.activeEntityId = entities[0].id;
       }
+
+      // Sincronizar con el selector móvil
+      const selMobile = document.getElementById("entity-dropdown-mobile");
+      if (selMobile) {
+        selMobile.innerHTML = sel.innerHTML;
+        selMobile.value = sel.value;
+        // Mostrar selector móvil en pantallas pequeñas
+        const wrap = document.getElementById("entity-select-mobile");
+        if (wrap) wrap.style.display = window.innerWidth <= 768 ? "flex" : "none";
+      }
     }
+
+    window.switchEntityMobile = (entityId) => {
+      const selDesktop = document.getElementById("entity-dropdown");
+      if (selDesktop) selDesktop.value = entityId;
+      // Trigger change event on desktop selector
+      selDesktop?.dispatchEvent(new Event("change"));
+    };
 
     // ─────────────────────────────────────────────
     // 6. RENDER NIVEL 1 — GRILLA DE MÓDULOS
@@ -2191,7 +2336,40 @@
       const entityName = getActiveEntityName();
       document.getElementById("level1-entity").textContent = entityName || "Sin entidad activa";
 
+      // ── Detectar tipo de entidad activa ──
+      const eid = STATE.activeEntityId || document.getElementById("entity-dropdown")?.value || "";
+      const allEntities = STATE.entities || [];
+      const activeEnt   = allEntities.find(e => e.id === eid) || {};
+      const tipoActivo  = activeEnt.tipo || "empresa"; // "empresa" o "condominio"
+      STATE.activeEntityTipo = tipoActivo;
+
+      // Badge de tipo en el header
+      const badge = document.getElementById("plan-badge");
+      if (badge && eid) {
+        const tipoLabel = tipoActivo === "condominio" ? "🏘️ Condominio" : "🏢 Empresa";
+        if (!isSuperadmin()) badge.textContent = tipoLabel;
+      }
+
+      // Banner informativo en el panel de módulos
+      if (eid) {
+        const bannerDiv = document.createElement("div");
+        bannerDiv.style.cssText = `grid-column:1/-1;background:${tipoActivo==="condominio"?"rgba(99,102,241,0.08)":"rgba(46,168,79,0.08)"};border:1px solid ${tipoActivo==="condominio"?"rgba(99,102,241,0.25)":"rgba(46,168,79,0.25)"};border-radius:var(--radius);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:10px;`;
+        bannerDiv.innerHTML = `<span style="font-size:20px">${tipoActivo==="condominio"?"🏘️":"🏢"}</span>
+          <div>
+            <strong>${entityName||"—"}</strong>
+            <span style="color:var(--c-muted);margin-left:8px;font-size:11px">${tipoActivo==="condominio"?"Administración de Condominio · Se muestran solo módulos de condominio":"Empresa Comercial · Se muestran solo módulos de empresa"}</span>
+          </div>`;
+        grid.appendChild(bannerDiv);
+      }
+
       MODULE_META.forEach(mod => {
+        // ── Filtro por tipo de entidad ──
+        const tipoMod = mod.tipoEntidad || "ambos";
+        const aplicaATipoActivo = tipoMod === "ambos" ||
+          tipoMod === tipoActivo ||
+          isSuperadmin(); // Superadmin ve todo siempre
+        if (!aplicaATipoActivo) return; // Ocultar completamente
+
         const hasAccess = modulosContratados.includes(mod.id);
         const card = document.createElement("div");
         card.className = `module-card ${hasAccess ? "active" : "locked"}`;
@@ -2240,6 +2418,20 @@
       if (!modulosContratados.includes(modId)) {
         renderNavGuard(modId);
         return;
+      }
+
+      // ── Validar compatibilidad con tipo de entidad activa ──
+      if (!isSuperadmin()) {
+        const mod = MODULE_META.find(m => m.id === modId);
+        const tipoMod    = mod?.tipoEntidad || "ambos";
+        const tipoActivo = STATE.activeEntityTipo || "empresa";
+        if (tipoMod !== "ambos" && tipoMod !== tipoActivo) {
+          const tipoLabel = tipoActivo === "condominio" ? "Condominio 🏘️" : "Empresa 🏢";
+          const modLabel  = tipoMod    === "condominio" ? "Condominios" : "Empresas Comerciales";
+          alert(`⚠️ Este módulo (${mod?.name||modId}) es exclusivo para ${modLabel}.\n\nLa entidad activa es de tipo ${tipoLabel}.\n\nCambia la entidad activa para acceder a este módulo.`);
+          renderLevel1();
+          return;
+        }
       }
 
       const mod = MODULE_META.find(m => m.id === modId);
@@ -2746,9 +2938,9 @@
           fecha: new Date().toISOString().slice(0,10),
           numero_asiento: "GC-"+periodo.replace("-",""),
           glosa: "Emisión Gastos Comunes "+periodo,
-          cuenta_debe: "1130 Gastos Comunes por Cobrar (Activo)",
+          cuenta_debe: "1.1.02.02",
           debe: totalGlobal,
-          cuenta_haber: "4310 Ingresos por Gastos Comunes (Ingreso)",
+          cuenta_haber: "4.1.02.01",
           haber: totalGlobal,
           cuadrado: true, origen: "GC_AUTOMATICO",
           creado: firebase.firestore.FieldValue.serverTimestamp()
@@ -2851,8 +3043,8 @@ Total global: $${totalGlobal.toLocaleString("es-CL")}`);
         entityId: condoId, fecha: fechaPago,
         numero_asiento: "PAG-"+Date.now(),
         glosa: `Pago GC ${periodo} — Unidad ${r.display_unidad||r.numero_unidad||"—"}`,
-        cuenta_debe: "1110 Caja / Banco (Activo)", debe: r.monto_total||0,
-        cuenta_haber: "1130 Gastos Comunes por Cobrar (Activo)", haber: r.monto_total||0,
+        cuenta_debe: "1.1.01.02", debe: r.monto_total||0,
+        cuenta_haber: "1.1.02.02", haber: r.monto_total||0,
         cuadrado:true, origen:"PAGO_GC",
         creado: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -4767,9 +4959,9 @@ Clave: ${clavePortal}`);
             fecha: new Date().toISOString().slice(0,10),
             numero_asiento: "REM-" + periodo.replace("-",""),
             glosa: `Centralización Remuneraciones ${periodo}`,
-            cuenta_debe: "4101 Sueldos y Remuneraciones",
+            cuenta_debe: "5.1.01.01",
             debe: totalHaberes,
-            cuenta_haber: "2105 Sueldos por Pagar",
+            cuenta_haber: "2.1.03.01",
             haber: totalHaberes,
             cuadrado: true,
             origen: "RRHH_AUTOMATICO",
@@ -5690,6 +5882,7 @@ Total Líquido: ${formatMonto(totalLiquido)}
         case "balance8":     renderCont_Balance8(zone, empId);     break;
         case "conciliacion": renderCont_Conciliacion(zone, empId); break;
         case "ivaf29":       renderCont_IVA(zone, empId);          break;
+        case "plan_cuentas": renderCont_PlanCuentas(zone, empId);  break;
         default:             renderCont_LibroDiario(zone, empId);
       }
     }
@@ -8535,13 +8728,50 @@ Si necesita clave, edita el cliente y agrega una.`;
 
             <!-- ASISTENCIA GPS -->
             <div id="pc2-sec-asistencia" class="pc2-sec">
-              <div class="pc2-card">
-                <div class="pc2-card-title" style="margin-bottom:14px">📍 Mi Registro de Asistencia</div>
-                <button class="pc2-btn-main" onclick="pc2MarcarAsistencia('${empDocId}','${empId}')">✅ Marcar Asistencia Ahora</button>
-                <div style="font-size:11px;color:#6b7280;text-align:center;margin-top:6px;">Se registra con GPS, hora exacta y dirección IP</div>
+              <!-- RELOJ + BOTONES ENTRADA / SALIDA -->
+              <div class="pc2-card" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;text-align:center;padding:20px 16px;">
+                <div style="font-size:11px;opacity:.7;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase">
+                  ${empresa.nombre||"—"}
+                </div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:10px;">
+                  Hola, ${emp.nombre?.split(" ")[0]||"Colaborador"} 👋
+                </div>
+                <!-- Reloj en tiempo real -->
+                <div id="pc2-reloj" style="font-size:52px;font-weight:800;letter-spacing:4px;font-family:monospace;line-height:1">
+                  00:00:00
+                </div>
+                <div style="font-size:12px;opacity:.7;margin:4px 0 16px;">H &nbsp;&nbsp;&nbsp; M &nbsp;&nbsp;&nbsp; S</div>
+                <div id="pc2-fecha-hoy" style="font-size:13px;opacity:.8;margin-bottom:20px;"></div>
+
+                <!-- Estado último registro -->
+                <div id="pc2-ultimo-reg" style="background:rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;margin-bottom:18px;text-align:left;font-size:12px;">
+                  <div style="opacity:.7;font-size:11px;margin-bottom:2px;">Último registro</div>
+                  <div id="pc2-ultimo-reg-txt">Cargando…</div>
+                </div>
+
+                <!-- Botones ENTRADA y SALIDA -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <button id="btn-entrada" onclick="pc2MarcarTurno('entrada','${empDocId}','${empId}')"
+                    style="background:#f59e0b;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.5px;font-family:var(--font);">
+                    🟢 ENTRADA
+                  </button>
+                  <button id="btn-salida" onclick="pc2MarcarTurno('salida','${empDocId}','${empId}')"
+                    style="background:rgba(255,255,255,0.15);color:#fff;border:2px solid rgba(255,255,255,0.4);border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.5px;font-family:var(--font);">
+                    🔴 SALIDA
+                  </button>
+                </div>
+                <div id="pc2-asist-msg" style="font-size:11px;opacity:.7;text-align:center;margin-top:10px;min-height:14px;"></div>
               </div>
+
+              <!-- REGISTROS DEL DÍA HOY -->
               <div class="pc2-card">
-                <div class="pc2-card-title" style="margin-bottom:12px">🗓️ Mis Registros del Mes</div>
+                <div class="pc2-card-title" style="margin-bottom:10px">📅 Registros de Hoy</div>
+                <div id="pc2-registros-hoy" style="display:flex;flex-direction:column;gap:6px;"></div>
+              </div>
+
+              <!-- HISTORIAL DEL MES -->
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:12px">🗓️ Resumen del Mes</div>
                 <div id="pc2-lista-asistencia"><div class="pc2-empty">Cargando…</div></div>
               </div>
             </div>
@@ -8590,6 +8820,42 @@ Si necesita clave, edita el cliente y agrega una.`;
               </div>
             </div>
 
+            <!-- RESERVA DE ESPACIOS -->
+            <div id="pc2-sec-reservas" class="pc2-sec">
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:12px">🏊 Reservar Espacio Común</div>
+                <div style="margin-bottom:10px">
+                  <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Espacio</label>
+                  <select id="res-espacio" class="pc2-select" style="margin-bottom:8px">
+                    <option value="">— Seleccionar —</option>
+                    <option value="quincho_a">🔥 Quincho A</option>
+                    <option value="quincho_b">🔥 Quincho B</option>
+                    <option value="sala_eventos">🎉 Sala de Eventos</option>
+                    <option value="piscina">🏊 Piscina</option>
+                    <option value="sala_reuniones">📋 Sala de Reuniones</option>
+                    <option value="cancha">⚽ Cancha / Multicancha</option>
+                  </select>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Fecha</label>
+                  <input type="date" id="res-fecha" class="pc2-input" style="margin-bottom:8px">
+                  <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Bloque Horario</label>
+                  <select id="res-bloque" class="pc2-select" style="margin-bottom:8px">
+                    <option value="manana">☀️ Mañana (09:00 - 13:00)</option>
+                    <option value="tarde">🌤️ Tarde (14:00 - 18:00)</option>
+                    <option value="noche">🌙 Noche (19:00 - 23:00)</option>
+                    <option value="dia_completo">📅 Día completo</option>
+                  </select>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Motivo / Observación</label>
+                  <input type="text" id="res-motivo" class="pc2-input" placeholder="Ej: Cumpleaños familiar">
+                  <button onclick="pc2SolicitarReserva('${empDocId}','${empId}')" class="pc2-btn-main" style="margin-top:4px">📅 Solicitar Reserva</button>
+                  <p id="res-msg" class="pc2-msg" style="margin-top:8px"></p>
+                </div>
+              </div>
+              <div class="pc2-card">
+                <div class="pc2-card-title" style="margin-bottom:10px">🗓️ Mis Reservas</div>
+                <div id="pc2-lista-reservas"><div class="pc2-empty">Cargando…</div></div>
+              </div>
+            </div>
+
             <!-- PERFIL -->
             <div id="pc2-sec-perfil" class="pc2-sec">
               <div class="pc2-card">
@@ -8626,8 +8892,8 @@ Si necesita clave, edita el cliente y agrega una.`;
             <button class="pc2-bn" id="pc2-bn-liquidaciones" onclick="pc2Nav('liquidaciones')">
               <span class="pc2-bn-ico">📑</span><span class="pc2-bn-lbl">Liquidaciones</span>
             </button>
-            <button class="pc2-bn" id="pc2-bn-vacaciones" onclick="pc2Nav('vacaciones')">
-              <span class="pc2-bn-ico">🏖️</span><span class="pc2-bn-lbl">Vacaciones</span>
+            <button class="pc2-bn" id="pc2-bn-reservas" onclick="pc2Nav('reservas')">
+              <span class="pc2-bn-ico">🏊</span><span class="pc2-bn-lbl">Reservas</span>
             </button>
             <button class="pc2-bn" id="pc2-bn-asistencia" onclick="pc2Nav('asistencia')">
               <span class="pc2-bn-ico">📍</span><span class="pc2-bn-lbl">Asistencia</span>
@@ -8666,7 +8932,7 @@ Si necesita clave, edita el cliente y agrega una.`;
 
     // ── Navegación bottom bar ──
     window.pc2Nav = (sec) => {
-      ["inicio","liquidaciones","vacaciones","permisos","asistencia","perfil"].forEach(s => {
+      ["inicio","liquidaciones","vacaciones","permisos","asistencia","reservas","perfil"].forEach(s => {
         const el = document.getElementById("pc2-sec-"+s);
         const bn = document.getElementById("pc2-bn-"+s);
         if (el) el.classList.toggle("on", s===sec);
@@ -8678,7 +8944,16 @@ Si necesita clave, edita el cliente y agrega una.`;
       if (sec === "asistencia") {
         const empDocId = document.getElementById("pc2-sec-asistencia")?.dataset?.empDocId;
         const empId    = document.getElementById("pc2-sec-asistencia")?.dataset?.empId;
-        if (empDocId) pc2CargarAsistencia(empDocId, empId);
+        if (empDocId) {
+          pc2IniciarAsistencia(empDocId, empId);  // Inicia reloj + carga último registro
+          pc2CargarAsistencia(empDocId, empId);   // Carga historial del mes
+        }
+      }
+      if (sec === "reservas") {
+        const secR = document.getElementById("pc2-sec-reservas");
+        const empDocIdR = secR?.dataset?.empDocId;
+        const empIdR    = secR?.dataset?.empId;
+        if (empDocIdR) pc2CargarReservas(empDocIdR, empIdR);
       }
       if (sec === "perfil") {
         const empDocId = document.getElementById("pc2-sec-perfil")?.dataset?.empDocId;
@@ -8698,88 +8973,193 @@ Si necesita clave, edita el cliente y agrega una.`;
     // Registro con geolocalización, timestamp UTC e IP
     // Válido para control DT Art. 33 CT Chile
     // ══════════════════════════════════════════════════
-    window.pc2MarcarAsistencia = async (empDocId, empId) => {
-      const btn    = document.getElementById("btn-marcar-asist");
-      const estado = document.getElementById("pc2-asist-estado");
-      if (btn) { btn.disabled = true; btn.textContent = "⏳ Obteniendo GPS…"; }
-      if (estado) estado.textContent = "Solicitando acceso a ubicación…";
+    window.pc2MarcarTurno = async (tipo, empDocId, empId) => {
+      // tipo: "entrada" o "salida"
+      const btnE = document.getElementById("btn-entrada");
+      const btnS = document.getElementById("btn-salida");
+      const msg  = document.getElementById("pc2-asist-msg");
+      if (btnE) { btnE.disabled = true; }
+      if (btnS) { btnS.disabled = true; }
+      if (msg)  { msg.textContent = "⏳ Obteniendo GPS…"; }
 
-      // Función para guardar con o sin GPS
       const guardar = async (lat, lng, precision, sinGps) => {
         const ahora   = new Date();
         const horaUTC = ahora.toISOString();
         const horaCL  = ahora.toLocaleString("es-CL", { timeZone:"America/Santiago",
           day:"2-digit", month:"2-digit", year:"numeric",
           hour:"2-digit", minute:"2-digit", second:"2-digit" });
-        const diaSemana = ahora.toLocaleDateString("es-CL", { weekday:"long", timeZone:"America/Santiago" });
-        const tipo = (ahora.getHours() < 13) ? "entrada" : "salida";
+        const diaSemana = ahora.toLocaleDateString("es-CL",
+          { timeZone:"America/Santiago", weekday:"long" });
+        const fecha = ahora.toISOString().slice(0,10);
+        const hora  = ahora.toLocaleTimeString("es-CL",
+          { timeZone:"America/Santiago", hour:"2-digit", minute:"2-digit", second:"2-digit" });
 
-        // Generar CSV único para este registro
-        const csv = pc2GenerarCSV();
+        await db.collection("asistencia").add({
+          entityId: empId, empleado_id: empDocId,
+          tipo,           // "entrada" o "salida"
+          fecha, hora, hora_utc: horaUTC, hora_cl: horaCL,
+          dia_semana: diaSemana,
+          lat: lat||null, lng: lng||null, precision: precision||null,
+          sin_gps: sinGps||false,
+          periodo: ahora.toISOString().slice(0,7),
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        try {
-          await db.collection("asistencia").add({
-            entityId:    empId,
-            empleado_id: empDocId,
-            tipo,          // entrada / salida
-            fecha:         ahora.toLocaleDateString("es-CL", { timeZone:"America/Santiago" }),
-            hora_local:    horaCL,
-            hora_utc:      horaUTC,
-            dia_semana:    diaSemana,
-            latitud:       lat || null,
-            longitud:      lng || null,
-            precision_gps: precision || null,
-            sin_gps:       sinGps || false,
-            csv_registro:  csv,
-            estado:        "registrado",
-            user_agent:    navigator.userAgent.substring(0, 200),
-            creado:        firebase.firestore.FieldValue.serverTimestamp()
-          });
-
-          // Actualizar UI
-          const tipoLabel = tipo === "entrada" ? "🟢 Entrada" : "🔵 Salida";
-          const gpsInfo = sinGps ? "⚠️ Sin GPS" : `📍 ${lat?.toFixed(5)}, ${lng?.toFixed(5)}`;
-          if (estado) {
-            estado.textContent = `✅ ${tipoLabel} registrada · ${horaCL.split(" ")[1]} · ${gpsInfo} · CSV: ${csv}`;
-          }
-          if (btn) { btn.disabled = false; btn.textContent = "✅ Marcar"; }
-
-          // Toast
-          const toast = document.createElement("div");
-          toast.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1b4332;color:#fff;padding:12px 22px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:90%;text-align:center;";
-          toast.innerHTML = `${tipoLabel} registrada correctamente<br><span style="font-size:10px;opacity:0.8">${horaCL} · ${gpsInfo}</span>`;
-          document.body.appendChild(toast);
-          setTimeout(() => toast.remove(), 5000);
-
-          // Recargar lista
-          pc2CargarAsistencia(empDocId, empId);
-
-        } catch(e) {
-          if (estado) estado.textContent = "Error al guardar: " + e.message;
-          if (btn) { btn.disabled = false; btn.textContent = "✅ Marcar"; }
+        // Actualizar UI
+        const color  = tipo === "entrada" ? "#16a34a" : "#dc2626";
+        const emoji  = tipo === "entrada" ? "🟢" : "🔴";
+        const label  = tipo === "entrada" ? "ENTRADA" : "SALIDA";
+        if (msg) {
+          msg.style.color = "#a3e635";
+          msg.textContent = `✓ ${label} registrada a las ${hora}`;
         }
+        // Actualizar "Último registro"
+        const ultEl = document.getElementById("pc2-ultimo-reg-txt");
+        if (ultEl) {
+          ultEl.innerHTML = `<strong style="color:${color}">${emoji} ${label}</strong> registrada a las <strong>${hora}</strong>`;
+        }
+        // Recargar registros del día
+        pc2CargarRegistrosHoy(empDocId, empId, fecha);
+        if (btnE) btnE.disabled = false;
+        if (btnS) btnS.disabled = false;
+
+        // Toast
+        const toast = document.createElement("div");
+        toast.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+          background:${tipo==="entrada"?"#16a34a":"#dc2626"};color:#fff;
+          padding:12px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;
+          box-shadow:0 4px 20px rgba(0,0,0,0.3)`;
+        toast.textContent = `${emoji} ${label} marcada a las ${hora} ${sinGps?"(sin GPS)":"📍"}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
       };
 
       // Intentar obtener GPS
-      if ("geolocation" in navigator) {
+      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            guardar(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, false);
-          },
-          (err) => {
-            // GPS denegado o no disponible — registrar igual sin coordenadas
-            const errMsg = err.code === 1 ? "GPS denegado" : err.code === 2 ? "GPS no disponible" : "Timeout GPS";
-            if (estado) estado.textContent = `⚠️ ${errMsg} — registrando sin coordenadas…`;
-            guardar(null, null, null, true);
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          pos => guardar(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, false),
+          ()  => guardar(null, null, null, true),
+          { timeout: 8000, maximumAge: 60000 }
         );
       } else {
         guardar(null, null, null, true);
       }
     };
 
-    // ── Cargar historial de asistencia del mes ──
+    // Función legacy para compatibilidad
+    window.pc2MarcarAsistencia = (empDocId, empId) => {
+      pc2MarcarTurno("entrada", empDocId, empId);
+    };
+
+    // ── Cargar registros de HOY ──
+    window.pc2CargarRegistrosHoy = async (empDocId, empId, fecha) => {
+      const cont = document.getElementById("pc2-registros-hoy");
+      if (!cont) return;
+      const hoy = fecha || new Date().toISOString().slice(0,10);
+      try {
+        const snap = await db.collection("asistencia")
+          .where("empleado_id","==",empDocId)
+          .where("fecha","==",hoy)
+          .orderBy("hora_utc","asc")
+          .get();
+
+        if (snap.empty) {
+          cont.innerHTML = `<div style="text-align:center;color:#6b7280;font-size:12px;padding:10px">Sin registros hoy</div>`;
+          return;
+        }
+        cont.innerHTML = "";
+        let totalMins = 0;
+        let ultimaEntrada = null;
+        snap.forEach(d => {
+          const r = d.data();
+          const color = r.tipo === "entrada" ? "#16a34a" : "#dc2626";
+          const emoji = r.tipo === "entrada" ? "🟢" : "🔴";
+          if (r.tipo === "entrada") ultimaEntrada = r.hora;
+          if (r.tipo === "salida" && ultimaEntrada) {
+            // Calcular tiempo trabajado
+            const [hE,mE] = ultimaEntrada.split(":").map(Number);
+            const [hS,mS] = r.hora.split(":").map(Number);
+            totalMins += (hS*60+mS) - (hE*60+mE);
+            ultimaEntrada = null;
+          }
+          cont.innerHTML += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border-radius:8px;border-left:3px solid ${color}">
+            <span style="font-size:18px">${emoji}</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:${color}">${r.tipo?.toUpperCase()||"—"}</div>
+              <div style="font-size:11px;color:#6b7280">${r.hora||"—"}${r.sin_gps?" · Sin GPS":"📍"}</div>
+            </div>
+          </div>`;
+        });
+        if (totalMins > 0) {
+          const h = Math.floor(totalMins/60), m = totalMins%60;
+          cont.innerHTML += `<div style="text-align:center;font-size:12px;color:#1b4332;font-weight:700;padding:8px;background:#f0fdf4;border-radius:8px;margin-top:4px">⏱️ Total hoy: ${h}h ${m}min trabajadas</div>`;
+        }
+      } catch(e) {
+        cont.innerHTML = `<div style="font-size:11px;color:#6b7280;padding:8px">Error cargando registros</div>`;
+      }
+    };
+
+    // ── Cargar último registro al iniciar sección asistencia ──
+    window.pc2IniciarAsistencia = async (empDocId, empId) => {
+      const hoy = new Date().toISOString().slice(0,10);
+
+      // Fecha actual
+      const fechaEl = document.getElementById("pc2-fecha-hoy");
+      if (fechaEl) {
+        fechaEl.textContent = new Date().toLocaleDateString("es-CL",
+          { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+      }
+
+      // Reloj en tiempo real
+      const relojEl = document.getElementById("pc2-reloj");
+      if (relojEl) {
+        clearInterval(window._relojInterval);
+        window._relojInterval = setInterval(() => {
+          const n = new Date();
+          const h = String(n.getHours()).padStart(2,"0");
+          const m = String(n.getMinutes()).padStart(2,"0");
+          const s = String(n.getSeconds()).padStart(2,"0");
+          if (relojEl) relojEl.textContent = `${h}:${m}:${s}`;
+        }, 1000);
+      }
+
+      // Cargar último registro
+      const ultEl = document.getElementById("pc2-ultimo-reg-txt");
+      try {
+        const snap = await db.collection("asistencia")
+          .where("empleado_id","==",empDocId)
+          .orderBy("hora_utc","desc").limit(1).get();
+        if (!snap.empty && ultEl) {
+          const r = snap.docs[0].data();
+          const color = r.tipo === "entrada" ? "#16a34a" : "#dc2626";
+          const emoji = r.tipo === "entrada" ? "🟢" : "🔴";
+          ultEl.innerHTML = `<strong style="color:${color}">${emoji} ${r.tipo?.toUpperCase()}</strong> — ${r.hora||"—"} (${r.fecha||"—"})`;
+          // Marcar botón activo según último tipo
+          const btnE = document.getElementById("btn-entrada");
+          const btnS = document.getElementById("btn-salida");
+          if (r.tipo === "entrada") {
+            // Última fue entrada → espera salida
+            if (btnS) { btnS.style.background = "#dc2626"; btnS.style.borderColor = "#dc2626"; }
+            if (btnE) { btnE.style.opacity = "0.6"; }
+          } else {
+            // Última fue salida → espera entrada
+            if (btnE) { btnE.style.opacity = "1"; }
+            if (btnS) { btnS.style.background = "rgba(255,255,255,0.15)"; }
+          }
+        } else if (ultEl) {
+          ultEl.textContent = "Sin registros previos";
+        }
+      } catch(e) {}
+
+      // Cargar registros del día
+      await pc2CargarRegistrosHoy(empDocId, empId, hoy);
+    };
+
+    window.pc2CargarAsistenciaMes = async (empDocId, empId) => {
+      // Alias para compatibilidad
+      return pc2CargarAsistencia(empDocId, empId);
+    };
+
     window.pc2CargarAsistencia = async (empDocId, empId) => {
       const cont = document.getElementById("pc2-lista-asistencia");
       if (!cont) return;
@@ -8788,6 +9168,9 @@ Si necesita clave, edita el cliente y agrega una.`;
         // Guardar refs en el DOM para uso por pc2Nav
         const sec = document.getElementById("pc2-sec-asistencia");
         if (sec) { sec.dataset.empDocId = empDocId; sec.dataset.empId = empId; }
+        // Also store in reservas section
+        const secRes = document.getElementById("pc2-sec-reservas");
+        if (secRes) { secRes.dataset.empDocId = empDocId; secRes.dataset.empId = empId; }
 
         const hoy    = new Date();
         const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toLocaleDateString("es-CL");
@@ -8805,10 +9188,10 @@ Si necesita clave, edita el cliente y agrega una.`;
         docs.sort((a,b) => (b.hora_utc||"").localeCompare(a.hora_utc||""));
 
         cont.innerHTML = docs.slice(0,30).map(r => {
-          const tipoColor = r.tipo === "entrada" ? "#1b4332" : "#0369a1";
-          const tipoLabel = r.tipo === "entrada" ? "🟢 Entrada" : "🔵 Salida";
-          const gpsLink = r.latitud
-            ? `<a href="https://www.google.com/maps?q=${r.latitud},${r.longitud}" target="_blank" style="font-size:10px;color:#0369a1;text-decoration:none;">📍 Ver mapa</a>`
+          const tipoColor = r.tipo === "entrada" ? "#16a34a" : r.tipo === "salida" ? "#dc2626" : "#0369a1";
+          const tipoLabel = r.tipo === "entrada" ? "🟢 ENTRADA" : r.tipo === "salida" ? "🔴 SALIDA" : "📍 Asistencia";
+          const gpsLink = (r.lat||r.latitud)
+            ? `<a href="https://www.google.com/maps?q=${r.lat||r.latitud},${r.lng||r.longitud}" target="_blank" style="font-size:10px;color:#0369a1;text-decoration:none;">📍 Ver mapa</a>`
             : `<span style="font-size:10px;color:#9ca3af">Sin GPS</span>`;
           return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">
             <div>
@@ -15132,6 +15515,377 @@ Asunto: ${asunto}`)) return;
       } else if (window.imprimirLiquidacionPorId) {
         imprimirLiquidacionPorId(docId);
       }
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // RESPONSIVE MÓVIL — Sidebar toggle + mejoras mobile
+    // ══════════════════════════════════════════════════════════════
+
+    window.toggleSidebar = () => {
+      const sidebar = document.getElementById("module-sidebar");
+      const overlay = document.getElementById("sidebar-overlay");
+      if (!sidebar) return;
+      const isOpen = sidebar.classList.contains("open");
+      if (isOpen) {
+        sidebar.classList.remove("open");
+        overlay?.classList.remove("visible");
+      } else {
+        sidebar.classList.add("open");
+        overlay?.classList.add("visible");
+      }
+    };
+
+    window.closeSidebar = () => {
+      document.getElementById("module-sidebar")?.classList.remove("open");
+      document.getElementById("sidebar-overlay")?.classList.remove("visible");
+    };
+
+    // Auto-cerrar sidebar al navegar en móvil
+    document.addEventListener("click", (e) => {
+      if (window.innerWidth <= 768) {
+        if (e.target.closest(".sidebar-item") || e.target.closest(".sidebar-link")) {
+          closeSidebar();
+        }
+      }
+    });
+
+    // Cerrar sidebar con swipe a la izquierda
+    let touchStartX = 0;
+    document.addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener("touchend", e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (dx < -60 && window.innerWidth <= 768) closeSidebar();
+      if (dx > 60 && window.innerWidth <= 768 && touchStartX < 40) toggleSidebar();
+    }, { passive: true });
+
+    // Mostrar/ocultar hamburger según screen
+    function updateHamburgerVisibility() {
+      const btn = document.getElementById("btn-hamburger");
+      if (btn) btn.style.display = window.innerWidth <= 768 ? "flex" : "none";
+    }
+    window.addEventListener("resize", () => {
+      updateHamburgerVisibility();
+      if (window.innerWidth > 768) closeSidebar();
+    });
+    // Init on load
+    document.addEventListener("DOMContentLoaded", updateHamburgerVisibility);
+
+    // ══════════════════════════════════════════════════════════════
+    // PLAN DE CUENTAS OFICIAL CHILE — Área 04 Contabilidad
+    // ══════════════════════════════════════════════════════════════
+
+    const PLAN_CUENTAS_BASE = {
+      // 1. ACTIVOS
+      "1.1.01.01": { nombre:"Caja General",                          tipo:"Activo Circulante",   categoria:"General"     },
+      "1.1.01.02": { nombre:"Banco / Cuenta Corriente Principal",    tipo:"Activo Circulante",   categoria:"General"     },
+      "1.1.02.01": { nombre:"Clientes por Cobrar (Comercial)",       tipo:"Activo Circulante",   categoria:"Empresa"     },
+      "1.1.02.02": { nombre:"Gastos Comunes por Cobrar",             tipo:"Activo Circulante",   categoria:"Condominio"  },
+      "1.1.03.01": { nombre:"Crédito Fiscal IVA",                    tipo:"Activo Circulante",   categoria:"Empresa"     },
+      "1.2.01.01": { nombre:"Maquinarias y Equipos",                 tipo:"Activo Fijo",         categoria:"General"     },
+      "1.2.01.02": { nombre:"Vehículos",                             tipo:"Activo Fijo",         categoria:"General"     },
+      "1.2.02.01": { nombre:"Bienes Raíces / Propiedades",           tipo:"Activo Fijo",         categoria:"Condominio"  },
+      // 2. PASIVOS
+      "2.1.01.01": { nombre:"Proveedores por Pagar",                 tipo:"Pasivo Circulante",   categoria:"General"     },
+      "2.1.02.01": { nombre:"Débito Fiscal IVA",                     tipo:"Pasivo Circulante",   categoria:"Empresa"     },
+      "2.1.03.01": { nombre:"Remuneraciones / Sueldos por Pagar",    tipo:"Pasivo Circulante",   categoria:"General"     },
+      "2.1.03.02": { nombre:"Leyes Sociales por Pagar (Previred)",   tipo:"Pasivo Circulante",   categoria:"General"     },
+      "2.1.04.01": { nombre:"Fondo de Terceros por Rendir",          tipo:"Pasivo Circulante",   categoria:"Condominio"  },
+      "2.2.01.01": { nombre:"Préstamos Bancarios Largo Plazo",       tipo:"Pasivo Largo Plazo",  categoria:"General"     },
+      // 3. PATRIMONIO / FONDOS
+      "3.1.01.01": { nombre:"Capital Social / Inicial",              tipo:"Patrimonio",          categoria:"Empresa"     },
+      "3.1.01.02": { nombre:"Utilidades Retenidas",                  tipo:"Patrimonio",          categoria:"Empresa"     },
+      "3.1.02.01": { nombre:"Fondo de Reserva Acumulado",           tipo:"Patrimonio",          categoria:"Condominio"  },
+      "3.1.02.02": { nombre:"Fondo de Operaciones / Contingencias", tipo:"Patrimonio",          categoria:"Condominio"  },
+      // 4. INGRESOS
+      "4.1.01.01": { nombre:"Ventas / Servicios (Afectas IVA)",      tipo:"Ingreso Operacional", categoria:"Empresa"     },
+      "4.1.01.02": { nombre:"Ventas / Servicios (Exentas IVA)",      tipo:"Ingreso Operacional", categoria:"Empresa"     },
+      "4.1.02.01": { nombre:"Ingresos por Recaudación Gasto Común",  tipo:"Ingreso Operacional", categoria:"Condominio"  },
+      "4.1.02.02": { nombre:"Ingresos por Intereses y Multas de Mora",tipo:"Ingreso No Operacional",categoria:"Condominio"},
+      "4.2.01.01": { nombre:"Otros Ingresos No Operacionales",       tipo:"Ingreso No Operacional",categoria:"General"   },
+      // 5. EGRESOS / GASTOS
+      "5.1.01.01": { nombre:"Gastos de Personal (Sueldos Brutos)",   tipo:"Gasto Operacional",   categoria:"General"     },
+      "5.1.01.02": { nombre:"Cotizaciones Previsionales (SIS+Mutual)",tipo:"Gasto Operacional",  categoria:"General"     },
+      "5.1.02.01": { nombre:"Costo de Ventas / Mercaderías",         tipo:"Gasto Operacional",   categoria:"Empresa"     },
+      "5.1.03.01": { nombre:"Consumos Básicos (Luz, Agua, Gas)",     tipo:"Gasto Operacional",   categoria:"General"     },
+      "5.1.03.02": { nombre:"Gastos de Mantención (Ascensores, Bombas)",tipo:"Gasto Operacional",categoria:"Condominio"  },
+      "5.1.04.01": { nombre:"Gastos de Administración General",      tipo:"Gasto Operacional",   categoria:"General"     },
+      "5.1.05.01": { nombre:"Depreciación del Ejercicio",            tipo:"Gasto Operacional",   categoria:"General"     },
+    };
+
+    // Obtener plan filtrado según tipo de entidad (empresa/condominio)
+    function getPlanFiltrado(tipoEntidad) {
+      const cat = tipoEntidad === "condominio" ? ["General","Condominio"] : ["General","Empresa"];
+      return Object.entries(PLAN_CUENTAS_BASE).filter(([,v])=>cat.includes(v.categoria));
+    }
+
+    async function renderCont_PlanCuentas(zone, empId) {
+      // Detectar tipo de entidad
+      let tipoEntidad = "empresa";
+      try {
+        const eSnap = await db.collection("condominios").doc(empId).get();
+        if (eSnap.exists) tipoEntidad = "condominio";
+      } catch(e) {}
+
+      // Cargar plan personalizado de Firestore (cuentas creadas por usuario)
+      let customCuentas = {};
+      try {
+        const cSnap = await db.collection("plan_cuentas").doc(empId).get();
+        if (cSnap.exists) customCuentas = cSnap.data().cuentas || {};
+      } catch(e) {}
+
+      // Merge: base + custom
+      const planCompleto = { ...PLAN_CUENTAS_BASE, ...customCuentas };
+      const planFiltrado = Object.entries(planCompleto)
+        .filter(([,v])=>["General", tipoEntidad==="condominio"?"Condominio":"Empresa"].includes(v.categoria))
+        .sort((a,b)=>a[0].localeCompare(b[0]));
+
+      // Agrupar por tipo
+      const grupos = {};
+      planFiltrado.forEach(([cod,c])=>{
+        if(!grupos[c.tipo]) grupos[c.tipo]=[];
+        grupos[c.tipo].push({cod,...c});
+      });
+
+      zone.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h3 style="font-size:14px;font-weight:700;color:var(--c-accent)">📋 Plan de Cuentas Oficial Chile</h3>
+            <p style="font-size:12px;color:var(--c-muted);margin-top:2px">Entidad: <strong>${tipoEntidad==="condominio"?"Condominio":"Empresa"}</strong> · ${planFiltrado.length} cuentas</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="cargarPlanBase('${empId}')" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-muted);font-family:var(--font);font-size:12px;padding:7px 12px;border-radius:var(--radius);cursor:pointer;">
+              🔄 Cargar Plan Base
+            </button>
+            <button onclick="abrirFormNuevaCuenta('${empId}')" class="btn-entrar" style="font-size:12px;padding:7px 14px;">
+              ➕ Nueva Cuenta
+            </button>
+          </div>
+        </div>
+
+        <div id="plan-cuentas-msg" style="min-height:14px;font-size:11px;margin-bottom:8px;"></div>
+
+        ${Object.entries(grupos).map(([tipo,cuentas])=>`
+          <div style="margin-bottom:16px;">
+            <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;background:var(--c-bg);border-radius:var(--radius);margin-bottom:4px;border-left:3px solid var(--c-accent)">
+              ${tipo}
+            </div>
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);overflow:hidden;">
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead><tr style="background:var(--c-bg);border-bottom:1px solid var(--c-border);">
+                  <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--c-muted);width:110px">CÓDIGO</th>
+                  <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--c-muted)">NOMBRE DE CUENTA</th>
+                  <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--c-muted);width:80px">USO</th>
+                  <th style="padding:7px 10px;text-align:right;font-size:10px;color:var(--c-muted);width:80px">ACCIONES</th>
+                </tr></thead>
+                <tbody>
+                  ${cuentas.map(c=>`<tr style="border-bottom:1px solid var(--c-border);" id="pc-row-${c.cod.replace(/\./g,'-')}">
+                    <td style="padding:7px 10px;font-family:var(--mono);font-size:11px;color:#4f46e5;font-weight:700">${c.cod}</td>
+                    <td style="padding:7px 10px">${c.nombre}</td>
+                    <td style="padding:7px 10px;text-align:center">
+                      <span style="font-size:10px;background:rgba(99,102,241,0.1);color:#4f46e5;padding:2px 7px;border-radius:99px">${c.categoria}</span>
+                    </td>
+                    <td style="padding:7px 10px;text-align:right;white-space:nowrap">
+                      <button onclick="editarCuenta('${c.cod}','${empId}')" style="background:none;border:1px solid var(--c-border);color:var(--c-muted);padding:2px 7px;border-radius:3px;cursor:pointer;font-size:10px;">✏️</button>
+                      ${customCuentas[c.cod]?`<button onclick="eliminarCuenta('${c.cod}','${empId}')" style="background:none;border:1px solid var(--c-danger);color:var(--c-danger);padding:2px 7px;border-radius:3px;cursor:pointer;font-size:10px;margin-left:3px">🗑</button>`:""}
+                    </td>
+                  </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `).join("")}
+
+        <!-- Modal nueva/editar cuenta -->
+        <div id="modal-cuenta" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;display:none;align-items:center;justify-content:center;padding:20px;">
+          <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);width:100%;max-width:480px;padding:24px;">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:16px;" id="modal-cuenta-titulo">Nueva Cuenta</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+              ${formField("Código (ej: 1.1.05.01)",inp("nc-codigo","text","1.X.XX.XX"))}
+              ${formField("Categoría",sel("nc-categoria",[{v:"General",l:"General"},{v:"Empresa",l:"Empresa"},{v:"Condominio",l:"Condominio"}]))}
+            </div>
+            ${formField("Nombre de la Cuenta",inp("nc-nombre","text","Descripción contable"))}
+            ${formField("Tipo",sel("nc-tipo",[
+              {v:"Activo Circulante",l:"Activo Circulante"},{v:"Activo Fijo",l:"Activo Fijo"},
+              {v:"Pasivo Circulante",l:"Pasivo Circulante"},{v:"Pasivo Largo Plazo",l:"Pasivo Largo Plazo"},
+              {v:"Patrimonio",l:"Patrimonio"},{v:"Ingreso Operacional",l:"Ingreso Operacional"},
+              {v:"Ingreso No Operacional",l:"Ingreso No Operacional"},
+              {v:"Gasto Operacional",l:"Gasto Operacional"}
+            ]))}
+            <input type="hidden" id="nc-cod-original">
+            <div style="display:flex;gap:8px;margin-top:14px;">
+              <button onclick="guardarCuenta('${empId}')" class="btn-entrar" style="flex:1">💾 Guardar</button>
+              <button onclick="document.getElementById('modal-cuenta').style.display='none'" style="background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:9px 18px;border-radius:var(--radius);cursor:pointer;">Cancelar</button>
+            </div>
+            <p id="nc-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+          </div>
+        </div>`;
+
+      document.getElementById("modal-cuenta").style.display = "none"; // Reset
+    }
+
+    // Cargar plan base en Firestore (primera vez)
+    window.cargarPlanBase = async (empId) => {
+      if (!confirm("¿Inicializar el Plan de Cuentas base? Esto no eliminará cuentas personalizadas existentes.")) return;
+      const cuentas = {};
+      Object.entries(PLAN_CUENTAS_BASE).forEach(([cod,c])=>{ cuentas[cod]=c; });
+      await db.collection("plan_cuentas").doc(empId).set({ cuentas, actualizado: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      const msg = document.getElementById("plan-cuentas-msg");
+      if (msg) { msg.style.color="var(--c-accent)"; msg.textContent="✓ Plan de Cuentas base cargado en Firebase."; setTimeout(()=>msg.textContent="",3000); }
+      renderCont_PlanCuentas(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    window.abrirFormNuevaCuenta = () => {
+      ["nc-codigo","nc-nombre","nc-cod-original"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+      document.getElementById("modal-cuenta-titulo").textContent = "➕ Nueva Cuenta";
+      document.getElementById("modal-cuenta").style.display = "flex";
+    };
+
+    window.editarCuenta = async (cod, empId) => {
+      const data = PLAN_CUENTAS_BASE[cod] || {};
+      try {
+        const d = await db.collection("plan_cuentas").doc(empId).get();
+        if (d.exists && d.data().cuentas?.[cod]) Object.assign(data, d.data().cuentas[cod]);
+      } catch(e) {}
+      document.getElementById("nc-codigo").value = cod;
+      document.getElementById("nc-nombre").value = data.nombre||"";
+      document.getElementById("nc-tipo").value = data.tipo||"";
+      document.getElementById("nc-categoria").value = data.categoria||"General";
+      document.getElementById("nc-cod-original").value = cod;
+      document.getElementById("modal-cuenta-titulo").textContent = `✏️ Editar Cuenta ${cod}`;
+      document.getElementById("modal-cuenta").style.display = "flex";
+    };
+
+    window.guardarCuenta = async (empId) => {
+      const cod  = document.getElementById("nc-codigo").value.trim();
+      const nombre = document.getElementById("nc-nombre").value.trim();
+      const tipo = document.getElementById("nc-tipo").value;
+      const cat  = document.getElementById("nc-categoria").value;
+      const original = document.getElementById("nc-cod-original").value;
+      if (!cod || !nombre) { alert("Código y nombre son obligatorios"); return; }
+      const msg = document.getElementById("nc-msg");
+      try {
+        await db.collection("plan_cuentas").doc(empId).set({
+          [`cuentas.${cod}`]: { nombre, tipo, categoria: cat, personalizada: true },
+          actualizado: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        if (msg) { msg.style.color="var(--c-accent)"; msg.textContent="✓ Guardado"; }
+        document.getElementById("modal-cuenta").style.display = "none";
+        renderCont_PlanCuentas(document.getElementById("module-dynamic-zone"), empId);
+      } catch(e) {
+        if (msg) { msg.style.color="var(--c-danger)"; msg.textContent="Error: "+e.message; }
+      }
+    };
+
+    window.eliminarCuenta = async (cod, empId) => {
+      // Solo eliminar si no tiene asientos asociados
+      const snap = await db.collection("asientos_contables")
+        .where("entityId","==",empId).where("cuenta_debe","==",cod).limit(1).get();
+      const snap2 = await db.collection("asientos_contables")
+        .where("entityId","==",empId).where("cuenta_haber","==",cod).limit(1).get();
+      if (!snap.empty || !snap2.empty) {
+        alert(`⚠️ La cuenta ${cod} tiene asientos contables registrados y no puede eliminarse.`);
+        return;
+      }
+      if (!confirm(`¿Eliminar la cuenta ${cod}?`)) return;
+      const d = await db.collection("plan_cuentas").doc(empId).get();
+      if (!d.exists) return;
+      const cuentas = d.data().cuentas || {};
+      delete cuentas[cod];
+      await db.collection("plan_cuentas").doc(empId).update({ cuentas });
+      renderCont_PlanCuentas(document.getElementById("module-dynamic-zone"), empId);
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // PORTAL RESIDENTE — RESERVA DE ESPACIOS COMUNES
+    // ══════════════════════════════════════════════════════════════
+
+    window.pc2SolicitarReserva = async (empDocId, empId) => {
+      const espacio = document.getElementById("res-espacio")?.value;
+      const fecha   = document.getElementById("res-fecha")?.value;
+      const bloque  = document.getElementById("res-bloque")?.value;
+      const motivo  = document.getElementById("res-motivo")?.value.trim();
+      const msg     = document.getElementById("res-msg");
+
+      if (!espacio) { if(msg){ msg.textContent="Selecciona un espacio"; } return; }
+      if (!fecha)   { if(msg){ msg.textContent="Selecciona una fecha"; } return; }
+
+      const ESPACIOS = { quincho_a:"Quincho A", quincho_b:"Quincho B",
+        sala_eventos:"Sala de Eventos", piscina:"Piscina",
+        sala_reuniones:"Sala de Reuniones", cancha:"Cancha Multicancha" };
+      const BLOQUES  = { manana:"Mañana (09-13h)", tarde:"Tarde (14-18h)",
+        noche:"Noche (19-23h)", dia_completo:"Día completo" };
+
+      if (msg) msg.textContent = "Enviando solicitud…";
+      try {
+        // Verificar disponibilidad
+        const existSnap = await db.collection("condominios").doc(empId)
+          .collection("reservas")
+          .where("espacio","==",espacio).where("fecha","==",fecha)
+          .where("bloque","==",bloque).where("estado","in",["pendiente","aprobada"]).get();
+        if (!existSnap.empty) {
+          if (msg) { msg.style.color="#dc2626"; msg.textContent="⚠️ Este espacio ya está reservado para esa fecha/bloque."; }
+          return;
+        }
+        // Obtener datos del empleado/residente
+        const empDoc = await db.collection("empleados").doc(empDocId).get();
+        const emp    = empDoc.exists ? empDoc.data() : {};
+
+        await db.collection("condominios").doc(empId).collection("reservas").add({
+          espacio, espacio_label: ESPACIOS[espacio]||espacio,
+          fecha, bloque, bloque_label: BLOQUES[bloque]||bloque,
+          motivo: motivo||"",
+          empleado_id: empDocId, nombre: emp.nombre||"—",
+          rut: emp.rut||"—",
+          torre: emp.torre||"", numero_unidad: emp.numero_unidad||"",
+          display_unidad: emp.display_unidad||emp.numero_unidad||"—",
+          estado: "pendiente",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        if (msg) { msg.style.color="#16a34a"; msg.textContent="✅ Solicitud enviada. Pendiente de aprobación."; }
+        ["res-espacio","res-fecha","res-motivo"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+        pc2CargarReservas(empDocId, empId);
+      } catch(e) {
+        if (msg) { msg.style.color="#dc2626"; msg.textContent="Error: "+e.message; }
+      }
+    };
+
+    window.pc2CargarReservas = async (empDocId, empId) => {
+      const cont = document.getElementById("pc2-lista-reservas");
+      if (!cont) return;
+      try {
+        const snap = await db.collection("condominios").doc(empId)
+          .collection("reservas").where("empleado_id","==",empDocId)
+          .orderBy("fecha","desc").limit(10).get();
+        if (snap.empty) { cont.innerHTML = '<div class="pc2-empty">Sin reservas registradas</div>'; return; }
+        const ESTADOS = { pendiente:"⏳ Pendiente", aprobada:"✅ Aprobada", rechazada:"❌ Rechazada" };
+        const COLORS  = { pendiente:"#f59e0b", aprobada:"#16a34a", rechazada:"#dc2626" };
+        cont.innerHTML = "";
+        snap.forEach(d => {
+          const r = d.data();
+          cont.innerHTML += `<div style="padding:10px;background:#f9fafb;border-radius:8px;margin-bottom:6px;border-left:3px solid ${COLORS[r.estado]||"#9ca3af"}">
+            <div style="font-weight:700;font-size:13px">${r.espacio_label||r.espacio}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px">${r.fecha} · ${r.bloque_label||r.bloque}</div>
+            ${r.motivo?`<div style="font-size:11px;color:#9ca3af;margin-top:2px">${r.motivo}</div>`:""}
+            <div style="margin-top:4px"><span style="background:${COLORS[r.estado]||"#e5e7eb"};color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px">${ESTADOS[r.estado]||r.estado}</span></div>
+          </div>`;
+        });
+      } catch(e) {
+        cont.innerHTML = '<div class="pc2-empty">Error cargando reservas</div>';
+      }
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // PORTAL RESIDENTE — WEBPAY PLACEHOLDER (próximo sprint)
+    // ══════════════════════════════════════════════════════════════
+    window.pc2PagarWebpay = (docId, monto) => {
+      // PLACEHOLDER: Integración WebPay / Kipuku — Próximo Sprint
+      // Para activar: reemplazar este código por la inicialización del SDK de Transbank
+      // o la API de Kipuku, pasando: monto, orderId, returnUrl
+      alert("💳 Pago en línea próximamente disponible. Estamos integrando WebPay para que puedas pagar tu gasto común desde aquí. Por ahora, coordina el pago por transferencia con la administración.");
+      // Futuro código:
+      // const webpay = new WebpayPlus.Transaction({ ...config });
+      // const response = await webpay.create(orderId, sessionId, monto, returnUrl);
+      // window.location.href = response.url + "?token_ws=" + response.token;
     };
   })();
   </script>
