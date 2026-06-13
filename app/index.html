@@ -3064,31 +3064,241 @@ Total global: $${totalGlobal.toLocaleString("es-CL")}`);
         db.collection("condominios").doc(condoId).get()
       ]);
       if (!dDoc.exists) return;
-      const r = dDoc.data(); const cfg = cfgDoc.data()||{};
-      const folio = "GC-"+Date.now().toString(36).toUpperCase();
-      const logoH = cfg.logo_url ? `<img src="${cfg.logo_url}" style="height:48px;object-fit:contain">` : `<div style="width:48px;height:48px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">${(cfg.nombre||"C")[0]}</div>`;
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Colilla GC</title>
-        <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;padding:40px;max-width:600px;margin:0 auto}
-        .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b4332;padding-bottom:14px;margin-bottom:20px}
-        h1{font-size:15px;font-weight:800;color:#1b4332;text-transform:uppercase;letter-spacing:1px}
-        .sub{font-size:11px;color:#6b7280}.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6}
-        .total{background:#1b4332;color:#fff;padding:10px 14px;border-radius:8px;display:flex;justify-content:space-between;margin-top:12px;font-size:14px;font-weight:800}
-        .est{display:inline-block;background:${r.estado==="pagado"?"#d1fae5":"#fef3c7"};color:${r.estado==="pagado"?"#065f46":"#92400e"};padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;margin-top:12px}
-        @media print{@page{size:A5;margin:10mm}body{padding:0}}</style></head><body>
-        <div class="hdr">${logoH}<div style="flex:1;text-align:center;padding:0 12px"><h1>Cobro de Gastos Comunes</h1><div class="sub">${cfg.nombre||"—"} · ${cfg.rut||""}</div></div><div style="font-size:10px;color:#6b7280;text-align:right">Folio: ${folio}<br>${new Date().toLocaleDateString("es-CL")}</div></div>
-        <div class="kv"><span>Unidad</span><strong>${r.display_unidad||r.numero_unidad||"—"}</strong></div>
-        <div class="kv"><span>Copropietario</span><strong>${r.nombre_propietario||"—"}</strong></div>
-        <div class="kv"><span>Período</span><strong>${r.periodo||"—"}</strong></div>
-        <div class="kv"><span>Vencimiento</span><span>${r.fecha_vencimiento||"—"}</span></div>
-        <div class="kv"><span>Gasto Común Base</span><span>$${Math.round(r.monto_base||0).toLocaleString("es-CL")}</span></div>
-        <div class="kv"><span>Fondo de Reserva (${cfg.fondo_reserva_pct||5}%)</span><span>$${Math.round(r.monto_fondo_reserva||0).toLocaleString("es-CL")}</span></div>
-        ${r.deuda_anterior?`<div class="kv"><span style="color:#dc2626">Deuda Anterior</span><span style="color:#dc2626">$${Math.round(r.deuda_anterior).toLocaleString("es-CL")}</span></div>`:""}
-        <div class="total"><span>TOTAL A PAGAR</span><span>$${Math.round(r.monto_total||0).toLocaleString("es-CL")}</span></div>
-        <div style="text-align:center"><span class="est">${r.estado==="pagado"?"✅ PAGADO":"⏳ PENDIENTE DE PAGO"}</span></div>
-        ${r.estado==="pagado"?`<div style="margin-top:10px;font-size:11px;color:#6b7280;text-align:center">Fecha de pago: ${r.fecha_pago||"—"}</div>`:""}
-        <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:9px;color:#9ca3af">Martinez Services ERP · ${new Date().toLocaleString("es-CL")}</div>
+      const r   = dDoc.data();
+      const cfg = cfgDoc.data() || {};
+
+      const folio  = "GC-" + Date.now().toString(36).toUpperCase();
+      const esProrrateo = (cfg.modalidad_cobro || "cuota_fija") === "prorrateo";
+      const pctFondo    = cfg.fondo_reserva_pct || 5;
+      const periodo     = r.periodo || "";
+      const mesLabel    = periodo ? new Date(periodo+"-01").toLocaleDateString("es-CL",{month:"long",year:"numeric"}) : "—";
+      const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
+
+      // Cargar egresos del período para el bloque 3
+      const egSnap = await db.collection("condominios").doc(condoId)
+        .collection("egresos").where("periodo","==",periodo).get();
+
+      // Agrupar egresos por categoría
+      const egresosCat = {};
+      let totalEgresos = 0;
+      egSnap.forEach(d => {
+        const eg = d.data();
+        const cat = eg.categoria || "Gastos Generales";
+        if (!egresosCat[cat]) egresosCat[cat] = { total:0, items:[] };
+        egresosCat[cat].items.push(eg);
+        egresosCat[cat].total += eg.monto || 0;
+        totalEgresos += eg.monto || 0;
+      });
+
+      // Cruzar remuneraciones desde RRHH
+      let totalRemun = 0;
+      try {
+        const remSnap = await db.collection("asientos_contables")
+          .where("entityId","==",condoId)
+          .where("origen","==","RRHH_AUTOMATICO")
+          .where("fecha",">=",periodo+"-01").where("fecha","<=",periodo+"-31").get();
+        remSnap.forEach(d => { totalRemun += d.data().debe || 0; });
+        if (totalRemun > 0) {
+          if (!egresosCat["Remuneraciones"]) egresosCat["Remuneraciones"] = { total:0, items:[] };
+          egresosCat["Remuneraciones"].total += totalRemun;
+          egresosCat["Remuneraciones"].items.push({
+            concepto:"Sueldos y Cotizaciones Personal",
+            descripcion:"Centralización automática desde Área 03 RRHH",
+            n_doc:"RRHH-"+periodo.replace("-",""),
+            fecha:periodo+"-30",
+            monto:totalRemun
+          });
+          totalEgresos += totalRemun;
+        }
+      } catch(e2) {}
+
+      // Interés mora si aplica
+      const diasMora = cfg.dias_tolerancia_mora || 10;
+      const pctMora  = cfg.interes_mora_pct || 1.5;
+      const hoy = new Date();
+      const vence = r.fecha_vencimiento ? new Date(r.fecha_vencimiento) : null;
+      let interesMora = 0;
+      if (vence && hoy > vence && r.estado !== "pagado") {
+        const diasAtraso = Math.floor((hoy-vence)/86400000);
+        if (diasAtraso > diasMora) interesMora = Math.round(r.monto_base * pctMora/100);
+      }
+      const totalFinal = (r.monto_total||0) + interesMora;
+
+      // Logo
+      const logoH = cfg.logo_url
+        ? `<img src="${cfg.logo_url}" style="height:56px;object-fit:contain;" onerror="this.remove()">`
+        : `<div style="width:56px;height:56px;background:#1b4332;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:900">${(cfg.nombre||"C")[0]}</div>`;
+
+      // Bloque 3: tabla egresos
+      let tablaEgresos = "";
+      if (Object.keys(egresosCat).length > 0) {
+        let counter = 0;
+        Object.entries(egresosCat).sort((a,b)=>b[1].total-a[1].total).forEach(([cat,data])=>{
+          counter++;
+          tablaEgresos += `
+            <tr style="background:#f0fdf4">
+              <td colspan="4" style="padding:5px 8px;font-weight:700;font-size:11px;color:#1b4332">${cat}</td>
+              <td style="padding:5px 8px;font-weight:800;text-align:right;color:#1b4332">${fmt(data.total)}</td>
+            </tr>`;
+          data.items.forEach((eg,i)=>{
+            tablaEgresos += `
+            <tr style="border-bottom:1px solid #f3f4f6">
+              <td style="padding:4px 8px;font-size:10px;color:#6b7280">${counter}.${i+1}</td>
+              <td style="padding:4px 8px;font-size:11px">${eg.concepto||eg.categoria||"—"}</td>
+              <td style="padding:4px 8px;font-size:10px;color:#6b7280">${eg.descripcion||eg.proveedor||""}</td>
+              <td style="padding:4px 8px;font-size:10px;color:#6b7280;text-align:center">${eg.n_doc||eg.numero_doc||""} ${eg.fecha||""}</td>
+              <td style="padding:4px 8px;font-size:11px;text-align:right">${fmt(eg.monto)}</td>
+            </tr>`;
+          });
+        });
+        tablaEgresos += `
+            <tr style="background:#1b4332">
+              <td colspan="4" style="padding:7px 8px;font-weight:800;color:#fff;font-size:12px">Total Egresos Comunidad</td>
+              <td style="padding:7px 8px;font-weight:800;color:#fff;text-align:right;font-size:13px">${fmt(totalEgresos)}</td>
+            </tr>`;
+      } else {
+        tablaEgresos = `<tr><td colspan="5" style="padding:12px;text-align:center;color:#9ca3af;font-size:11px">Sin egresos registrados para este período.<br>Registra los egresos en Área 01 → Egresos del Mes.</td></tr>`;
+      }
+
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <meta name="color-scheme" content="light">
+        <title>Liquidación GC ${periodo} — ${r.display_unidad||r.numero_unidad||""}</title>
+        <style>
+          *{box-sizing:border-box;margin:0;padding:0}
+          body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a1a;padding:24px;max-width:800px;margin:0 auto}
+          .hdr{display:grid;grid-template-columns:70px 1fr auto;gap:12px;align-items:start;border-bottom:3px solid #1b4332;padding-bottom:12px;margin-bottom:14px}
+          .title{font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#1b4332;margin-bottom:4px}
+          .subtitle{font-size:11px;color:#6b7280}
+          .pago-box{background:#f0fdf4;border:2px solid #1b4332;border-radius:8px;padding:10px 14px;font-size:11px}
+          .section-hdr{background:#1b4332;color:#fff;padding:6px 10px;font-weight:700;font-size:11px;margin-bottom:0;border-radius:4px 4px 0 0}
+          .info-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e5e7eb;border-radius:0 0 4px 4px;margin-bottom:12px}
+          .kv{padding:5px 10px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;gap:8px}
+          .kv:last-child{border-bottom:none}
+          .kv-label{color:#6b7280;font-size:10px}
+          .kv-val{font-weight:700;text-align:right;font-size:11px}
+          .cobro-table{width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;margin-bottom:12px}
+          .cobro-table td,.cobro-table th{padding:6px 10px;border-bottom:1px solid #f3f4f6}
+          .cobro-table th{background:#f9fafb;font-size:10px;color:#6b7280;text-align:left}
+          .total-row{background:#1b4332!important}
+          .total-row td{color:#fff!important;font-weight:800;font-size:14px;padding:10px!important;border:none!important}
+          .egr-table{width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;margin-bottom:12px;font-size:11px}
+          .egr-table th{background:#f9fafb;padding:5px 8px;text-align:left;font-size:10px;color:#6b7280;border-bottom:2px solid #1b4332}
+          .obs-box{background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:10px;margin-bottom:12px;font-size:11px;line-height:1.6}
+          .footer{margin-top:16px;border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:9px;color:#9ca3af}
+          @media print{
+            @page{size:A4;margin:12mm}
+            body{padding:0;max-width:100%}
+            html,body,*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+          }
+        </style></head><body>
+
+        <!-- BLOQUE 1: ENCABEZADO -->
+        <div class="hdr">
+          ${logoH}
+          <div>
+            <div class="title">Liquidación de Gastos Comunes</div>
+            <div class="subtitle">${cfg.nombre||"—"}</div>
+            <div class="subtitle">${cfg.direccion||""} ${cfg.ciudad?", "+cfg.ciudad:""}</div>
+            <div class="subtitle">RUT: ${cfg.rut||"—"}</div>
+          </div>
+          <div class="pago-box">
+            <div style="font-weight:800;color:#1b4332;margin-bottom:4px">¡Paga tus gastos comunes aquí!</div>
+            <div style="font-size:10px;color:#6b7280">Código de pago en línea:</div>
+            <div style="font-size:14px;font-weight:900;letter-spacing:2px;color:#1b4332">${folio}</div>
+            <div style="font-size:10px;color:#6b7280;margin-top:4px;font-style:italic">WebPay / Kipuku — Próximamente</div>
+          </div>
+        </div>
+
+        <!-- Datos Unidad -->
+        <div class="section-hdr">Identificación de la Unidad</div>
+        <div class="info-grid">
+          <div style="border-right:1px solid #e5e7eb">
+            <div class="kv"><span class="kv-label">Unidad</span><span class="kv-val">${r.display_unidad||r.numero_unidad||"—"}</span></div>
+            <div class="kv"><span class="kv-label">Residente</span><span class="kv-val">${r.nombre_propietario||"—"}</span></div>
+            ${esProrrateo ? `<div class="kv"><span class="kv-label">Prorrateo</span><span class="kv-val">${(r.alicuota_pct||0).toFixed(4)}%</span></div>` : `<div class="kv"><span class="kv-label">Modalidad</span><span class="kv-val">Cuota Fija General</span></div>`}
+            <div class="kv"><span class="kv-label">Folio boleta</span><span class="kv-val">${folio}</span></div>
+          </div>
+          <div>
+            <div class="kv"><span class="kv-label">Mes de cobro</span><span class="kv-val">${mesLabel}</span></div>
+            <div class="kv"><span class="kv-label">Vencimiento</span><span class="kv-val">${r.fecha_vencimiento||"—"}</span></div>
+            ${r.estado==="pagado" ? `<div class="kv"><span class="kv-label">Último pago</span><span class="kv-val">${r.fecha_pago||"—"}</span></div>` : ""}
+            <div class="kv"><span class="kv-label">Estado</span><span class="kv-val" style="color:${r.estado==="pagado"?"#16a34a":"#dc2626"}">${r.estado==="pagado"?"✅ PAGADO":"⏳ PENDIENTE"}</span></div>
+          </div>
+        </div>
+
+        <!-- BLOQUE 2: DETALLE DE COBRO -->
+        <div class="section-hdr">Detalle de su Gasto Común</div>
+        <table class="cobro-table">
+          <tr><th>Concepto</th><th style="text-align:right">Monto</th></tr>
+          <tr>
+            <td>${esProrrateo ? "Gasto Común (prorrateo " + (r.alicuota_pct||0).toFixed(4) + "%)" : "Cuota Fija del Período"}</td>
+            <td style="text-align:right;font-weight:700">${fmt(r.monto_base)}</td>
+          </tr>
+          <tr style="background:#fafafa">
+            <td>Fondo de Reserva (${pctFondo}%) ${mesLabel}</td>
+            <td style="text-align:right">${fmt(r.monto_fondo_reserva)}</td>
+          </tr>
+          ${r.deuda_anterior>0 ? `<tr style="background:#fef2f2"><td style="color:#dc2626">Arrastre Deuda Anterior</td><td style="text-align:right;color:#dc2626;font-weight:700">${fmt(r.deuda_anterior)}</td></tr>` : ""}
+          ${interesMora>0 ? `<tr style="background:#fef2f2"><td style="color:#dc2626">Interés por Mora (${pctMora}%)</td><td style="text-align:right;color:#dc2626">${fmt(interesMora)}</td></tr>` : ""}
+          <tr class="total-row">
+            <td>${cfg.nombre||"Condominio"} — Administración<br><span style="font-weight:400;font-size:10px;opacity:.8">${cfg.correo||""}</span></td>
+            <td style="text-align:right">Total a pagar<br>${fmt(totalFinal)}</td>
+          </tr>
+        </table>
+
+        <!-- OBSERVACIONES / DATOS BANCARIOS -->
+        <div class="obs-box">
+          <strong>PARA PAGAR VÍA TRANSFERENCIA ELECTRÓNICA, LOS DATOS SON:</strong><br>
+          ${cfg.nombre?.toUpperCase()||"CONDOMINIO"} RUT: ${cfg.rut||"—"}
+          ${cfg.num_cuenta ? `N° CTA CTE: ${cfg.num_cuenta} del Banco ${cfg.banco||"—"}.` : ""}<br>
+          ENVIAR EL COMPROBANTE DE LA TRANSFERENCIA <strong>INDICANDO EL N° DE LA UNIDAD (${r.display_unidad||r.numero_unidad||"DEPTO/CASA/LOCAL"})</strong>, AL MAIL ${cfg.correo||"administración"}.<br>
+          SE RUEGA QUE ESTA LIQUIDACIÓN DEBERÁ SER CANCELADA HASTA EL DÍA <strong>${r.fecha_vencimiento||"—"}</strong>
+        </div>
+
+        <!-- Tabla resumen unidad -->
+        <div class="section-hdr">Unidades</div>
+        <table class="cobro-table" style="margin-bottom:16px">
+          <tr style="background:#f9fafb">
+            <th>Unidad</th>
+            ${esProrrateo ? "<th>Prorrateo</th>" : ""}
+            <th style="text-align:right">Cobros del período</th>
+          </tr>
+          <tr>
+            <td>${r.display_unidad||r.numero_unidad||"—"}</td>
+            ${esProrrateo ? `<td>${(r.alicuota_pct||0).toFixed(4)}%</td>` : ""}
+            <td style="text-align:right;font-weight:700">${fmt(totalFinal)}</td>
+          </tr>
+          <tr style="background:#f9fafb">
+            <td colspan="${esProrrateo?2:1}"><strong>Total</strong></td>
+            <td style="text-align:right;font-weight:800">${fmt(totalFinal)}</td>
+          </tr>
+        </table>
+
+        <!-- BLOQUE 3: EGRESOS DE LA COMUNIDAD (OBLIGATORIO) -->
+        <div class="section-hdr" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Egresos Gasto Común de la Comunidad — ${mesLabel}</span>
+          <span style="font-size:13px">${fmt(totalEgresos)}</span>
+        </div>
+        <table class="egr-table">
+          <tr>
+            <th style="width:30px">#</th>
+            <th>Concepto</th>
+            <th>Descripción / Proveedor</th>
+            <th style="text-align:center">N° Doc / Fecha</th>
+            <th style="text-align:right">Monto</th>
+          </tr>
+          ${tablaEgresos}
+        </table>
+
+        <div class="footer">
+          Liquidación generada por Martinez Services ERP · ${new Date().toLocaleString("es-CL")} · Folio: ${folio}
+        </div>
         </body></html>`;
-      const w = window.open("","_blank"); w.document.write(html); w.document.close(); setTimeout(()=>w.print(),500);
+
+      const w = window.open("","_blank");
+      w.document.write(html);
+      w.document.close();
+      setTimeout(()=>w.print(), 600);
     };
     window.eliminarGC = async (periodo, condoId) => {
       if (!confirm(`¿Eliminar todos los GC del período ${periodo}? Esta acción no se puede deshacer.`)) return;
@@ -11044,26 +11254,128 @@ Si necesita clave, edita el cliente y agrega una.`;
 
       const { condo, condoId, unidad } = residenteData;
       zone.innerHTML = `
-        <div style="background:linear-gradient(135deg,rgba(46,168,79,0.15),rgba(21,101,192,0.1));border:1px solid rgba(46,168,79,0.3);border-radius:var(--radius-lg);padding:22px;margin-bottom:20px;">
-          <div style="font-size:20px;font-weight:900;margin-bottom:4px">🏢 ${condo.nombre||'Condominio'}</div>
-          <div style="font-size:14px;color:var(--c-muted)">Unidad N° ${unidad.numero_unidad||'—'} · ${unidad.nombre_propietario||'—'}</div>
-          <div style="font-size:12px;color:var(--c-muted)">RUT: ${unidad.rut||'—'} · Rol: ${unidad.rol||'—'}</div>
+        <!-- ── TARJETA ESTADO AL DÍA ── -->
+        <div id="res-estado-card" style="border-radius:var(--radius-lg);padding:18px 16px;margin-bottom:12px;background:linear-gradient(135deg,#1b4332,#2d6a4f);color:#fff;">
+          <div style="font-size:11px;opacity:.7;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${condo.nombre||"Condominio"}</div>
+          <div style="font-size:17px;font-weight:900;margin-bottom:2px">${unidad.display_unidad||unidad.numero_unidad||"—"}</div>
+          <div style="font-size:12px;opacity:.8">${unidad.nombre_propietario||"—"} · RUT ${unidad.rut||"—"}</div>
+          <div id="res-estado-deuda" style="margin-top:10px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.15);font-size:13px;font-weight:700">
+            ⏳ Verificando estado de cuenta…
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;">
-          <button onclick="verEstadoCuentaResidente('${condoId}','${unidad.numero_unidad}')" style="background:rgba(46,168,79,0.1);border:1px solid rgba(46,168,79,0.3);color:var(--c-accent);font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            💰 Mi Gasto Común<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Ver cobros del mes activo</div>
-          </button>
-          <button onclick="verHistorialResidente('${condoId}','${unidad.numero_unidad}')" style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            📋 Mi Historial<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Últimos 12 períodos</div>
-          </button>
-          <button onclick="pagarEnLinea('0','periodo activo','${unidad.numero_unidad}')" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            💳 Pagar en Línea<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Vía WhatsApp (Próximamente WebPay)</div>
-          </button>
-          <button onclick="alert('Reservas disponibles próximamente desde tu portal')" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#7c3aed;font-family:var(--font);padding:14px;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:13px;text-align:left;">
-            📅 Reservar Espacio<div style="font-size:11px;font-weight:400;color:var(--c-muted);margin-top:3px">Quincho, sala, cancha</div>
+
+        <!-- ── BOTÓN DESCARGAR GC ── -->
+        <div id="res-gc-btn-wrap" style="margin-bottom:12px;">
+          <button id="res-btn-gc" onclick="res_DescargarGC('${condoId}','${unidad.numero_unidad||""}')"
+            style="width:100%;background:#1b4332;color:#fff;border:none;font-family:var(--font);font-size:14px;font-weight:800;padding:16px;border-radius:var(--radius-lg);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            📥 Descargar Gasto Común
           </button>
         </div>
-        <div id="portal-residente-contenido"></div>`;
+
+        <!-- ── ACCESOS RÁPIDOS (estilo ComunidadFeliz) ── -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px;">
+          <button onclick="res_Nav('conserje')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+            <span style="font-size:22px">👨‍💼</span>Conserje
+          </button>
+          <button onclick="res_Nav('cartola')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+            <span style="font-size:22px">📊</span>Cartola
+          </button>
+          <button onclick="res_Nav('visitas')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+            <span style="font-size:22px">🔑</span>Visitas
+          </button>
+          <button onclick="res_Nav('alertas')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+            <span style="font-size:22px">⚠️</span>Alertas
+          </button>
+          <button onclick="res_Nav('pago')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+            <span style="font-size:22px">💳</span>Pagar
+          </button>
+        </div>
+
+        <!-- ── DOBLE TAB FINANCIERO ── -->
+        <div style="background:#fff;border-radius:var(--radius-lg);border:1px solid #e5e7eb;overflow:hidden;margin-bottom:12px;">
+          <!-- Tabs -->
+          <div style="display:flex;border-bottom:1px solid #e5e7eb;">
+            <button id="res-tab-mis" onclick="res_TabFinanciero('mis','${condoId}','${unidad.numero_unidad||""}')"
+              style="flex:1;padding:12px;background:#1b4332;color:#fff;border:none;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;">
+              💰 Mis Montos
+            </button>
+            <button id="res-tab-com" onclick="res_TabFinanciero('comunidad','${condoId}','${unidad.numero_unidad||""}')"
+              style="flex:1;padding:12px;background:#f9fafb;color:#374151;border:none;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;">
+              🏘️ Comunidad
+            </button>
+          </div>
+          <!-- Contenido tabs -->
+          <div id="res-tab-content" style="padding:14px;">
+            <div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">Cargando…</div>
+          </div>
+        </div>
+
+        <!-- ── COMUNICADOS ── -->
+        <div style="background:#fff;border-radius:var(--radius-lg);border:1px solid #e5e7eb;padding:14px;margin-bottom:60px;">
+          <div style="font-weight:700;font-size:13px;color:#1b4332;margin-bottom:10px">📢 Avisos de la Administración</div>
+          <div id="res-comunicados"><div style="text-align:center;color:#9ca3af;font-size:12px;padding:10px">Cargando comunicados…</div></div>
+        </div>
+
+        <!-- Datos banco para transferencias (fijo al fondo) -->
+        ${condo.banco||condo.num_cuenta ? `
+        <div style="position:fixed;bottom:60px;left:0;right:0;background:#fffbeb;border-top:1px solid #fde68a;padding:8px 16px;font-size:11px;text-align:center;z-index:50;">
+          Transferencia: ${condo.nombre||""} · RUT ${condo.rut||""} · ${condo.banco||""} CTA: ${condo.num_cuenta||""} · Indica tu unidad
+        </div>` : ""}
+      `;
+
+    // Cargar datos dinámicos del portal residente
+    const resCondoId   = '${condoId}';
+    const resNumUnidad = '${unidad.numero_unidad||""}';
+    const resUDocId    = '${unidad.docId||""}';
+
+    // Estado de cuenta
+    try {
+      const morSnap = await db.collection("condominios").doc(resCondoId)
+        .collection("morosidad").where("numero_unidad","==",resNumUnidad).where("estado","==","activa").get();
+      const deudaEl = document.getElementById("res-estado-deuda");
+      if (!morSnap.empty) {
+        let totalDeuda = 0;
+        morSnap.forEach(d => { totalDeuda += d.data().monto_total || d.data().monto || 0; });
+        if (deudaEl) deudaEl.innerHTML = `<span style="color:#fca5a5">⚠️ Deuda pendiente: <strong>$${totalDeuda.toLocaleString("es-CL")}</strong></span>`;
+      } else {
+        if (deudaEl) deudaEl.innerHTML = `✅ ¡Tus cuentas están al día! · ${unidad.torre?unidad.torre+" · ":""}${unidad.display_unidad||unidad.numero_unidad||""}`;
+      }
+    } catch(e) {}
+
+    // Cargar botón GC (mostrar mes actual)
+    try {
+      const gcSnap = await db.collection("condominios").doc(resCondoId)
+        .collection("gastos_comunes").where("numero_unidad","==",resNumUnidad)
+        .orderBy("periodo","desc").limit(1).get();
+      const gcBtn = document.getElementById("res-btn-gc");
+      if (!gcSnap.empty && gcBtn) {
+        const gc = gcSnap.docs[0];
+        const p = gc.data().periodo;
+        const mesLbl = p ? new Date(p+"-01").toLocaleDateString("es-CL",{month:"long",year:"numeric"}) : "—";
+        gcBtn.innerHTML = "📥 Descargar GC " + mesLbl + " · <strong>$" + Math.round(gc.data().monto_total||0).toLocaleString("es-CL") + "</strong>";
+        gcBtn.onclick = () => imprimirColillaGC(gc.id, resCondoId);
+      }
+    } catch(e) {}
+
+    // Cargar tab inicial Mis Montos
+    res_TabFinanciero("mis", resCondoId, resNumUnidad);
+
+    // Comunicados
+    try {
+      const comSnap = await db.collection("condominios").doc(resCondoId)
+        .collection("comunicados").orderBy("creado","desc").limit(5).get();
+      const comEl = document.getElementById("res-comunicados");
+      if (comEl) {
+        if (comSnap.empty) { comEl.innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:12px;padding:10px">Sin comunicados recientes</div>'; }
+        else {
+          comEl.innerHTML = comSnap.docs.map(d => {
+            const c = d.data();
+            const divStyle = "border-left:3px solid #1b4332;padding:8px 10px;margin-bottom:6px;background:#f9fafb;border-radius:0 6px 6px 0";
+            return "<div style='" + divStyle + "'><div style='font-weight:700;font-size:12px'>" + (c.titulo||"Comunicado") + "</div><div style='font-size:11px;color:#6b7280;margin-top:2px'>" + (c.contenido||"") + "</div><div style='font-size:10px;color:#9ca3af;margin-top:3px'>" + (c.creado?.toDate?.().toLocaleDateString("es-CL")||"") + "</div></div>";
+          }).join("");
+        }
+      }
+    } catch(e) {}
     }
 
     window.verEstadoCuentaResidente = async (condoId, numUnidad) => {
@@ -15886,6 +16198,139 @@ Asunto: ${asunto}`)) return;
       // const webpay = new WebpayPlus.Transaction({ ...config });
       // const response = await webpay.create(orderId, sessionId, monto, returnUrl);
       // window.location.href = response.url + "?token_ws=" + response.token;
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // PORTAL RESIDENTE — Doble Tab + Accesos Rápidos
+    // ══════════════════════════════════════════════════════════════
+
+    window.res_TabFinanciero = async (tab, condoId, numUnidad) => {
+      // Actualizar estilos tabs
+      const tabMis = document.getElementById("res-tab-mis");
+      const tabCom = document.getElementById("res-tab-com");
+      if (tabMis) { tabMis.style.background = tab==="mis"?"#1b4332":"#f9fafb"; tabMis.style.color = tab==="mis"?"#fff":"#374151"; }
+      if (tabCom) { tabCom.style.background = tab==="comunidad"?"#1b4332":"#f9fafb"; tabCom.style.color = tab==="comunidad"?"#fff":"#374151"; }
+
+      const cont = document.getElementById("res-tab-content");
+      if (!cont) return;
+      cont.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">Cargando…</div>';
+
+      const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
+
+      // Cargar config del condo
+      const cfgDoc = await db.collection("condominios").doc(condoId).get();
+      const cfg = cfgDoc.data() || {};
+      const esProrrateo = (cfg.modalidad_cobro||"cuota_fija") === "prorrateo";
+
+      if (tab === "mis") {
+        // ── TAB: MIS MONTOS ──
+        const gcSnap = await db.collection("condominios").doc(condoId)
+          .collection("gastos_comunes").where("numero_unidad","==",numUnidad)
+          .orderBy("periodo","desc").limit(1).get();
+
+        if (gcSnap.empty) {
+          cont.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">Sin gastos comunes emitidos para tu unidad</div>';
+          return;
+        }
+        const gc = gcSnap.docs[0].data();
+        const periodo = gc.periodo || "—";
+        const mesLbl = periodo ? new Date(periodo+"-01").toLocaleDateString("es-CL",{month:"long",year:"numeric"}) : "—";
+        const pctFondo = cfg.fondo_reserva_pct || 5;
+
+        cont.innerHTML = `
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Cobros del período — ${mesLbl}</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6">
+            <span style="font-size:13px">${esProrrateo?"Gasto Común (Prorrateo "+((gc.alicuota_pct||0).toFixed(4))+"%)":"Cuota Fija del Período"}</span>
+            <span style="font-weight:700">${fmt(gc.monto_base)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6">
+            <span style="font-size:13px">Fondo de Reserva (${pctFondo}%)</span>
+            <span>${fmt(gc.monto_fondo_reserva)}</span>
+          </div>
+          ${gc.deuda_anterior>0 ? `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6"><span style="font-size:13px;color:#dc2626">Arrastre Deuda Anterior</span><span style="color:#dc2626;font-weight:700">${fmt(gc.deuda_anterior)}</span></div>` : ""}
+          <div style="display:flex;justify-content:space-between;padding:12px;background:#1b4332;border-radius:8px;margin-top:10px">
+            <span style="font-size:14px;font-weight:700;color:#fff">Total a Pagar</span>
+            <span style="font-size:18px;font-weight:900;color:#fff">${fmt(gc.monto_total)}</span>
+          </div>
+          <div style="margin-top:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:11px">
+            <strong>Datos para transferencia:</strong><br>
+            ${cfg.nombre||"Condominio"} · RUT ${cfg.rut||"—"}${cfg.banco?" · "+cfg.banco+" CTA "+cfg.num_cuenta:""}${cfg.correo?"<br>Envía comprobante a "+cfg.correo:""}<br>
+            <strong>Indica tu unidad: ${gc.display_unidad||numUnidad}</strong>
+          </div>
+          <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button onclick="imprimirColillaGC('${gcSnap.docs[0].id}','${condoId}')"
+              style="background:#1b4332;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">
+              🖨️ Imprimir Colilla
+            </button>
+            <button onclick="pc2PagarWebpay('${gcSnap.docs[0].id}',${gc.monto_total||0})"
+              style="background:#f59e0b;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">
+              💳 Pagar en Línea
+            </button>
+          </div>`;
+
+      } else {
+        // ── TAB: COMUNIDAD (Transparencia Total) ──
+        const periodo = new Date().toISOString().slice(0,7);
+        const egSnap = await db.collection("condominios").doc(condoId)
+          .collection("egresos").where("periodo","==",periodo).get();
+
+        let totalEg = 0;
+        const cats = {};
+        egSnap.forEach(d => {
+          const eg = d.data();
+          const cat = eg.categoria || "Otros";
+          if (!cats[cat]) cats[cat] = 0;
+          cats[cat] += eg.monto || 0;
+          totalEg += eg.monto || 0;
+        });
+
+        // Cruzar remuneraciones RRHH
+        try {
+          const remSnap = await db.collection("asientos_contables")
+            .where("entityId","==",condoId).where("origen","==","RRHH_AUTOMATICO")
+            .where("fecha",">=",periodo+"-01").where("fecha","<=",periodo+"-31").get();
+          remSnap.forEach(d => {
+            const monto = d.data().debe || 0;
+            cats["Remuneraciones Personal"] = (cats["Remuneraciones Personal"]||0) + monto;
+            totalEg += monto;
+          });
+        } catch(e) {}
+
+        const mesLbl = new Date(periodo+"-01").toLocaleDateString("es-CL",{month:"long",year:"numeric"});
+
+        if (totalEg === 0) {
+          cont.innerHTML = `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">Sin egresos registrados para ${mesLbl}.<br>Registra los egresos en Área 01 → Egresos del Mes.</div>`;
+          return;
+        }
+
+        let rows = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,monto])=>`
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6">
+            <span style="font-size:12px">${cat}</span>
+            <span style="font-weight:700;font-size:12px">${fmt(monto)}</span>
+          </div>`).join("");
+
+        cont.innerHTML = `
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Egresos Comunidad — ${mesLbl}</div>
+          ${rows}
+          <div style="display:flex;justify-content:space-between;padding:10px;background:#1b4332;border-radius:8px;margin-top:10px">
+            <span style="font-size:13px;font-weight:700;color:#fff">Total Egresos Comunidad</span>
+            <span style="font-size:16px;font-weight:900;color:#fff">${fmt(totalEg)}</span>
+          </div>
+          <div style="margin-top:8px;font-size:10px;color:#9ca3af;text-align:center">Como copropietario, tienes derecho legal a ver en qué se gasta el dinero de tu comunidad.</div>`;
+      }
+    };
+
+    // Accesos rápidos del residente
+    window.res_Nav = (sec) => {
+      const msgs = {
+        conserje: "👨‍💼 Bitácora de conserjería y encomiendas — Próximamente",
+        cartola:  "📊 Cartola histórica de pagos — Ve a 'Mis Montos' para ver el período actual",
+        visitas:  "🔑 Registro de visitas y QR de ingreso — Próximamente",
+        alertas:  "⚠️ Reportar incidente a la administración — Próximamente",
+        pago:     null
+      };
+      if (sec === "pago") { pc2PagarWebpay("", 0); return; }
+      if (msgs[sec]) alert(msgs[sec]);
     };
   })();
   </script>
