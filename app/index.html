@@ -1126,6 +1126,20 @@
 
         <button class="btn-login" id="btn-login">Ingresar al sistema</button>
 
+        <!-- Modo registro para residentes/colaboradores -->
+        <div id="login-register-section" style="display:none;margin-bottom:8px;">
+          <label class="login-label" for="login-pass2">Confirmar contraseña</label>
+          <input class="login-input" type="password" id="login-pass2" placeholder="Repite tu contraseña" autocomplete="new-password" style="margin-bottom:8px"/>
+          <button class="btn-login" id="btn-register" style="background:var(--c-accent)">Crear mi cuenta</button>
+        </div>
+
+        <div style="text-align:center;margin:8px 0;">
+          <button id="btn-toggle-register" onclick="toggleRegisterMode()"
+            style="background:none;border:none;color:var(--c-accent);font-family:var(--font);font-size:12px;cursor:pointer;text-decoration:underline;">
+            ¿Eres residente o colaborador? Crea tu cuenta aquí
+          </button>
+        </div>
+
         <div style="display:flex;align-items:center;gap:10px;margin:16px 0;">
           <div style="flex:1;height:1px;background:var(--c-border)"></div>
           <span style="font-size:11px;color:var(--c-muted)">o ingresa con</span>
@@ -2165,8 +2179,47 @@
       showSAButton(); // ← CRÍTICO: mostrar SA Panel si es superadmin
 
       // ── DETECTOR DE ROL: redirige automáticamente según quién entra ──
-      const rol  = STATE.tenantData?.rol  || "";
+      let rol  = STATE.tenantData?.rol  || "";
       const plan = STATE.tenantData?.plan || "";
+
+      // Auto-detectar residente: si no tiene rol, buscar si su email está en alguna unidad
+      if (!rol || rol === "pendiente") {
+        try {
+          const condosSnap = await db.collection("condominios").get();
+          for (const condoDoc of condosSnap.docs) {
+            const unidSnap = await db.collection("condominios").doc(condoDoc.id)
+              .collection("unidades").where("correo","==",user.email.toLowerCase()).limit(1).get();
+            if (!unidSnap.empty) {
+              // Email coincide con una unidad → es residente
+              rol = "residente";
+              // Actualizar su documento de usuario
+              await db.collection("usuarios").doc(user.uid).set({
+                email: user.email.toLowerCase(), rol: "residente",
+                condoId: condoDoc.id, actualizado: firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+              STATE.tenantData = { ...STATE.tenantData, rol: "residente" };
+              break;
+            }
+          }
+        } catch(e2) {}
+      }
+
+      // Auto-detectar colaborador: si no tiene rol, buscar si su email está en empleados
+      if (!rol || rol === "pendiente") {
+        try {
+          const empSnap = await db.collection("empleados")
+            .where("correo_portal","==",user.email.toLowerCase()).limit(1).get();
+          if (!empSnap.empty) {
+            rol = "trabajador";
+            await db.collection("usuarios").doc(user.uid).set({
+              email: user.email.toLowerCase(), rol: "trabajador",
+              actualizado: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            STATE.tenantData = { ...STATE.tenantData, rol: "trabajador" };
+          }
+        } catch(e3) {}
+      }
+
       // Detectar trabajador por rol O por plan "Portal" (fallback para usuarios ya creados)
       const esTrabajador = rol === "trabajador" || (plan === "Portal" && rol !== "residente");
       if (esTrabajador) {
@@ -2202,6 +2255,14 @@
         }
         const zone = document.getElementById("module-dynamic-zone");
         if (zone) await renderPortalResidente(zone, user);
+      } else if (rol === "pendiente") {
+        // Cuenta creada pero sin vincular aún
+        showHeader(false);
+        showScreen("screen-login");
+        document.getElementById("login-error").style.color = "#f59e0b";
+        document.getElementById("login-error").textContent =
+          "✅ Tu cuenta existe, pero aún no ha sido vinculada a ninguna unidad o ficha de personal. Contacta a tu administrador e indícale tu correo: " + user.email;
+        auth.signOut();
       } else {
         // Admin, superadmin, cliente → panel normal de módulos
         renderLevel1();
@@ -3069,7 +3130,7 @@ Total global: $${totalGlobal.toLocaleString("es-CL")}`);
 
       const folio  = "GC-" + Date.now().toString(36).toUpperCase();
       const esProrrateo = (cfg.modalidad_cobro || "cuota_fija") === "prorrateo";
-      const pctFondo    = cfg.fondo_reserva_pct || 5;
+      const pctFondo    = cfg.fondo_reserva_pct !== undefined ? cfg.fondo_reserva_pct : 5;
       const periodo     = r.periodo || "";
       const mesLabel    = periodo ? new Date(periodo+"-01").toLocaleDateString("es-CL",{month:"long",year:"numeric"}) : "—";
       const fmt = n => "$"+Math.round(n||0).toLocaleString("es-CL");
@@ -3793,7 +3854,7 @@ Total global: $${totalGlobal.toLocaleString("es-CL")}`);
           </div>
           <div style="font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--c-border);padding-bottom:4px;">🏦 Fondo de Reserva y Morosidad</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-            ${formField("% Recargo Fondo Reserva",inp("cfg-fondo-pct","number","5",   `value="${cfg.fondo_reserva_pct||5}"`))}
+            ${formField("% Fondo Reserva (0 = sin fondo)",inp("cfg-fondo-pct","number","0",`value="${cfg.fondo_reserva_pct!==undefined?cfg.fondo_reserva_pct:5}"`))}
             ${formField("Días tolerancia mora",   inp("cfg-dias-mora","number","10",   `value="${cfg.dias_tolerancia_mora||10}"`))}
             ${formField("% Interés mora mensual", inp("cfg-interes-mora","number","1.5",`value="${cfg.interes_mora_pct||1.5}"`))}
             ${formField("WhatsApp Admin (+56)",   inp("cfg-wa","tel","",              `value="${cfg.whatsapp_admin||""}"`))}
@@ -3821,7 +3882,7 @@ Total global: $${totalGlobal.toLocaleString("es-CL")}`);
           num_torres:           parseInt(document.getElementById("cfg-torres").value)||1,
           modalidad_cobro:      modalidad,
           cuota_fija:           parseFloat(document.getElementById("cfg-cuota-fija").value)||0,
-          fondo_reserva_pct:    parseFloat(document.getElementById("cfg-fondo-pct").value)||5,
+          fondo_reserva_pct:    parseFloat(document.getElementById("cfg-fondo-pct").value)||0,
           dias_tolerancia_mora: parseInt(document.getElementById("cfg-dias-mora").value)||10,
           interes_mora_pct:     parseFloat(document.getElementById("cfg-interes-mora").value)||1.5,
           whatsapp_admin:       document.getElementById("cfg-wa").value.trim(),
@@ -3936,6 +3997,56 @@ Total global: $${totalGlobal.toLocaleString("es-CL")}`);
           e.code === "auth/popup-closed-by-user" ? "Ventana de Google cerrada. Intenta de nuevo." :
           e.code === "auth/account-exists-with-different-credential" ? "Este correo ya tiene una cuenta con contraseña. Usa el formulario de arriba." :
           "Error al ingresar con Google: " + e.message;
+      }
+    });
+
+    // Toggle modo registro
+    window.toggleRegisterMode = () => {
+      const regSection = document.getElementById("login-register-section");
+      const toggleBtn  = document.getElementById("btn-toggle-register");
+      const loginBtn   = document.getElementById("btn-login");
+      const isReg = regSection.style.display === "none";
+      regSection.style.display = isReg ? "block" : "none";
+      loginBtn.style.display   = isReg ? "none"  : "block";
+      toggleBtn.textContent    = isReg
+        ? "¿Ya tienes cuenta? Inicia sesión aquí"
+        : "¿Eres residente o colaborador? Crea tu cuenta aquí";
+      document.getElementById("login-error").textContent = "";
+    };
+
+    // Crear cuenta nueva (residentes y colaboradores sin Gmail)
+    document.getElementById("btn-register").addEventListener("click", async () => {
+      const email = document.getElementById("login-email").value.trim();
+      const pass  = document.getElementById("login-pass").value;
+      const pass2 = document.getElementById("login-pass2").value;
+      const errEl = document.getElementById("login-error");
+      errEl.textContent = "";
+      if (!email) { errEl.textContent = "Ingresa tu correo."; return; }
+      if (pass.length < 6) { errEl.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+      if (pass !== pass2) { errEl.textContent = "Las contraseñas no coinciden."; return; }
+      const btn = document.getElementById("btn-register");
+      btn.textContent = "Creando cuenta…"; btn.disabled = true;
+      try {
+        const cred = await auth.createUserWithEmailAndPassword(email, pass);
+        // Crear doc en usuarios con rol "pendiente" hasta que admin lo vincule
+        await db.collection("usuarios").doc(cred.user.uid).set({
+          email: email.toLowerCase(),
+          rol: "pendiente",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        errEl.style.color = "var(--c-accent)";
+        errEl.textContent = "✅ Cuenta creada. Contacta a tu administrador para que la vincule a tu unidad o ficha de personal.";
+        btn.textContent = "Crear mi cuenta"; btn.disabled = false;
+        toggleRegisterMode();
+      } catch(e) {
+        btn.textContent = "Crear mi cuenta"; btn.disabled = false;
+        const msgs = {
+          "auth/email-already-in-use": "Este correo ya tiene cuenta. Inicia sesión.",
+          "auth/invalid-email": "Correo inválido.",
+          "auth/weak-password": "Contraseña muy débil. Mínimo 6 caracteres."
+        };
+        errEl.style.color = "var(--c-danger)";
+        errEl.textContent = msgs[e.code] || "Error: " + e.message;
       }
     });
 
