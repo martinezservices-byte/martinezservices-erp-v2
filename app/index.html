@@ -2250,6 +2250,18 @@
         showScreen("screen-level2");
         const sidebar = document.getElementById("module-sidebar");
         if (sidebar) sidebar.style.display = "none";
+
+        // ── Limpiar header para residente (solo logo + correo + cerrar sesión) ──
+        document.getElementById("entity-select-wrap")?.style.setProperty("display","none","important");
+        document.getElementById("entity-select-mobile")?.style.setProperty("display","none","important");
+        document.getElementById("plan-badge")?.style.setProperty("display","none","important");
+        document.getElementById("btn-mis-empresas")?.style.setProperty("display","none","important");
+        document.getElementById("btn-hamburger")?.style.setProperty("display","none","important");
+        document.getElementById("btn-sa-panel")?.style.setProperty("display","none","important");
+        // Mostrar nombre del condominio en plan-badge
+        const pb = document.getElementById("plan-badge");
+        if (pb) { pb.textContent = "🏘️ Portal Residente"; pb.style.display=""; pb.style.background="rgba(46,168,79,0.15)"; pb.style.color="var(--c-accent)"; }
+
         const content = document.getElementById("module-content");
         if (content) {
           content.style.padding = "0";
@@ -11538,7 +11550,7 @@ Si necesita clave, edita el cliente y agrega una.`;
         const unidSnap = await db.collection("condominios").doc(condoDoc.id)
           .collection("unidades").where("correo","==",user.email.toLowerCase()).limit(1).get();
         if (!unidSnap.empty) {
-          residenteData = { condo: condoDoc.data(), condoId: condoDoc.id, unidad: unidSnap.docs[0].data() };
+          residenteData = { condo: condoDoc.data(), condoId: condoDoc.id, unidad: { id: unidSnap.docs[0].id, ...unidSnap.docs[0].data() } };
           break;
         }
       }
@@ -11574,19 +11586,19 @@ Si necesita clave, edita el cliente y agrega una.`;
 
         <!-- ── ACCESOS RÁPIDOS (estilo ComunidadFeliz) ── -->
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px;">
-          <button onclick="res_Nav('conserje')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+          <button onclick="res_Nav('conserje','${condoId}','${unidad.id||""}')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151;-webkit-tap-highlight-color:transparent;">
             <span style="font-size:22px">👨‍💼</span>Conserje
           </button>
-          <button onclick="res_Nav('cartola')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+          <button onclick="res_Nav('cartola','${condoId}','${unidad.id||""}')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151;-webkit-tap-highlight-color:transparent;">
             <span style="font-size:22px">📊</span>Cartola
           </button>
-          <button onclick="res_Nav('visitas')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+          <button onclick="res_Nav('visitas','${condoId}','${unidad.id||""}')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151;-webkit-tap-highlight-color:transparent;">
             <span style="font-size:22px">🔑</span>Visitas
           </button>
-          <button onclick="res_Nav('alertas')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+          <button onclick="res_Nav('alertas','${condoId}','${unidad.id||""}')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151;-webkit-tap-highlight-color:transparent;">
             <span style="font-size:22px">⚠️</span>Alertas
           </button>
-          <button onclick="res_Nav('pago')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151">
+          <button onclick="res_Nav('pago','${condoId}','${unidad.id||""}')" style="background:#fff;border:1px solid #e5e7eb;padding:10px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#374151;-webkit-tap-highlight-color:transparent;">
             <span style="font-size:22px">💳</span>Pagar
           </button>
         </div>
@@ -11616,11 +11628,7 @@ Si necesita clave, edita el cliente y agrega una.`;
           <div id="res-comunicados"><div style="text-align:center;color:#9ca3af;font-size:12px;padding:10px">Cargando comunicados…</div></div>
         </div>
 
-        <!-- Datos banco para transferencias (fijo al fondo) -->
-        ${condo.banco||condo.num_cuenta ? `
-        <div style="position:fixed;bottom:60px;left:0;right:0;background:#fffbeb;border-top:1px solid #fde68a;padding:8px 16px;font-size:11px;text-align:center;z-index:50;">
-          Transferencia: ${condo.nombre||""} · RUT ${condo.rut||""} · ${condo.banco||""} CTA: ${condo.num_cuenta||""} · Indica tu unidad
-        </div>` : ""}
+        <!-- Datos bancarios integrados en la tarjeta (no flotante) -->
       `;
 
     // Cargar datos dinámicos del portal residente
@@ -16620,17 +16628,129 @@ Asunto: ${asunto}`)) return;
       }
     };
 
-    // Accesos rápidos del residente
-    window.res_Nav = (sec) => {
-      const msgs = {
-        conserje: "👨‍💼 Bitácora de conserjería y encomiendas — Próximamente",
-        cartola:  "📊 Cartola histórica de pagos — Ve a 'Mis Montos' para ver el período actual",
-        visitas:  "🔑 Registro de visitas y QR de ingreso — Próximamente",
-        alertas:  "⚠️ Reportar incidente a la administración — Próximamente",
-        pago:     null
-      };
+    // Accesos rápidos del residente — modales reales, sin alert()
+    window.res_Nav = (sec, condoId, unidadDocId) => {
       if (sec === "pago") { pc2PagarWebpay("", 0); return; }
-      if (msgs[sec]) alert(msgs[sec]);
+      if (sec === "cartola") { res_TabFinanciero("mis", condoId, ""); return; }
+
+      // Modal profesional
+      const configs = {
+        conserje: {
+          titulo: "👨‍💼 Conserjería y Encomiendas",
+          html: `<div style="padding:4px 0">
+            <p style="color:var(--c-muted);font-size:12px;margin-bottom:12px">Encomiendas y registros de la conserjería de tu condominio.</p>
+            <div id="res-conserje-content"><div style="text-align:center;color:var(--c-muted);font-size:12px;padding:20px">Cargando…</div></div>
+          </div>`,
+          onOpen: async () => {
+            if (!condoId) return;
+            const cont = document.getElementById("res-conserje-content");
+            try {
+              const snap = await db.collection("condominios").doc(condoId)
+                .collection("accesos_qr").orderBy("creado","desc").limit(10).get();
+              if (snap.empty) { cont.innerHTML='<div style="text-align:center;color:var(--c-muted);font-size:12px;padding:12px">Sin registros recientes</div>'; return; }
+              cont.innerHTML = snap.docs.map(d=>{const r=d.data();
+                return `<div style="padding:8px 0;border-bottom:1px solid var(--c-border);font-size:12px">
+                  <strong>${r.tipo||"Visita"}</strong> · ${r.nombre||"—"}<br>
+                  <span style="font-size:10px;color:var(--c-muted)">${r.fecha||""} ${r.hora||""} · ${r.observacion||""}</span>
+                </div>`;
+              }).join("");
+            } catch(e) { cont.innerHTML='<div style="color:var(--c-muted);font-size:12px;padding:8px">Error cargando registros</div>'; }
+          }
+        },
+        visitas: {
+          titulo: "🔑 Mis Visitas Autorizadas",
+          html: `<div style="padding:4px 0">
+            <p style="color:var(--c-muted);font-size:12px;margin-bottom:12px">Registro de visitas y accesos a tu unidad.</p>
+            <div style="background:var(--c-bg);border-radius:var(--radius);padding:12px;margin-bottom:10px">
+              <div style="font-size:11px;font-weight:700;color:var(--c-accent);margin-bottom:8px">🔑 Generar QR de ingreso</div>
+              <p style="font-size:11px;color:var(--c-muted)">El QR de acceso estará disponible próximamente. Por ahora, coordina visitas directamente con la conserjería.</p>
+            </div>
+            <div id="res-visitas-content"><div style="text-align:center;color:var(--c-muted);font-size:12px;padding:12px">Cargando accesos…</div></div>
+          </div>`,
+          onOpen: async () => {
+            if (!condoId || !unidadDocId) return;
+            const cont = document.getElementById("res-visitas-content");
+            try {
+              const snap = await db.collection("condominios").doc(condoId)
+                .collection("accesos_qr").where("unidad_id","==",unidadDocId)
+                .orderBy("creado","desc").limit(8).get();
+              if (snap.empty) { cont.innerHTML='<div style="text-align:center;color:var(--c-muted);font-size:12px;padding:8px">Sin visitas registradas</div>'; return; }
+              cont.innerHTML = snap.docs.map(d=>{const r=d.data();
+                return `<div style="padding:6px 0;border-bottom:1px solid var(--c-border);font-size:11px">
+                  <strong>${r.nombre||"Visita"}</strong> · ${r.fecha||""} ${r.hora||""}</div>`;
+              }).join("");
+            } catch(e) { cont.innerHTML=''; }
+          }
+        },
+        alertas: {
+          titulo: "⚠️ Reportar Incidente",
+          html: `<div style="padding:4px 0">
+            <p style="color:var(--c-muted);font-size:12px;margin-bottom:12px">Envía un reporte directamente a la administración de tu condominio.</p>
+            <div style="margin-bottom:10px">
+              <label style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;display:block;margin-bottom:4px">Tipo de incidente</label>
+              <select id="inc-tipo" style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px;border-radius:var(--radius);outline:none;">
+                <option value="ruidos">🔊 Ruidos molestos</option>
+                <option value="filtracion">💧 Filtración / humedad</option>
+                <option value="ascensor">🛗 Falla ascensor</option>
+                <option value="iluminacion">💡 Iluminación áreas comunes</option>
+                <option value="limpieza">🧹 Limpieza áreas comunes</option>
+                <option value="seguridad">🔒 Seguridad / accesos</option>
+                <option value="otro">📋 Otro</option>
+              </select>
+            </div>
+            <div style="margin-bottom:10px">
+              <label style="font-size:11px;font-weight:700;color:var(--c-muted);text-transform:uppercase;display:block;margin-bottom:4px">Descripción</label>
+              <textarea id="inc-desc" rows="3" placeholder="Describe el incidente..."
+                style="width:100%;background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-text);font-family:var(--font);font-size:13px;padding:8px;border-radius:var(--radius);outline:none;resize:vertical;"></textarea>
+            </div>
+            <button onclick="res_EnviarIncidente('${condoId}','${unidadDocId}')" class="btn-entrar" style="width:100%">📤 Enviar Reporte</button>
+            <p id="inc-msg" style="font-size:11px;text-align:center;margin-top:6px;min-height:14px;"></p>
+          </div>`
+        }
+      };
+
+      const cfg = configs[sec];
+      if (!cfg) return;
+
+      // Crear modal
+      const existing = document.getElementById("res-modal-rapido");
+      if (existing) existing.remove();
+      const modal = document.createElement("div");
+      modal.id = "res-modal-rapido";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:5000;display:flex;align-items:flex-end;padding:0;";
+      modal.innerHTML = `
+        <div style="background:var(--c-surface);border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;padding:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-size:15px;font-weight:800">${cfg.titulo}</div>
+            <button onclick="document.getElementById('res-modal-rapido').remove()"
+              style="background:var(--c-bg);border:none;color:var(--c-muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+          </div>
+          ${cfg.html}
+        </div>`;
+      modal.onclick = (e) => { if(e.target===modal) modal.remove(); };
+      document.body.appendChild(modal);
+      if (cfg.onOpen) cfg.onOpen();
+    };
+
+    window.res_EnviarIncidente = async (condoId, unidadDocId) => {
+      const tipo = document.getElementById("inc-tipo")?.value;
+      const desc = document.getElementById("inc-desc")?.value.trim();
+      const msg  = document.getElementById("inc-msg");
+      if (!desc) { if(msg){msg.style.color="var(--c-danger)";msg.textContent="Describe el incidente";} return; }
+      try {
+        await db.collection("condominios").doc(condoId).collection("novedades").add({
+          tipo_novedad: "incidente_residente",
+          tipo_incidente: tipo,
+          descripcion: desc,
+          unidad_id: unidadDocId,
+          estado: "pendiente",
+          creado: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        if(msg){msg.style.color="var(--c-accent)";msg.textContent="✅ Reporte enviado a la administración.";}
+        setTimeout(()=>document.getElementById("res-modal-rapido")?.remove(),2000);
+      } catch(e) {
+        if(msg){msg.style.color="var(--c-danger)";msg.textContent="Error: "+e.message;}
+      }
     };
 
     // ══════════════════════════════════════════════════════════════
